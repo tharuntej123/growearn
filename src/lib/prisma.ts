@@ -1,0 +1,39 @@
+import { PrismaClient } from '@prisma/client';
+
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
+
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+  });
+
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+
+/**
+ * Health check helper executing a trivial query to verify DB connectivity.
+ */
+export async function checkDatabaseHealth(): Promise<{
+  connected: boolean;
+  latencyMs: number;
+  error?: string;
+}> {
+  const start = Date.now();
+  try {
+    await prisma.$queryRawUnsafe('SELECT 1');
+    const latencyMs = Date.now() - start;
+    return { connected: true, latencyMs };
+  } catch (error: any) {
+    const latencyMs = Date.now() - start;
+    console.error('[Database:HealthCheckFailed]', error?.message || error);
+    return {
+      connected: false,
+      latencyMs,
+      error: error?.message || 'Database connection error',
+    };
+  }
+}
+
+export default prisma;
