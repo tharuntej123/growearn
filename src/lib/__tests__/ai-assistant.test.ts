@@ -22,19 +22,51 @@ async function runAITests() {
     }
   }
 
-  // 1. Test AIAssistantService General Questions
-  console.log('--- 1. Testing AIAssistantService.answer (General Questions) ---');
+  // 1. Test AIAssistantService General Questions (Exact Answers)
+  console.log('--- 1. Testing AIAssistantService.answer (Technical Q&A) ---');
   try {
     const q1 = await AIAssistantService.answer('What is a REST API?', null);
     assert(q1.intent === 'GENERAL_QUESTION', 'Classifies "What is a REST API?" as GENERAL_QUESTION');
     assert(Boolean(q1.directAnswer && q1.directAnswer.includes('REST')), 'Direct answer contains REST API explanation');
-    assert(Array.isArray(q1.recommendedActions) && q1.recommendedActions.length > 0, 'Returns recommended action pills');
+    assert(Boolean(q1.directAnswer.includes('GET /api/resources')), 'Contains HTTP verb methods breakdown');
+
+    const qJava = await AIAssistantService.answer('What is polymorphism in Java?', null);
+    assert(Boolean(qJava.directAnswer.includes('Polymorphism') && qJava.directAnswer.includes('Compile-Time')), 'Direct answer contains Java Polymorphism explanation');
   } catch (err: any) {
     assert(false, 'AIAssistantService general question', err.message);
   }
 
-  // 2. Test AIAssistantService Skill Analysis
-  console.log('\n--- 2. Testing AIAssistantService.answer (Skill Gap Analysis) ---');
+  // 2. Test AIAssistantService Roadmap Generation with Visual Flow
+  console.log('\n--- 2. Testing AIAssistantService.answer (Roadmap Flow) ---');
+  try {
+    const userContext: any = {
+      id: 'test-user',
+      name: 'Alex Chen',
+      email: 'alex@example.com',
+      role: 'LEARNER',
+      skills: ['Java', 'SQL'],
+      profile: { targetRole: 'Backend Developer', experienceLevel: 'Intermediate' },
+    };
+
+    const qRoadmap = await AIAssistantService.answer('Give me a roadmap for Backend Developer', userContext);
+    assert(qRoadmap.intent === 'ROADMAP', 'Classifies "Give me a roadmap for Backend Developer" as ROADMAP');
+    assert(qRoadmap.directAnswer.includes('Phase 1'), 'Contains Phase 1 breakdown');
+    assert(qRoadmap.directAnswer.includes('Phase 2'), 'Contains Phase 2 breakdown');
+    assert(qRoadmap.directAnswer.includes('Phase 3'), 'Contains Phase 3 breakdown');
+    assert(qRoadmap.directAnswer.includes('Phase 4'), 'Contains Phase 4 breakdown');
+    assert(qRoadmap.directAnswer.includes('┌───'), 'Contains visual ASCII learning flow diagram');
+    assert(qRoadmap.directAnswer.includes('Milestone Project'), 'Contains milestone projects');
+
+    // Test clicking button string variants
+    const qClick = await AIAssistantService.answer('View Career Roadmap', userContext);
+    assert(qClick.intent === 'ROADMAP', 'Classifies "View Career Roadmap" as ROADMAP');
+    assert(qClick.directAnswer.includes('Step-by-Step Learning & Career Roadmap'), 'Delivers full roadmap directly without looping');
+  } catch (err: any) {
+    assert(false, 'AIAssistantService roadmap generation', err.message);
+  }
+
+  // 3. Test AIAssistantService Skill Analysis
+  console.log('\n--- 3. Testing AIAssistantService.answer (Skill Gap Analysis) ---');
   try {
     const contextMock: any = {
       id: 'test-user',
@@ -43,7 +75,7 @@ async function runAITests() {
       role: 'LEARNER',
       skills: ['React', 'TypeScript', 'Node.js'],
       hasSkills: true,
-      profile: { targetRole: 'Full Stack AI Engineer', experienceLevel: 'Intermediate' },
+      profile: { targetRole: 'Full Stack Engineer', experienceLevel: 'Intermediate' },
     };
     const q2 = await AIAssistantService.answer('What should I learn next?', contextMock);
     assert(q2.intent === 'SKILL_ANALYSIS', 'Classifies "What should I learn next?" as SKILL_ANALYSIS');
@@ -52,8 +84,8 @@ async function runAITests() {
     assert(false, 'AIAssistantService skill analysis', err.message);
   }
 
-  // 3. Test AIService.improveMessage
-  console.log('\n--- 3. Testing AIService.improveMessage ---');
+  // 4. Test AIService.improveMessage
+  console.log('\n--- 4. Testing AIService.improveMessage ---');
   try {
     const res = await AIService.improveMessage('hi can u tell me about this job', 'professional');
     assert(Boolean(res.improved && res.improved.length > 10), 'Returns polished message');
@@ -62,8 +94,8 @@ async function runAITests() {
     assert(false, 'AIService improveMessage', err.message);
   }
 
-  // 4. Test Career Roadmap Generation
-  console.log('\n--- 4. Testing CareerRoadmapService.generate ---');
+  // 5. Test Career Roadmap Generation Service
+  console.log('\n--- 5. Testing CareerRoadmapService.generate ---');
   try {
     const roadmap = CareerRoadmapService.generate(['React', 'TypeScript'], 'Frontend Engineer', 'Beginner');
     assert(Boolean(roadmap.targetRole === 'Frontend Engineer'), 'Target role matches input');
@@ -72,8 +104,8 @@ async function runAITests() {
     assert(false, 'CareerRoadmapService generate', err.message);
   }
 
-  // 5. Test Resume Skill Extractor
-  console.log('\n--- 5. Testing AIService.extractResumeSkills ---');
+  // 6. Test Resume Skill Extractor
+  console.log('\n--- 6. Testing AIService.extractResumeSkills ---');
   try {
     const extracted = await AIService.extractResumeSkills('Experienced with Java, Spring Boot, PostgreSQL, Docker, and React.');
     assert(extracted.detectedSkills.includes('Java'), 'Detects Java');
@@ -94,3 +126,4 @@ runAITests().catch((err) => {
   console.error('Fatal AI test error:', err);
   process.exit(1);
 });
+

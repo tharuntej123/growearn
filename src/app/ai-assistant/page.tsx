@@ -30,24 +30,131 @@ interface ChatMessage {
   intent?: string;
 }
 
+function parseInline(text: string): React.ReactNode {
+  const tokens = text.split(/(\*\*.*?\*\*|`.*?`)/g);
+
+  return tokens.map((tok, i) => {
+    if (tok.startsWith('**') && tok.endsWith('**')) {
+      return (
+        <strong key={i} className="font-bold text-slate-900">
+          {tok.slice(2, -2)}
+        </strong>
+      );
+    }
+    if (tok.startsWith('`') && tok.endsWith('`')) {
+      return (
+        <code
+          key={i}
+          className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 font-mono text-[11px]"
+        >
+          {tok.slice(1, -1)}
+        </code>
+      );
+    }
+    return tok;
+  });
+}
+
+function FormattedMessageContent({ content }: { content: string }) {
+  const parts = content.split(/(```[\s\S]*?```)/g);
+
+  return (
+    <div className="space-y-2.5 text-xs sm:text-sm leading-relaxed text-slate-800">
+      {parts.map((part, index) => {
+        if (part.startsWith('```') && part.endsWith('```')) {
+          const lines = part.slice(3, -3).trim().split('\n');
+          let lang = '';
+          let code = '';
+          if (
+            ['text', 'java', 'sql', 'typescript', 'javascript', 'python', 'bash', 'json'].includes(
+              lines[0].trim().toLowerCase()
+            )
+          ) {
+            lang = lines[0].trim();
+            code = lines.slice(1).join('\n');
+          } else {
+            code = lines.join('\n');
+          }
+
+          return (
+            <div
+              key={index}
+              className="my-2.5 rounded-xl overflow-hidden border border-slate-800 bg-slate-950 text-slate-100 shadow-sm"
+            >
+              {lang && (
+                <div className="px-3 py-1 bg-slate-900 text-[10px] uppercase font-mono text-emerald-400 font-semibold border-b border-slate-800 flex items-center justify-between">
+                  <span>{lang}</span>
+                </div>
+              )}
+              <pre className="p-3.5 font-mono text-xs overflow-x-auto text-emerald-300 leading-normal">
+                <code>{code}</code>
+              </pre>
+            </div>
+          );
+        }
+
+        const lines = part.split('\n');
+        return (
+          <div key={index} className="space-y-1.5">
+            {lines.map((line, lineIdx) => {
+              const trimmed = line.trim();
+              if (!trimmed) return <div key={lineIdx} className="h-1" />;
+
+              if (trimmed.startsWith('### ')) {
+                return (
+                  <h4 key={lineIdx} className="text-sm sm:text-base font-bold text-slate-900 mt-3 mb-1">
+                    {parseInline(trimmed.slice(4))}
+                  </h4>
+                );
+              }
+              if (trimmed.startsWith('## ')) {
+                return (
+                  <h3
+                    key={lineIdx}
+                    className="text-base sm:text-lg font-bold text-slate-950 mt-4 mb-1 border-b border-slate-200 pb-1"
+                  >
+                    {parseInline(trimmed.slice(3))}
+                  </h3>
+                );
+              }
+              if (trimmed === '---') {
+                return <hr key={lineIdx} className="my-3 border-slate-200" />;
+              }
+              if (trimmed.startsWith('• ') || trimmed.startsWith('- ')) {
+                return (
+                  <div key={lineIdx} className="flex items-start gap-2 pl-2">
+                    <span className="text-emerald-600 font-bold">•</span>
+                    <span className="flex-1">{parseInline(trimmed.slice(2))}</span>
+                  </div>
+                );
+              }
+
+              return (
+                <p key={lineIdx} className="leading-relaxed">
+                  {parseInline(line)}
+                </p>
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function AIAssistantPage() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'career_chat' | 'message_improver'>('career_chat');
 
   const userFirstName = user?.name ? user.name.split(' ')[0] : 'there';
-  const hasSkills = user?.skills && user.skills.length > 0;
 
-  // Career Chat State
+  // Career Chat State: Clean initial state with NO unprompted suggestions
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'm-1',
       sender: 'ai',
-      text: hasSkills
-        ? `Hello ${userFirstName}! I am your Groearn AI Career Assistant. Based on your profile and skills, I can give you targeted advice, explain complex concepts, analyze skill gaps, or find matching jobs. What would you like to explore?`
-        : `Hello ${userFirstName}! I am your Groearn AI Career Assistant. You can ask me technical questions, advice on career paths, or complete your onboarding to unlock personalized roadmap recommendations.`,
-      actions: hasSkills
-        ? ['What should I learn next?', 'Find jobs suitable for me', 'What is a REST API?', 'How can I improve my resume?']
-        : ['What is a REST API?', 'What is polymorphism in Java?', 'How to choose a career path?', 'Open Onboarding'],
+      text: `Hello ${userFirstName}! I am your Groearn AI Career Assistant. How can I help you today? You can ask me technical questions (like "What is a REST API?"), request structured career roadmaps (like "Give me a roadmap for Backend Developer"), or analyze your skills.`,
+      actions: [],
     },
   ]);
   const [inputQuery, setInputQuery] = useState('');
@@ -56,7 +163,9 @@ export default function AIAssistantPage() {
   // Message Improver State
   const [rawMessage, setRawMessage] = useState('hi can u tell me about this job and how much u pay');
   const [improvedResult, setImprovedResult] = useState<any>(null);
-  const [selectedTone, setSelectedTone] = useState<'professional' | 'friendly' | 'concise' | 'persuasive' | 'grammar_fix'>('professional');
+  const [selectedTone, setSelectedTone] = useState<
+    'professional' | 'friendly' | 'concise' | 'persuasive' | 'grammar_fix'
+  >('professional');
   const [isImproving, setIsImproving] = useState(false);
 
   const handleSendMessage = async (queryText?: string) => {
@@ -80,7 +189,7 @@ export default function AIAssistantPage() {
           id: (Date.now() + 1).toString(),
           sender: 'ai',
           text: json.data.response,
-          actions: json.data.recommendedActions,
+          actions: json.data.recommendedActions || [],
           intent: json.data.intent,
         };
         setMessages((prev) => [...prev, aiMsg]);
@@ -90,7 +199,7 @@ export default function AIAssistantPage() {
           id: (Date.now() + 1).toString(),
           sender: 'ai',
           text: `⚠️ ${errorText} Please try asking again or rephrase your question.`,
-          actions: ['What should I learn next?', 'What is a REST API?', 'Find jobs suitable for me'],
+          actions: [],
         };
         setMessages((prev) => [...prev, aiErrorMsg]);
         toast.error(errorText);
@@ -135,7 +244,7 @@ export default function AIAssistantPage() {
           <div>
             <div className="flex items-center gap-2">
               <Sparkles className="h-6 w-6 text-emerald-600 animate-pulse" />
-              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+              <h1 className="text-2xl sm:3xl font-bold text-slate-900 tracking-tight">
                 Groearn AI Assistant
               </h1>
             </div>
@@ -171,7 +280,7 @@ export default function AIAssistantPage() {
 
         {/* Tab 1: Career Advisor Chat */}
         {activeTab === 'career_chat' && (
-          <Card className="bg-white border-slate-200/90 rounded-3xl p-5 shadow-sm flex flex-col h-[640px]">
+          <Card className="bg-white border-slate-200/90 rounded-3xl p-5 shadow-sm flex flex-col h-[680px]">
             {/* Messages Scroll Area */}
             <div className="flex-1 overflow-y-auto space-y-4 pr-2">
               {messages.map((m) => (
@@ -188,15 +297,19 @@ export default function AIAssistantPage() {
                   )}
 
                   <div
-                    className={`p-4 rounded-2xl max-w-xl text-xs sm:text-sm leading-relaxed shadow-sm ${
+                    className={`p-4 rounded-2xl max-w-2xl lg:max-w-3xl text-xs sm:text-sm leading-relaxed shadow-sm ${
                       m.sender === 'user'
                         ? 'bg-emerald-600 text-white rounded-tr-none'
                         : 'bg-slate-50 border border-slate-200 text-slate-800 rounded-tl-none'
                     }`}
                   >
-                    <div className="whitespace-pre-line leading-relaxed">{m.text}</div>
+                    {m.sender === 'user' ? (
+                      <div className="whitespace-pre-line leading-relaxed font-medium">{m.text}</div>
+                    ) : (
+                      <FormattedMessageContent content={m.text} />
+                    )}
 
-                    {/* Quick action buttons if provided */}
+                    {/* Quick action buttons only if explicitly provided */}
                     {m.actions && m.actions.length > 0 && (
                       <div className="mt-3 pt-3 border-t border-slate-200 flex flex-wrap gap-1.5">
                         {m.actions.map((act, idx) => (
@@ -235,7 +348,7 @@ export default function AIAssistantPage() {
                 className="flex items-center gap-2"
               >
                 <Input
-                  placeholder="Ask a technical or career question (e.g. 'What is a REST API?', 'What should I learn next?')..."
+                  placeholder="Ask a question or request a roadmap (e.g. 'Give me a roadmap for Backend Developer', 'What is a REST API?')..."
                   value={inputQuery}
                   onChange={(e) => setInputQuery(e.target.value)}
                   disabled={isSending}
@@ -337,3 +450,4 @@ export default function AIAssistantPage() {
     </div>
   );
 }
+

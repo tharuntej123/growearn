@@ -72,8 +72,10 @@ export type AssistantIntent = z.infer<typeof assistantIntentEnum>;
 export const assistantResponseSchema = z.object({
   intent: assistantIntentEnum,
   directAnswer: z.string(),
-  recommendedActions: z.array(z.string()),
+  recommendedActions: z.array(z.string()).default([]),
   structuredData: z.record(z.any()).optional(),
 });
 
 export type AssistantResponseOutput = z.infer<typeof assistantResponseSchema>;
+
+
