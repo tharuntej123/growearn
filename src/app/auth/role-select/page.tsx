@@ -64,9 +64,11 @@ export default function RoleSelectPage() {
     setIsLoading(false);
 
     if (res.success) {
-      toast.success(`Active role set to ${selectedRole}`);
-      if (selectedRole === ROLES.LEARNER || (selectedRole as string) === 'STUDENT' || selectedRole === ROLES.PROFESSIONAL || (selectedRole as string) === 'FREELANCER') {
+      toast.success(`Active profile set to ${selectedRole}`);
+      if (selectedRole === ROLES.LEARNER || (selectedRole as string) === 'STUDENT') {
         router.push('/onboarding');
+      } else if (selectedRole === ROLES.PROFESSIONAL || (selectedRole as string) === 'FREELANCER') {
+        router.push('/professional/dashboard');
       } else if (selectedRole === ROLES.MENTOR) {
         router.push('/mentor/dashboard');
       } else if (selectedRole === ROLES.EMPLOYER || (selectedRole as string) === 'COMPANY') {
@@ -85,14 +87,13 @@ export default function RoleSelectPage() {
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold mb-3">
             <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
-            <span>Personalize Your Experience</span>
+            <span>Choose Your Dedicated Profile</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
             How do you want to use Groearn?
           </h1>
           <p className="mt-2 text-sm text-slate-600 max-w-xl mx-auto leading-relaxed">
-            Select your primary focus to customize your dashboard. You can expand your capabilities
-            or switch identities at any time.
+            Select your primary profile. This tailors your dashboard, AI roadmap recommendations, and workspace tools.
           </p>
         </div>
 

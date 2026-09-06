@@ -35,6 +35,7 @@ export default function JobsPage() {
   const [cityFilter, setCityFilter] = useState('');
   const [locationType, setLocationType] = useState('ALL');
   const [jobType, setJobType] = useState('ALL');
+  const [scopeFilter, setScopeFilter] = useState<'ALL' | 'FREELANCE' | 'LOCAL'>('ALL');
 
   // Proposal modal
   const [selectedJob, setSelectedJob] = useState<any>(null);
@@ -50,6 +51,8 @@ export default function JobsPage() {
       if (cityFilter) params.append('city', cityFilter);
       if (locationType !== 'ALL') params.append('locationType', locationType);
       if (jobType !== 'ALL') params.append('jobType', jobType);
+      if (scopeFilter === 'LOCAL') params.append('isLocal', 'true');
+      if (scopeFilter === 'FREELANCE') params.append('isLocal', 'false');
 
       const res = await fetch(`/api/jobs?${params.toString()}`);
       const json = await res.json();
@@ -67,7 +70,7 @@ export default function JobsPage() {
 
   useEffect(() => {
     fetchJobs();
-  }, [locationType, jobType]);
+  }, [locationType, jobType, scopeFilter]);
 
   const handleOpenProposal = async (job: any) => {
     setSelectedJob(job);
@@ -100,20 +103,25 @@ export default function JobsPage() {
     if (!selectedJob) return;
     setIsSubmitting(true);
     try {
-      const res = await fetch(`/api/jobs/${selectedJob.id}/apply`, {
+      const res = await fetch(`/api/jobs/${selectedJob.id}/proposal`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ coverLetter: customProposal }),
+        body: JSON.stringify({
+          coverLetter: customProposal,
+          proposedRate: 500,
+          estimatedDays: 7,
+        }),
       });
       const json = await res.json();
       if (json.success) {
-        toast.success(`Application submitted with ${json.data?.aiMatch?.overallScore || 90}% AI Match!`);
+        toast.success('Proposal submitted successfully to hiring team!');
         setSelectedJob(null);
+        setCustomProposal('');
       } else {
-        toast.error(json.error?.message || 'Submission failed');
+        toast.error(json.error?.message || 'Failed to submit proposal');
       }
     } catch {
-      toast.error('Error applying to job');
+      toast.error('Submission failed due to network error');
     } finally {
       setIsSubmitting(false);
     }
@@ -131,6 +139,40 @@ export default function JobsPage() {
           <p className="text-xs sm:text-sm text-slate-600 mt-1">
             Discover remote professional projects, on-site Chennai/local gigs, and full-time enterprise roles.
           </p>
+        </div>
+
+        {/* Scope Selector Tabs */}
+        <div className="flex items-center gap-2 bg-white border border-slate-200 p-1.5 rounded-2xl w-fit shadow-xs">
+          <button
+            onClick={() => setScopeFilter('ALL')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              scopeFilter === 'ALL'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            ✨ All Opportunities
+          </button>
+          <button
+            onClick={() => setScopeFilter('FREELANCE')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              scopeFilter === 'FREELANCE'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            🌍 Global & Freelance
+          </button>
+          <button
+            onClick={() => setScopeFilter('LOCAL')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              scopeFilter === 'LOCAL'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            📍 Local Jobs (Chennai & Hubs)
+          </button>
         </div>
 
         {/* Unpersonalized Callout if user has 0 skills */}

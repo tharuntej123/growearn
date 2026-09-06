@@ -16,6 +16,8 @@ export async function GET(req: NextRequest) {
     const jobType = searchParams.get('jobType') || undefined;
     const companyId = searchParams.get('companyId') || undefined;
     const mine = searchParams.get('mine') === 'true';
+    const isLocalParam = searchParams.get('isLocal');
+    const isLocal = isLocalParam === 'true' ? true : isLocalParam === 'false' ? false : undefined;
 
     const authUser = await getCurrentUser(req);
     const targetCompanyId = mine && authUser ? authUser.id : companyId;
@@ -28,6 +30,7 @@ export async function GET(req: NextRequest) {
         city,
         locationType,
         jobType,
+        isLocal,
       });
       return apiSuccess({
         jobs,
@@ -43,7 +46,7 @@ export async function GET(req: NextRequest) {
     const { jobs, isPersonalized, emptyReason } = await RecommendationService.getJobs(
       userContext,
       50,
-      { city, locationType, jobType, query }
+      { city, locationType, jobType, query, isLocal }
     );
 
     return apiSuccess({

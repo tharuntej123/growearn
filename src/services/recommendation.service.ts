@@ -38,10 +38,13 @@ export class RecommendationService {
   static async getJobs(
     userContext: UserAIContext | null,
     limit = 10,
-    filters?: { city?: string; locationType?: string; jobType?: string; query?: string }
+    filters?: { city?: string; locationType?: string; jobType?: string; query?: string; isLocal?: boolean }
   ): Promise<{ jobs: ScoredJob[]; isPersonalized: boolean; emptyReason?: string }> {
     const where: any = { status: 'OPEN' };
 
+    if (filters?.isLocal !== undefined) {
+      where.isLocal = filters.isLocal;
+    }
     if (filters?.locationType && filters.locationType !== 'ALL') {
       where.locationType = filters.locationType;
     }

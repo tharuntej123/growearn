@@ -20,7 +20,9 @@ import {
   Clock,
   ArrowRight,
   Filter,
+  Compass,
 } from 'lucide-react';
+import { QuickPostCard } from '@/components/feed/quick-post-card';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -69,6 +71,7 @@ export default function CompanyDashboardPage() {
 
   // Job creation modal state
   const [showJobModal, setShowJobModal] = useState(false);
+  const [isLocalJob, setIsLocalJob] = useState(false);
   const [jobTitle, setJobTitle] = useState('');
   const [jobDescription, setJobDescription] = useState('');
   const [jobCity, setJobCity] = useState('Chennai');
@@ -86,12 +89,12 @@ export default function CompanyDashboardPage() {
     {
       id: 'app-1',
       candidateName: 'Elena Rostova',
-      candidateTitle: 'Senior Next.js & AI Application Specialist',
-      avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150',
-      jobTitle: 'Next.js & AI Web Application Engineer',
-      matchScore: 98,
-      status: 'SHORTLISTED',
-      appliedDate: '2 days ago',
+      candidateTitle: 'Full Stack Engineer & React Specialist',
+      avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
+      jobTitle: 'Senior Java & Spring Boot Backend Architect',
+      matchScore: 96,
+      status: 'REVIEWING',
+      appliedDate: '2 hours ago',
     },
     {
       id: 'app-2',
@@ -172,6 +175,9 @@ export default function CompanyDashboardPage() {
     if (!jobSkills.trim()) {
       errors.skills = 'At least one skill is required';
     }
+    if (isLocalJob && !jobCity.trim()) {
+      errors.city = 'City/location is required for local job postings';
+    }
 
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
@@ -187,21 +193,25 @@ export default function CompanyDashboardPage() {
         body: JSON.stringify({
           title: jobTitle.trim(),
           description: jobDescription.trim(),
-          city: jobCity.trim() || 'Chennai',
-          locationType: jobLocationType,
+          city: isLocalJob ? (jobCity.trim() || 'Chennai') : 'Remote / Worldwide',
+          locationType: isLocalJob ? jobLocationType : 'REMOTE',
           jobType,
           minSalary: Number(minSalary),
           maxSalary: Number(maxSalary),
           currency: 'USD',
           experienceLevel: 'MID',
-          isLocal: jobLocationType !== 'REMOTE',
+          isLocal: isLocalJob,
           skills: jobSkills.split(',').map((s) => s.trim()).filter(Boolean),
         }),
       });
 
       const json = await res.json();
       if (json.success) {
-        toast.success('Job opportunity posted and searchable across the platform!');
+        toast.success(
+          isLocalJob
+            ? `Local job in ${jobCity} posted successfully!`
+            : 'Global / Remote freelance job posted successfully!'
+        );
         setShowJobModal(false);
         setJobTitle('');
         setJobDescription('');
@@ -506,6 +516,20 @@ export default function CompanyDashboardPage() {
           )}
         </div>
 
+        {/* Company Community Feed & Quick Post */}
+        <div className="space-y-4 pt-2">
+          <div>
+            <h2 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+              <Compass className="h-5 w-5 text-emerald-600" /> Share with Talent Community
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">Announce open roles, team hiring culture, and project opportunities.</p>
+          </div>
+
+          <QuickPostCard
+            placeholder="Announce newly opened positions, engineering challenges, or company updates..."
+          />
+        </div>
+
         {/* Job Posting Modal */}
         {showJobModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
@@ -524,6 +548,48 @@ export default function CompanyDashboardPage() {
               )}
 
               <form onSubmit={handleCreateJob} className="space-y-3.5 text-xs">
+                {/* 2-Way Job Posting Scope Selector */}
+                <div className="space-y-1.5">
+                  <label className="block font-semibold text-slate-700">Job Reach & Scope *</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsLocalJob(false);
+                        setJobLocationType('REMOTE');
+                      }}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        !isLocalJob
+                          ? 'bg-emerald-50 border-emerald-500 text-emerald-900 ring-2 ring-emerald-500/20 shadow-xs'
+                          : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 font-bold text-xs">
+                        <span className="text-base">🌍</span> Global / Remote Job
+                      </div>
+                      <p className="text-[10px] text-slate-500 mt-1">Worldwide freelance & distributed talent</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsLocalJob(true);
+                        if (jobLocationType === 'REMOTE') setJobLocationType('HYBRID');
+                      }}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        isLocalJob
+                          ? 'bg-emerald-50 border-emerald-500 text-emerald-900 ring-2 ring-emerald-500/20 shadow-xs'
+                          : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 font-bold text-xs">
+                        <span className="text-base">📍</span> Local Job (City Specific)
+                      </div>
+                      <p className="text-[10px] text-slate-500 mt-1">On-site or hybrid in Chennai, Bengaluru, etc.</p>
+                    </button>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">Job Title *</label>
                   <Input
@@ -575,9 +641,14 @@ export default function CompanyDashboardPage() {
                       aria-label="Work Mode"
                       className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-slate-800 shadow-sm"
                     >
-                      <option value="REMOTE">Remote</option>
-                      <option value="HYBRID">Hybrid</option>
-                      <option value="ONSITE">On-Site</option>
+                      {!isLocalJob ? (
+                        <option value="REMOTE">Remote (Worldwide)</option>
+                      ) : (
+                        <>
+                          <option value="HYBRID">Hybrid</option>
+                          <option value="ONSITE">On-Site</option>
+                        </>
+                      )}
                     </select>
                   </div>
                   <div>
@@ -595,13 +666,22 @@ export default function CompanyDashboardPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">City / Region</label>
+                    <label className="block font-semibold text-slate-700 mb-1">
+                      {isLocalJob ? 'City / Location *' : 'Location'}
+                    </label>
                     <Input
-                      placeholder="e.g. Chennai"
-                      value={jobCity}
-                      onChange={(e) => setJobCity(e.target.value)}
-                      className="bg-white"
+                      placeholder={isLocalJob ? 'e.g. Chennai, TN' : 'Remote / Worldwide'}
+                      value={isLocalJob ? jobCity : 'Remote / Worldwide'}
+                      disabled={!isLocalJob}
+                      onChange={(e) => {
+                        setJobCity(e.target.value);
+                        if (fieldErrors.city) setFieldErrors((prev) => ({ ...prev, city: '' }));
+                      }}
+                      className={`bg-white ${fieldErrors.city ? 'border-rose-400' : ''}`}
                     />
+                    {fieldErrors.city && (
+                      <p className="text-[11px] text-rose-600 mt-1">{fieldErrors.city}</p>
+                    )}
                   </div>
                 </div>
 

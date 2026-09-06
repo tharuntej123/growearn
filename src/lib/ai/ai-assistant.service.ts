@@ -71,7 +71,23 @@ export class AIAssistantService {
       q.includes('coach') ||
       q.includes('1-on-1') ||
       q.includes('advisor') ||
-      q.includes('mock interview')
+      q.includes('mock interview') ||
+      q.includes('these guys') ||
+      q.includes('these people') ||
+      q.includes('who is available') ||
+      q.includes('who are available') ||
+      q.includes('available in the application') ||
+      q.includes('available on growearn') ||
+      q.includes('available on groearn') ||
+      q.includes('available in growearn') ||
+      q.includes('available in groearn') ||
+      q.includes('sarah') ||
+      q.includes('david kim') ||
+      q.includes('priya') ||
+      q.includes('michael chang') ||
+      q.includes('marcus') ||
+      q.includes('elena') ||
+      q.includes('instructors')
     ) {
       return 'MENTOR_RECOMMENDATION';
     }
@@ -268,7 +284,44 @@ export class AIAssistantService {
     // --- 1. Handle ROADMAP ---
     if (intent === 'ROADMAP') {
       const roadmap = CareerRoadmapService.generate(userSkills, detectedRole, exp, goal);
-      return this.formatRoadmapFlow(detectedRole, roadmap);
+      let baseOutput = this.formatRoadmapFlow(detectedRole, roadmap);
+
+      try {
+        const [topCourses, topMentors] = await Promise.all([
+          prisma.course.findMany({
+            take: 2,
+            select: { title: true, price: true, category: true },
+          }).catch(() => []),
+          prisma.mentorProfile.findMany({
+            take: 2,
+            include: { user: { select: { name: true, headline: true } } },
+          }).catch(() => []),
+        ]);
+
+        if (topCourses.length > 0 || topMentors.length > 0) {
+          baseOutput += `\n\n---\n\n### 🎓 Top Curated Courses & Mentors for this Roadmap:\n\n`;
+
+          if (topCourses.length > 0) {
+            baseOutput += `**📚 Recommended Courses**:\n`;
+            topCourses.forEach((c) => {
+              baseOutput += `• **${c.title}** *(${c.category})* — ${c.price > 0 ? `$${c.price}` : 'Free'}\n`;
+            });
+            baseOutput += `\n`;
+          }
+
+          if (topMentors.length > 0) {
+            baseOutput += `**👨‍🏫 Matched Expert Mentors**:\n`;
+            topMentors.forEach((m) => {
+              baseOutput += `• **${m.user?.name || 'Expert Mentor'}**: ${m.user?.headline || 'Tech Lead & Career Coach'}\n`;
+            });
+          }
+        }
+      } catch {
+        // Fallback gracefully if database is unavailable
+      }
+
+      baseOutput += `\n\n💡 *Tip: You can also manually customize your roadmap and skills at any time from your **Learner Dashboard**.*`;
+      return baseOutput;
     }
 
 
@@ -300,7 +353,69 @@ export class AIAssistantService {
     if (intent === 'GENERAL_QUESTION') {
       let answer = '';
 
-      if (qLower.includes('rest') || qLower.includes('api')) {
+      if (qLower.includes('python')) {
+        answer = `**Python** is a high-level, dynamically typed, multi-paradigm programming language celebrated for its clear, readable syntax, vast standard library, and dominance in **AI/ML, Data Engineering, Backend APIs, and Automation**.
+
+### 🌟 Core Strengths & Use Cases:
+1. **AI, Machine Learning & Data Science**: Primary language for \`PyTorch\`, \`TensorFlow\`, \`HuggingFace\`, \`scikit-learn\`, \`NumPy\`, and \`Pandas\`.
+2. **High-Performance Web Backends**: Modern asynchronous frameworks like **FastAPI** and enterprise batteries-included frameworks like **Django**.
+3. **Scripting, DevOps & Cloud Automation**: Native choice for AWS Lambda, cloud orchestration, data scraping, and infrastructure tooling.
+
+### 💻 Code Example: Modern Asynchronous API with FastAPI & Pydantic
+\`\`\`python
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
+from typing import List
+import asyncio
+
+app = FastAPI(title="Groearn AI Pipeline API")
+
+class CandidateProfile(BaseModel):
+    name: str
+    skills: List[str]
+    years_experience: int = Field(..., ge=0)
+
+@app.post("/api/candidates/analyze")
+async def analyze_candidate(profile: CandidateProfile):
+    # Simulate async AI matching
+    await asyncio.sleep(0.05)
+    match_score = min(100, len(profile.skills) * 15 + profile.years_experience * 5)
+    return {
+        "status": "success",
+        "candidate": profile.name,
+        "match_score": f"{match_score}%",
+        "eligible": match_score >= 70
+    }
+\`\`\`
+
+### ⚡ Key Architectural Concepts in Python:
+• **GIL (Global Interpreter Lock)**: A mutex that protects access to Python objects, preventing multiple native threads from executing Python bytecodes at once (CPython). Multi-core parallelism is achieved via \`multiprocessing\` or asynchronous I/O via \`asyncio\`.
+• **Dynamic Typing with Optional Type Hints**: Modern Python ($\ge 3.10$) uses type annotations (\`str\`, \`List[int]\`, \`Union\`) checked statically via \`mypy\` or \`pyright\`.
+• **Generators & Iterators**: Memory-efficient stream processing using the \`yield\` keyword.`;
+      } else if (qLower.includes('javascript') || qLower.includes('typescript') || qLower.includes('nodejs') || qLower.includes('node.js')) {
+        answer = `**TypeScript & JavaScript** form the backbone of modern web and full-stack cloud software engineering.
+
+### 🚀 Key Technical Pillars:
+1. **Event Loop & Single-Threaded Non-Blocking I/O**: The V8 runtime executes synchronous JS code on the main call stack and offloads I/O (network, filesystem) to the libuv thread pool.
+2. **TypeScript Type System**: Adds static type-checking, structural typing (duck typing), generics, union types, and utility types (\`Partial\`, \`Pick\`, \`Omit\`) at compile time without runtime performance overhead.
+3. **Modern Async**: \`async/await\` layered over Promises with \`Promise.all()\`, \`Promise.allSettled()\`, and microtask scheduling.
+
+### 💻 TypeScript Generic Pattern Example:
+\`\`\`typescript
+export interface APIResponse<T> {
+  success: boolean;
+  data: T;
+  timestamp: string;
+}
+
+export async function fetchResource<T>(url: string): Promise<APIResponse<T>> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(\`HTTP Error: \${res.status}\`);
+  const data: T = await res.json();
+  return { success: true, data, timestamp: new Date().toISOString() };
+}
+\`\`\``;
+      } else if (qLower.includes('rest') || qLower.includes('api') || qLower.includes('http')) {
         answer = `A **REST API** (Representational State Transfer) is a stateless architectural style for networked web services using HTTP.
 
 ### 🏛️ Core Architectural Constraints:
@@ -320,7 +435,7 @@ export class AIAssistantService {
 • \`200 OK\` (Success), \`201 Created\` (Resource created), \`204 No Content\` (Deleted).
 • \`400 Bad Request\` (Validation failed), \`401 Unauthorized\` (Missing token), \`403 Forbidden\` (Insufficient permissions), \`404 Not Found\`.
 • \`500 Internal Server Error\` (Unhandled exception).`;
-      } else if (qLower.includes('polymorphism')) {
+      } else if (qLower.includes('polymorphism') || qLower.includes('oop')) {
         answer = `**Polymorphism** is an Object-Oriented Programming (OOP) principle meaning "many forms". It allows objects of different concrete subtypes to be treated through a unified interface.
 
 ### 1. Compile-Time Polymorphism (Method Overloading)
@@ -343,13 +458,6 @@ public class StripeProcessor implements PaymentProcessor {
     @Override
     public void process(double amount) {
         System.out.println("Processing $" + amount + " via Stripe API");
-    }
-}
-
-public class CryptoProcessor implements PaymentProcessor {
-    @Override
-    public void process(double amount) {
-        System.out.println("Executing on-chain transaction for $" + amount);
     }
 }
 \`\`\`
@@ -387,7 +495,7 @@ Decouples client business logic from concrete implementations, adhering to the *
 • **Deployment**: Declarative updates for Pods and ReplicaSets.
 • **Service**: Stable virtual IP and load balancer across dynamic Pods.
 • **Ingress**: HTTP/HTTPS routing into cluster services.`;
-      } else if (qLower.includes('microservice')) {
+      } else if (qLower.includes('microservice') || qLower.includes('system design')) {
         answer = `**Microservices Architecture** decomposes an application into loosely coupled, independently deployable services organized around specific business domains.
 
 ### 📐 Core Architectural Patterns:
@@ -411,6 +519,7 @@ Decouples client business logic from concrete implementations, adhering to the *
         qLower.includes('index') ||
         qLower.includes('database') ||
         qLower.includes('sql') ||
+        qLower.includes('postgres') ||
         qLower.includes('acid')
       ) {
         answer = `**Database Indexing** creates specialized data structures (typically B-Trees or Hash/GIN) that allow relational database engines to locate matching rows in $O(\\log N)$ time instead of performing expensive full-table sequential scans ($O(N)$).
@@ -437,15 +546,29 @@ Decouples client business logic from concrete implementations, adhering to the *
 2. **Client Components (\`'use client'\`)**: Hydrate in the browser to handle interactivity, state (\`useState\`), and DOM events.
 3. **Streaming & Suspense**: Progressively stream UI components to the browser as data resolves.
 4. **Server Actions**: Server-side functions invoked directly from client components with automatic revalidation.`;
+      } else if (
+        qLower.includes('groearn') ||
+        qLower.includes('growearn') ||
+        (qLower.includes('what is') && (qLower.includes('this platform') || qLower.includes('this app') || qLower.includes('platform'))) ||
+        qLower.includes('how does groearn work') ||
+        qLower.includes('how does growearn work')
+      ) {
+        answer = `**Groearn** is an all-in-one AI career ecosystem and talent platform connecting 4 distinct profiles:
+
+1. 👨‍🎓 **Learner**: Explore in-demand tech roles, generate customized AI Roadmaps, track competencies in "What I Learn", and manage resumes.
+2. 👨‍🏫 **Mentor**: Conduct 1-on-1 coaching sessions and author courses with syllabus and study material uploads.
+3. 💼 **Professional**: Access freelance & full-time job listings and generate tailored proposals using the 1-Click AI Proposal Generator.
+4. 🏢 **Company**: Post jobs with real-time field validation, source verified candidates, and review AI candidate matching.
+5. 🌐 **Community Feed**: Connect with peers, share knowledge, and post updates across all roles.
+
+You can ask me to generate a personalized career roadmap, recommend courses & mentors, or explain any technical topic!`;
       } else {
         answer = `Hello ${userName}! Regarding "${question}":
 
-In modern production software engineering, building reliable systems requires:
-1. **Clear Architectural Boundaries**: Strict separation between presentation, business domain logic, and data storage layers.
-2. **Type Safety & Data Validation**: Validate external payloads at network boundaries using tools like Zod or Bean Validation.
-3. **Observability & Automated Testing**: Implement unit, integration, and end-to-end tests alongside structured server logs and health checks.
-
-Feel free to ask for deep architectural breakdowns, code examples, roadmap progressions, or specific framework techniques!`;
+Here is a quick breakdown to guide you:
+• If you're looking for **programming language explanations** (Python, Java, TypeScript, Go, Rust), ask for syntax guides, architectural overviews, or code examples.
+• If you're looking for **career roadmaps** or learning paths, tell me your target role (e.g. *Full Stack*, *AI/ML*, *Backend*, *DevOps*).
+• If you're looking for **mentors** or **courses**, check out the verified directory on the Mentors & Courses pages or ask me for top recommendations!`;
       }
 
       return answer;
@@ -459,7 +582,7 @@ Feel free to ask for deep architectural breakdowns, code examples, roadmap progr
           company: { select: { name: true } },
           skills: { include: { skill: true } },
         },
-        take: 3,
+        take: 4,
         orderBy: { createdAt: 'desc' },
       });
 
@@ -482,14 +605,14 @@ Feel free to ask for deep architectural breakdowns, code examples, roadmap progr
     if (intent === 'COURSE_RECOMMENDATION') {
       const courses = await prisma.course.findMany({
         where: { isPublished: true },
-        take: 3,
+        take: 4,
         include: { instructor: { select: { name: true } } },
         orderBy: { rating: 'desc' },
       });
 
       let answer = `📚 **Recommended Interactive Courses for ${detectedRole}**\n\n`;
       courses.forEach((c) => {
-        answer += `• **${c.title}** (${c.category} • ${c.level}) — Instructor: **${c.instructor.name}** (⭐ ${c.rating})\n`;
+        answer += `• **${c.title}** (${c.category} • ${c.level}) — Instructor: **${c.instructor.name}** (⭐ ${c.rating}) — ${c.price > 0 ? `$${c.price}` : 'Free'}\n`;
       });
       answer += `\nExplore interactive course modules and video lessons on the Courses page!`;
 
@@ -500,17 +623,17 @@ Feel free to ask for deep architectural breakdowns, code examples, roadmap progr
     if (intent === 'MENTOR_RECOMMENDATION') {
       const mentors = await prisma.mentorProfile.findMany({
         where: { isAvailable: true },
-        include: { user: { select: { name: true, headline: true } } },
-        take: 2,
+        include: { user: { select: { name: true, headline: true, bio: true } } },
+        take: 6,
         orderBy: { rating: 'desc' },
       });
 
-      let answer = `👨‍🏫 **Verified Mentors for Architecture & Career Coaching**\n\n`;
+      let answer = `Yes! The following verified industry leaders and mentors are actively available on **Groearn** for 1-on-1 coaching, architecture reviews, and mock interviews:\n\n`;
       mentors.forEach((m) => {
-        answer += `• **${m.user.name}** (${m.user.headline || 'Senior Architect'}) — $${m.hourlyRate}/hr (⭐ ${m.rating})\n`;
-        answer += `  Expertise: ${m.expertise}\n\n`;
+        answer += `• **${m.user.name}** — ${m.user.headline || 'Senior Architect'}\n`;
+        answer += `  Expertise: \`${m.expertise}\` • Rate: **$${m.hourlyRate}/hr** • Rating: **⭐ ${m.rating}**\n\n`;
       });
-      answer += `You can book 1-on-1 sessions for architecture reviews, roadmap audits, or mock interviews on the Mentors page!`;
+      answer += `You can explore their full profiles, verified reviews, and book 1-on-1 sessions directly on the **Mentors** page!`;
 
       return answer;
     }

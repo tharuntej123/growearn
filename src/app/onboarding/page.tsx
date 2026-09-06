@@ -23,6 +23,51 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+const IN_DEMAND_MARKET_ROLES = [
+  {
+    role: 'Full Stack Developer',
+    demand: 'Very High 🔥',
+    salary: '$95k – $145k',
+    description: 'Build end-to-end web architectures with modern React, Next.js, Node.js and PostgreSQL databases.',
+    topSkills: ['React', 'Next.js', 'TypeScript', 'Node.js', 'PostgreSQL', 'Tailwind CSS'],
+  },
+  {
+    role: 'AI / ML Engineer',
+    demand: 'Explosive 🚀',
+    salary: '$125k – $190k',
+    description: 'Design LLM applications, RAG pipelines, neural models, LangChain agents, and vector databases.',
+    topSkills: ['Python', 'PyTorch', 'LangChain', 'OpenAI', 'RAG Pipelines', 'Vector DBs'],
+  },
+  {
+    role: 'Frontend Specialist',
+    demand: 'High 🔥',
+    salary: '$85k – $135k',
+    description: 'Craft responsive, high-performance web applications with modern design systems and micro-interactions.',
+    topSkills: ['React 19', 'TypeScript', 'Next.js App Router', 'Tailwind CSS', 'State Management'],
+  },
+  {
+    role: 'Cloud & DevOps Architect',
+    demand: 'Very High 🔥',
+    salary: '$115k – $175k',
+    description: 'Automate CI/CD pipelines, containerize architectures, and manage resilient cloud infrastructure.',
+    topSkills: ['AWS', 'Docker', 'Kubernetes', 'Terraform', 'CI/CD Pipelines', 'Linux'],
+  },
+  {
+    role: 'Backend & Systems Engineer',
+    demand: 'High 🔥',
+    salary: '$105k – $160k',
+    description: 'Architect scalable microservices, high-throughput APIs, distributed caching, and database schemas.',
+    topSkills: ['Java', 'Spring Boot', 'PostgreSQL', 'Redis', 'Kafka', 'REST/gRPC'],
+  },
+  {
+    role: 'Data Engineer & Analyst',
+    demand: 'High 🔥',
+    salary: '$90k – $150k',
+    description: 'Construct real-time data pipelines, lakehouses, ETL flows, and actionable intelligence dashboards.',
+    topSkills: ['SQL', 'Python', 'Apache Spark', 'Snowflake', 'dbt', 'Data Modeling'],
+  },
+];
+
 const POPULAR_SKILL_SUGGESTIONS = [
   'Java',
   'Spring Boot',
@@ -44,17 +89,6 @@ const POPULAR_SKILL_SUGGESTIONS = [
   'System Design',
 ];
 
-const TARGET_ROLE_OPTIONS = [
-  'Backend Developer',
-  'Frontend Developer',
-  'Full Stack Developer',
-  'AI / ML Engineer',
-  'Data Scientist',
-  'DevOps Engineer',
-  'Mobile Developer (React Native/Flutter)',
-  'Cloud Software Architect',
-];
-
 const CAREER_GOAL_OPTIONS = [
   'Find a High-Paying Full-Time Job',
   'Start High-Rate Professional Contracting',
@@ -68,13 +102,13 @@ export default function OnboardingPage() {
   const { user, refreshUser } = useAuth();
 
   const [step, setStep] = useState(1);
-  const totalSteps = 4;
+  const totalSteps = 3;
 
   // Form State
-  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
-  const [customSkillInput, setCustomSkillInput] = useState('');
-  const [targetRole, setTargetRole] = useState('Backend Developer');
+  const [targetRole, setTargetRole] = useState('Full Stack Developer');
   const [customRoleInput, setCustomRoleInput] = useState('');
+  const [selectedSkills, setSelectedSkills] = useState<string[]>(['React', 'TypeScript', 'Next.js']);
+  const [customSkillInput, setCustomSkillInput] = useState('');
   const [careerGoal, setCareerGoal] = useState('Find a High-Paying Full-Time Job');
   const [experienceLevel, setExperienceLevel] = useState<'Beginner' | 'Intermediate' | 'Advanced' | 'Professional'>('Beginner');
   const [yearsOfExperience, setYearsOfExperience] = useState<number>(0);
@@ -96,6 +130,14 @@ export default function OnboardingPage() {
 
   const handleRemoveSkill = (skill: string) => {
     setSelectedSkills(selectedSkills.filter((s) => s !== skill));
+  };
+
+  const handleSelectMarketRole = (roleObj: typeof IN_DEMAND_MARKET_ROLES[0]) => {
+    setTargetRole(roleObj.role);
+    setCustomRoleInput('');
+    // Pre-populate relevant suggested skills
+    const newSkills = Array.from(new Set([...selectedSkills, ...roleObj.topSkills.slice(0, 3)]));
+    setSelectedSkills(newSkills);
   };
 
   const handleFinalSubmit = async () => {
@@ -208,22 +250,93 @@ export default function OnboardingPage() {
 
         {/* Multi-Step Card */}
         <Card className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
-          {/* STEP 1: Current Skills */}
+          {/* STEP 1: In-Demand Market Job Roles */}
           {step === 1 && (
             <div className="space-y-5">
               <div>
                 <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                  <Zap className="h-5 w-5 text-emerald-600" /> What skills do you currently have?
+                  <Target className="h-5 w-5 text-emerald-600" /> Choose Your Target Market Job Role
                 </h3>
                 <p className="text-xs text-slate-500 mt-1">
-                  Select your current technologies or type your own.
+                  Explore current in-demand market positions, salary trends, and essential tech stacks. Select a target role to build your AI roadmap.
+                </p>
+              </div>
+
+              {/* Market Job Roles Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                {IN_DEMAND_MARKET_ROLES.map((r) => {
+                  const isSelected = targetRole === r.role && !customRoleInput;
+                  return (
+                    <div
+                      key={r.role}
+                      onClick={() => handleSelectMarketRole(r)}
+                      className={`cursor-pointer rounded-2xl p-4 border transition-all relative text-left ${
+                        isSelected
+                          ? 'bg-emerald-50/60 border-emerald-500 shadow-sm ring-2 ring-emerald-500/20'
+                          : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-1.5">
+                        <span className="font-bold text-sm text-slate-900">{r.role}</span>
+                        <Badge variant="success" className="text-[10px] shrink-0 font-semibold">
+                          {r.demand}
+                        </Badge>
+                      </div>
+
+                      <p className="text-xs text-emerald-700 font-bold mb-1.5">
+                        Market Compensation: {r.salary}
+                      </p>
+
+                      <p className="text-xs text-slate-600 leading-relaxed line-clamp-2 mb-3">
+                        {r.description}
+                      </p>
+
+                      <div className="flex flex-wrap gap-1">
+                        {r.topSkills.map((sk) => (
+                          <span
+                            key={sk}
+                            className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200"
+                          >
+                            {sk}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Custom Role Input */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  Or specify a custom job title:
+                </label>
+                <Input
+                  placeholder="e.g. Distributed Systems Engineer, Flutter Mobile Lead..."
+                  value={customRoleInput}
+                  onChange={(e) => setCustomRoleInput(e.target.value)}
+                  icon={<Search className="h-4 w-4" />}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* STEP 2: Current Skills & Primary Career Goal */}
+          {step === 2 && (
+            <div className="space-y-5">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-emerald-600" /> Your Current Skill Baseline & Goal
+                </h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  Tell us what technologies you already know. Our AI will identify your exact skill gaps for <span className="font-bold text-emerald-700">{customRoleInput || targetRole}</span>.
                 </p>
               </div>
 
               {/* Selected Skills Chips */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-2">
-                  Your Selected Skills ({selectedSkills.length}):
+                  Selected Baseline Skills ({selectedSkills.length}):
                 </label>
                 <div className="min-h-[48px] p-3 rounded-2xl bg-slate-50 border border-slate-200 flex flex-wrap gap-2">
                   {selectedSkills.length === 0 ? (
@@ -257,7 +370,7 @@ export default function OnboardingPage() {
                 className="flex gap-2"
               >
                 <Input
-                  placeholder="Type any skill (e.g. Java, Python, React, SQL, Docker)..."
+                  placeholder="Type any technology or tool (e.g. Docker, Python, Spring Boot)..."
                   value={customSkillInput}
                   onChange={(e) => setCustomSkillInput(e.target.value)}
                   icon={<Search className="h-4 w-4" />}
@@ -269,7 +382,7 @@ export default function OnboardingPage() {
 
               {/* Popular Skill Suggestions */}
               <div>
-                <p className="text-xs font-semibold text-slate-500 mb-2">Popular suggestions:</p>
+                <p className="text-xs font-semibold text-slate-500 mb-2">Popular technical skills:</p>
                 <div className="flex flex-wrap gap-1.5">
                   {POPULAR_SKILL_SUGGESTIONS.map((skill) => {
                     const isSelected = selectedSkills.includes(skill);
@@ -290,59 +403,11 @@ export default function OnboardingPage() {
                   })}
                 </div>
               </div>
-            </div>
-          )}
 
-          {/* STEP 2: Career Goal & Target Role */}
-          {step === 2 && (
-            <div className="space-y-5">
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                  <Target className="h-5 w-5 text-emerald-600" /> What role and career direction are you targeting?
-                </h3>
-                <p className="text-xs text-slate-500 mt-1">
-                  Our AI compares your skills against this role to identify exact skill gaps and build your roadmap.
-                </p>
-              </div>
-
-              {/* Target Role Selector */}
-              <div>
+              {/* Career Goal */}
+              <div className="pt-2">
                 <label className="block text-xs font-semibold text-slate-700 mb-2">
-                  Target Role:
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {TARGET_ROLE_OPTIONS.map((role) => (
-                    <button
-                      key={role}
-                      type="button"
-                      onClick={() => {
-                        setTargetRole(role);
-                        setCustomRoleInput('');
-                      }}
-                      className={`p-3 rounded-xl border text-left text-xs font-semibold transition-all ${
-                        targetRole === role && !customRoleInput
-                          ? 'bg-emerald-50 border-emerald-500 text-emerald-900 shadow-xs'
-                          : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-                      }`}
-                    >
-                      {role}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="mt-2">
-                  <Input
-                    placeholder="Or type custom target role (e.g. Java Microservices Architect)..."
-                    value={customRoleInput}
-                    onChange={(e) => setCustomRoleInput(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Primary Career Goal */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-2">
-                  Primary Goal:
+                  Primary Career Goal:
                 </label>
                 <div className="space-y-2">
                   {CAREER_GOAL_OPTIONS.map((g) => (
@@ -364,15 +429,15 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {/* STEP 3: Experience Level */}
+          {/* STEP 3: Experience Level & Preferences */}
           {step === 3 && (
             <div className="space-y-5">
               <div>
                 <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                  <GraduationCap className="h-5 w-5 text-emerald-600" /> What is your experience level?
+                  <GraduationCap className="h-5 w-5 text-emerald-600" /> Experience Level & Preferences
                 </h3>
                 <p className="text-xs text-slate-500 mt-1">
-                  Helps calibrate the depth of course recommendations and roadmap difficulty.
+                  Calibrate your course depth, mentor pairing, and job matching criteria.
                 </p>
               </div>
 
@@ -380,9 +445,9 @@ export default function OnboardingPage() {
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { id: 'Beginner', title: 'Beginner', desc: '0-1 yrs • Learning foundations' },
-                  { id: 'Intermediate', title: 'Intermediate', desc: '1-3 yrs • Built small apps' },
-                  { id: 'Advanced', title: 'Advanced', desc: '3-6 yrs • Professional engineer' },
-                  { id: 'Professional', title: 'Professional / Lead', desc: '6+ yrs • Tech lead / Architect' },
+                  { id: 'Intermediate', title: 'Intermediate', desc: '1-3 yrs • Built full apps' },
+                  { id: 'Advanced', title: 'Advanced', desc: '3-6 yrs • Production engineer' },
+                  { id: 'Professional', title: 'Senior / Lead', desc: '6+ yrs • Tech lead / Architect' },
                 ].map((lvl) => (
                   <button
                     key={lvl.id}
@@ -400,34 +465,7 @@ export default function OnboardingPage() {
                 ))}
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Years of Industry Experience:
-                </label>
-                <Input
-                  type="number"
-                  min={0}
-                  max={40}
-                  value={yearsOfExperience}
-                  onChange={(e) => setYearsOfExperience(Number(e.target.value))}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* STEP 4: Preferences & Final Action */}
-          {step === 4 && (
-            <div className="space-y-5">
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-emerald-600" /> Job & Location Preferences
-                </h3>
-                <p className="text-xs text-slate-500 mt-1">
-                  Filter global remote vs local opportunities in your region.
-                </p>
-              </div>
-
-              {/* Work Type */}
+              {/* Work Mode */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-2">Preferred Work Mode:</label>
                 <div className="grid grid-cols-3 gap-2">
@@ -450,7 +488,7 @@ export default function OnboardingPage() {
 
               {/* Location */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Your City / Region:</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Location / Region:</label>
                 <Input
                   placeholder="e.g. Chennai, Tamil Nadu"
                   value={preferredLocation}
@@ -461,12 +499,12 @@ export default function OnboardingPage() {
 
               {/* Summary Pill Preview */}
               <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2 text-xs">
-                <p className="font-bold text-emerald-800">Ready to Generate Your Personalized Ecosystem:</p>
+                <p className="font-bold text-emerald-800">Your AI Career Blueprint Summary:</p>
                 <div className="space-y-1 text-slate-700">
                   <p>• <strong>Target Role:</strong> {customRoleInput || targetRole}</p>
-                  <p>• <strong>Skills ({selectedSkills.length}):</strong> {selectedSkills.join(', ') || 'None selected (Foundational mode)'}</p>
-                  <p>• <strong>Experience:</strong> {experienceLevel} ({yearsOfExperience} yrs)</p>
-                  <p>• <strong>Location:</strong> {preferredLocation} ({preferredWorkType})</p>
+                  <p>• <strong>Baseline Skills ({selectedSkills.length}):</strong> {selectedSkills.join(', ') || 'Foundational'}</p>
+                  <p>• <strong>Experience Level:</strong> {experienceLevel}</p>
+                  <p>• <strong>Goal:</strong> {careerGoal}</p>
                 </div>
               </div>
             </div>
@@ -491,12 +529,7 @@ export default function OnboardingPage() {
               <Button
                 variant="default"
                 size="sm"
-                onClick={() => {
-                  if (step === 1 && selectedSkills.length === 0) {
-                    toast.info('You can proceed without skills, or select your current technologies for better matching.');
-                  }
-                  setStep(step + 1);
-                }}
+                onClick={() => setStep(step + 1)}
                 className="gap-1.5"
               >
                 Continue <ArrowRight className="h-4 w-4" />
@@ -506,9 +539,9 @@ export default function OnboardingPage() {
                 variant="default"
                 size="sm"
                 onClick={handleFinalSubmit}
-                className="gap-2 px-6"
+                className="gap-2 px-6 shadow-sm font-semibold"
               >
-                <Sparkles className="h-4 w-4" /> Generate My Personalized Experience
+                <Sparkles className="h-4 w-4" /> Generate AI Roadmap & Enter Dashboard
               </Button>
             )}
           </div>

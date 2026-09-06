@@ -1,31 +1,28 @@
-import { ChatOpenAI } from '@langchain/openai';
-import { ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate } from '@langchain/core/prompts';
 import { RAGDocument, RAGRetriever } from './retriever';
 import { UserAIContext } from '@/services/user-context.service';
+import { GrokLLMClient } from '../grok-client';
 
 export interface LangChainRAGResponse {
   answer: string;
   sourceDocuments: RAGDocument[];
   isLLMPowered: boolean;
+  provider?: string;
+  model?: string;
 }
 
 export class LangChainRAGService {
   /**
-   * Check if live LLM credentials are configured
+   * Check if live LLM credentials (Grok / OpenAI / Gemini) are configured
    */
   static isLLMAvailable(): boolean {
-    return Boolean(
-      process.env.OPENAI_API_KEY &&
-      process.env.OPENAI_API_KEY.trim() !== '' &&
-      process.env.MOCK_AI !== 'true'
-    );
+    return GrokLLMClient.isAvailable();
   }
 
   /**
-   * Executes the LangChain RAG pipeline:
-   * 1. Retrieve grounded documents from DB (Jobs, Courses, Mentors, Profile)
-   * 2. Format context into LangChain prompt template
-   * 3. Invoke ChatOpenAI LLM chain (or fallback if offline)
+   * Executes the RAG pipeline:
+   * 1. Retrieve grounded documents from DB (Jobs, Courses, Mentors, Profile, Knowledge Base)
+   * 2. Format context into LLM system prompt
+   * 3. Invoke Grok (xAI) or multi-provider LLM (or fallback if offline/failed)
    */
   static async executeRAG(
     question: string,
@@ -47,47 +44,47 @@ export class LangChainRAGService {
     }
 
     try {
-      // Step 3: Initialize LangChain ChatOpenAI model
-      const model = new ChatOpenAI({
-        modelName: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-        temperature: 0.2,
-        openAIApiKey: process.env.OPENAI_API_KEY,
+      const systemPrompt = `You are Groearn AI — the Senior Full-Stack Software Architect, Tech Career Advisor, and Community Guide for the Groearn platform.
+
+YOUR MISSION:
+1. Provide authoritative, deeply helpful, direct, and conversational responses to user questions.
+2. For general knowledge or technical software engineering questions (e.g. "what is python", "how does react work", "explain kafka", "fastapi vs django", "system design", "docker"), ANSWER THE QUESTION DIRECTLY with technical depth, real-world trade-offs, and accurate code examples. Do NOT give a platform introduction when asked a technical question.
+3. If asked about people/mentors, courses, jobs, or features on Groearn ("are these guys available in the application growearn", "who can mentor me", "what courses are available"), reference the REAL context documents from the Groearn database. Confirm that verified mentors (like Sarah Jenkins, David Kim, Michael Chang, Priya Sharma, Marcus Vance, Elena Rostova) are active on Groearn and explain how users can explore their profiles or book 1-on-1 sessions.
+4. If asked for a career roadmap, provide an aligned ASCII workflow chart and structured learning phases with realistic timeline, skills, and milestone projects.
+5. Format your output in clean, readable Markdown (bullet points, bold text, code blocks).
+6. Always maintain a welcoming, professional, and empowering tone.
+
+CONTEXT DOCUMENTS (From Groearn Database & Platform):
+${contextString}`;
+
+      const completion = await GrokLLMClient.complete({
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: question },
+        ],
+        temperature: 0.3,
+        maxTokens: 2048,
       });
 
-      // Step 4: Create LangChain Prompt Template
-      const systemPrompt = `You are the Groearn Senior Full-Stack Software Architect and AI Career Assistant.
-Your mission is to provide deeply technical, authoritative, precise, and practical software engineering guidance, career roadmaps, and platform recommendations.
+      if (completion && completion.text) {
+        return {
+          answer: completion.text,
+          sourceDocuments: retrievedDocs,
+          isLLMPowered: true,
+          provider: completion.provider,
+          model: completion.model,
+        };
+      }
 
-RULES:
-1. Ground your responses strictly in the provided Context Documents whenever applicable (real database jobs, courses, mentors, and user profile).
-2. If asking for a career roadmap, provide an aligned ASCII workflow chart and 4 structured learning phases with timeline, objectives, skills, essential topics, practice tasks, and milestone projects.
-3. For technical questions (REST, Polymorphism, Docker, Kafka, Microservices, Indexing), provide in-depth architectural explanations, core constraints, and realistic code examples.
-4. Do not mention that you are an AI model or prompt-engineered assistant; speak directly as the Groearn Career & Architecture Advisor.
-
-CONTEXT DOCUMENTS:
-{context}`;
-
-      const chatPrompt = ChatPromptTemplate.fromMessages([
-        SystemMessagePromptTemplate.fromTemplate(systemPrompt),
-        HumanMessagePromptTemplate.fromTemplate('{question}'),
-      ]);
-
-      // Step 5: Execute LangChain Chain
-      const chain = chatPrompt.pipe(model);
-      const response = await chain.invoke({
-        context: contextString,
-        question: question,
-      });
-
-      const responseText = typeof response.content === 'string' ? response.content : JSON.stringify(response.content);
-
+      // Fallback if LLM returned null
+      const fallbackAnswer = fallbackSynthesizer ? await fallbackSynthesizer() : '';
       return {
-        answer: responseText,
+        answer: fallbackAnswer,
         sourceDocuments: retrievedDocs,
-        isLLMPowered: true,
+        isLLMPowered: false,
       };
     } catch (err) {
-      console.warn('LangChain execution non-fatal error, falling back to deterministic synthesizer:', err);
+      console.warn('[LangChainRAGService] Execution non-fatal error, falling back to deterministic synthesizer:', err);
       const fallbackAnswer = fallbackSynthesizer ? await fallbackSynthesizer() : '';
       return {
         answer: fallbackAnswer,

@@ -44,7 +44,11 @@ export default function LoginPage() {
 
     if (res.success) {
       toast.success('Welcome back!');
-      router.push('/feed');
+      const meRes = await fetch('/api/auth/me');
+      const meJson = await meRes.json();
+      const currentRole = meJson.data?.user?.role || 'LEARNER';
+      const target = ROLE_INFO[currentRole]?.defaultDashboard || '/student/dashboard';
+      router.push(target);
     } else {
       setError(res.error || 'Invalid email or password');
       toast.error(res.error || 'Login failed');
