@@ -9,6 +9,9 @@ An AI-powered professional ecosystem unifying **E-Learning (Udemy)**, **Freelanc
 
 | Layer | Technologies & Libraries | Purpose & Key Highlights |
 | :--- | :--- | :--- |
+| **LLM & AI Orchestration** | **LangChain** (`@langchain/core`, `@langchain/openai`) • **OpenAI** (`gpt-4o-mini`) | Dynamic prompt templates, LLM chaining, multi-turn reasoning, and dual-engine fallback. |
+| **RAG (Retrieval-Augmented Generation)** | **Custom RAG Retriever** • **Prisma Context Pipeline** | Grounded retrieval of live database jobs, published courses, expert mentors, and user profile data (zero hallucination). |
+| **AI Intelligence Engine** | **Skill Gap Matrix** • **ASCII Flow Generator** • **Proposal Builder** | 5-factor hybrid candidate matcher, dynamic visual ASCII roadmaps, resume skill parser, and tone polisher. |
 | **Frontend Framework** | **Next.js 16.3.4** (App Router) • **React 19.2.8** | React Server Components (RSC), Turbopack bundler, client hydration, dynamic routing. |
 | **Styling & Design System** | **Tailwind CSS v4** • **PostCSS** | Light theme aesthetic (`#F8FAF9` / Emerald `#16A34A`), glassmorphic overlays, responsive typography. |
 | **UI Components & Icons** | **Lucide React** • **Sonner** • **Canvas Confetti** | Crisp modern SVG icons, interactive toast feedback system, gamified milestone celebrations. |
@@ -17,10 +20,10 @@ An AI-powered professional ecosystem unifying **E-Learning (Udemy)**, **Freelanc
 | **Data Validation & Schemas**| **Zod 3.24** • **@hookform/resolvers** | Strict runtime validation schemas for API requests, auth payloads, and AI outputs. |
 | **Authentication & Security**| **Jose** • **JsonWebToken** • **Bcrypt.js** | Stateless JWT authentication, role-based access control (RBAC), salted password hashing. |
 | **Database & ORM** | **Prisma ORM 6.4** • **SQLite / PostgreSQL (Neon)** | Type-safe schema migrations, relation modeling, connection pooling, and seeding. |
-| **AI & Intelligence Engine** | **Skill Gap Analyzer** • **ASCII Roadmap Generator** • **AI Proposal Builder** | 5-factor hybrid candidate matcher, visual ASCII learning flows, and message tone polisher. |
 | **Testing & CI/CD** | **GitHub Actions** • **ESLint 9** • **TypeScript 5** • **TSX** | Automated multi-platform CI/CD pipeline (typecheck, lint, schema push, production build). |
 
 ---
+
 
 ## 🌟 Key Features
 
