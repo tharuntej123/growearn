@@ -3,8 +3,10 @@ import { UserAIContext } from '@/services/user-context.service';
 import { prisma } from '@/lib/prisma';
 import { SkillAnalysisService } from './skill-analysis.service';
 import { CareerRoadmapService } from './roadmap.service';
+import { LangChainRAGService } from './rag/langchain-agent';
 
 export class AIAssistantService {
+
   /**
    * Classify user question intent
    */
@@ -222,16 +224,53 @@ export class AIAssistantService {
       detectedRole = 'Full Stack Engineer';
     }
 
+    // --- 0. LangChain LLM + RAG Execution (When configured) ---
+    if (LangChainRAGService.isLLMAvailable()) {
+      const ragResult = await LangChainRAGService.executeRAG(
+        question,
+        userContext,
+        () => this.synthesizeGroundedAnswer(question, userContext, intent, detectedRole)
+      );
+
+      if (ragResult.isLLMPowered && ragResult.answer) {
+        return assistantResponseSchema.parse({
+          intent,
+          directAnswer: ragResult.answer,
+          recommendedActions: [],
+        });
+      }
+    }
+
+    const answer = await this.synthesizeGroundedAnswer(question, userContext, intent, detectedRole);
+    return assistantResponseSchema.parse({
+      intent,
+      directAnswer: answer,
+      recommendedActions: [],
+    });
+  }
+
+  /**
+   * Grounded Deterministic Synthesizer (Zero-latency RAG Fallback)
+   */
+  private static async synthesizeGroundedAnswer(
+    question: string,
+    userContext: UserAIContext | null,
+    intent: AssistantIntent,
+    detectedRole: string
+  ): Promise<string> {
+    const qLower = question.toLowerCase().trim();
+    const userName = userContext?.name ? userContext.name.split(' ')[0] : 'there';
+    const userSkills = userContext?.skills || [];
+    const exp = userContext?.profile?.experienceLevel || 'Intermediate';
+    const goal = userContext?.profile?.careerGoal || 'Advance Engineering Career';
+    const hasSkills = userSkills.length > 0;
+
     // --- 1. Handle ROADMAP ---
     if (intent === 'ROADMAP') {
       const roadmap = CareerRoadmapService.generate(userSkills, detectedRole, exp, goal);
-      const answer = this.formatRoadmapFlow(detectedRole, roadmap);
-
-      return assistantResponseSchema.parse({
-        intent,
-        directAnswer: answer,
-      });
+      return this.formatRoadmapFlow(detectedRole, roadmap);
     }
+
 
     // --- 2. Handle SKILL_ANALYSIS ---
     if (intent === 'SKILL_ANALYSIS') {
@@ -254,10 +293,7 @@ export class AIAssistantService {
         answer += `\nYou can update your skills anytime in your profile to receive personalized pacing!`;
       }
 
-      return assistantResponseSchema.parse({
-        intent,
-        directAnswer: answer,
-      });
+      return answer;
     }
 
     // --- 3. Handle GENERAL_QUESTION (Deep, Authoritative Technical Q&A) ---
@@ -412,10 +448,7 @@ In modern production software engineering, building reliable systems requires:
 Feel free to ask for deep architectural breakdowns, code examples, roadmap progressions, or specific framework techniques!`;
       }
 
-      return assistantResponseSchema.parse({
-        intent,
-        directAnswer: answer,
-      });
+      return answer;
     }
 
     // --- 4. Handle JOB_SEARCH ---
@@ -431,10 +464,7 @@ Feel free to ask for deep architectural breakdowns, code examples, roadmap progr
       });
 
       if (jobs.length === 0) {
-        return assistantResponseSchema.parse({
-          intent,
-          directAnswer: `There are currently no open job listings matching "${detectedRole}". Check the Jobs page for upcoming opportunities or post new requirements from your Company dashboard!`,
-        });
+        return `There are currently no open job listings matching "${detectedRole}". Check the Jobs page for upcoming opportunities or post new requirements from your Company dashboard!`;
       }
 
       let answer = `💼 **Open Opportunities Matched for ${detectedRole}**\n\n`;
@@ -445,10 +475,7 @@ Feel free to ask for deep architectural breakdowns, code examples, roadmap progr
       });
       answer += `You can review full descriptions and submit tailored applications on the Jobs tab!`;
 
-      return assistantResponseSchema.parse({
-        intent,
-        directAnswer: answer,
-      });
+      return answer;
     }
 
     // --- 5. Handle COURSE_RECOMMENDATION ---
@@ -466,10 +493,7 @@ Feel free to ask for deep architectural breakdowns, code examples, roadmap progr
       });
       answer += `\nExplore interactive course modules and video lessons on the Courses page!`;
 
-      return assistantResponseSchema.parse({
-        intent,
-        directAnswer: answer,
-      });
+      return answer;
     }
 
     // --- 6. Handle MENTOR_RECOMMENDATION ---
@@ -488,10 +512,7 @@ Feel free to ask for deep architectural breakdowns, code examples, roadmap progr
       });
       answer += `You can book 1-on-1 sessions for architecture reviews, roadmap audits, or mock interviews on the Mentors page!`;
 
-      return assistantResponseSchema.parse({
-        intent,
-        directAnswer: answer,
-      });
+      return answer;
     }
 
     // --- 7. Handle RESUME_HELP ---
@@ -507,18 +528,13 @@ Feel free to ask for deep architectural breakdowns, code examples, roadmap progr
 4. **Keyword Alignment**:
    Tailor your resume headline and summaries to the exact core requirements of target roles.`;
 
-      return assistantResponseSchema.parse({
-        intent,
-        directAnswer: answer,
-      });
+      return answer;
     }
 
     // --- 8. Default Fallback ---
-    return assistantResponseSchema.parse({
-      intent: 'CAREER_ADVICE',
-      directAnswer: `Hello ${userName}! With your background in ${userSkills.join(', ') || 'modern software engineering'}, I can help you generate comprehensive career roadmaps, analyze skill gaps for target roles, explain complex technical architectures, or discover matching jobs. What would you like to explore?`,
-    });
+    return `Hello ${userName}! With your background in ${userSkills.join(', ') || 'modern software engineering'}, I can help you generate comprehensive career roadmaps, analyze skill gaps for target roles, explain complex technical architectures, or discover matching jobs. What would you like to explore?`;
   }
 }
+
 
 

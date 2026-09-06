@@ -7,7 +7,6 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
     "prisma:seed": "tsx prisma/seed.ts",
@@ -15,6 +14,8 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
+    "@langchain/core": "^1.2.9",
+    "@langchain/openai": "^1.5.11",
     "@prisma/client": "^6.4.1",
     "@tanstack/react-query": "^5.66.0",
     "bcryptjs": "^2.4.3",
