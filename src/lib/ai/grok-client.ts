@@ -125,10 +125,10 @@ export class GrokLLMClient {
    * Call Groq API (https://api.groq.com/openai/v1/chat/completions)
    */
   private static async callGroq(options: LLMCompletionOptions): Promise<LLMCompletionResult | null> {
-    let apiKey = (process.env.GROQ_API_KEY || process.env.GROK_API_KEY || process.env.OPENAI_API_KEY || '').trim();
+    const apiKey = (process.env.GROQ_API_KEY || process.env.GROK_API_KEY || process.env.OPENAI_API_KEY || '').trim();
     if (!apiKey) return null;
 
-    let model = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
+    const model = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
     const endpoint = 'https://api.groq.com/openai/v1/chat/completions';
 
     const fallbackCandidates = [
