@@ -1,145 +1,313 @@
-# Groearn (Unified Freelancing Platform)
+# Groearn — Unified Freelancing & Career Ecosystem
 > **“Learn. Earn. Work. Grow — All in One.”**
 
-An AI-powered professional ecosystem unifying **E-Learning (Udemy)**, **Freelance & Local Jobs (Upwork)**, **1-on-1 Mentorship**, **Professional Networking (LinkedIn)**, and an **AI Career Assistant** into one connected platform.
+Groearn is an AI-powered, full-stack career and freelancing platform that unifies **E-Learning (Udemy)**, **Freelance & Local Jobs (Upwork/Fiverr)**, **1-on-1 Expert Mentorship**, **Professional Social Networking (LinkedIn)**, and an **Intelligent AI Career Assistant** into a single cohesive ecosystem.
 
 ---
 
-## 🛠️ Technology Stack
+## 🛠️ Complete Technology Stack
 
-| Layer | Technologies & Libraries | Purpose & Key Highlights |
-| :--- | :--- | :--- |
-| **LLM & AI Orchestration** | **LangChain** (`@langchain/core`, `@langchain/openai`) • **OpenAI** (`gpt-4o-mini`) | Dynamic prompt templates, LLM chaining, multi-turn reasoning, and dual-engine fallback. |
-| **RAG (Retrieval-Augmented Generation)** | **Custom RAG Retriever** • **Prisma Context Pipeline** | Grounded retrieval of live database jobs, published courses, expert mentors, and user profile data (zero hallucination). |
-| **AI Intelligence Engine** | **Skill Gap Matrix** • **ASCII Flow Generator** • **Proposal Builder** | 5-factor hybrid candidate matcher, dynamic visual ASCII roadmaps, resume skill parser, and tone polisher. |
-| **Frontend Framework** | **Next.js 16.3.4** (App Router) • **React 19.2.8** | React Server Components (RSC), Turbopack bundler, client hydration, dynamic routing. |
-| **Styling & Design System** | **Tailwind CSS v4** • **PostCSS** | Light theme aesthetic (`#F8FAF9` / Emerald `#16A34A`), glassmorphic overlays, responsive typography. |
-| **UI Components & Icons** | **Lucide React** • **Sonner** • **Canvas Confetti** | Crisp modern SVG icons, interactive toast feedback system, gamified milestone celebrations. |
-| **Data Visualization** | **Recharts 2.15** | Interactive radar charts for skill profiling, career analytics, and mentor revenue charts. |
-| **Backend & API Layer** | **Next.js API Routes** (Node.js runtime) | Clean RESTful endpoints, Controller-Service-Repository architecture pattern. |
-| **Data Validation & Schemas**| **Zod 3.24** • **@hookform/resolvers** | Strict runtime validation schemas for API requests, auth payloads, and AI outputs. |
-| **Authentication & Security**| **Jose** • **JsonWebToken** • **Bcrypt.js** | Stateless JWT authentication, role-based access control (RBAC), salted password hashing. |
-| **Database & ORM** | **Prisma ORM 6.4** • **SQLite / PostgreSQL (Neon)** | Type-safe schema migrations, relation modeling, connection pooling, and seeding. |
-| **Testing & CI/CD** | **GitHub Actions** • **ESLint 9** • **TypeScript 5** • **TSX** | Automated multi-platform CI/CD pipeline (typecheck, lint, schema push, production build). |
-
----
-
-
-## 🌟 Key Features
-
-- **Unified Identity Evolution**: Users progress through **Learner $\rightarrow$ Professional $\rightarrow$ Mentor $\rightarrow$ Company**.
-- **5-Factor Explainable AI Matcher**:
-  $$\text{Score} = (\text{Skills} \times 50\%) + (\text{Experience} \times 20\%) + (\text{Location} \times 10\%) + (\text{Goal} \times 10\%) + (\text{AI Semantic} \times 10\%)$$
-- **Local & Global Job Discovery**: Extensible `JobProvider` architecture supporting remote worldwide projects and on-site local gigs (e.g., Chennai, Tamil Nadu).
-- **Interactive Career Roadmaps**: Step-by-step 4-phase curricula with visual ASCII workflow diagrams and milestone projects.
-- **AI Proposal Generator**: Generate custom milestone proposals with timeline and architecture breakdowns.
-- **Interactive Course System**: Video player, module progress tracking, mock payment checkout, and automated certificates.
-- **1-on-1 Mentorship Marketplace**: Hourly rate coaching, session booking requests, and integrated video meeting rooms.
-- **AI Communication Assistant**: Live message tone polisher (Professional, Friendly, Concise, Persuasive, Grammar Fix).
-- **Professional Feed**: Share achievements, project launches, certifications, and hiring announcements.
+| Category | Technology / Library | Version | Role & Architectural Purpose |
+| :--- | :--- | :--- | :--- |
+| **Frontend Framework** | **Next.js** (App Router) | `16.3.4` | React Server Components (RSC), Turbopack bundler, server actions, route handlers, dynamic layout nesting. |
+| **UI Library** | **React** / **React DOM** | `19.2.8` | Component rendering, concurrent features, modern hooks (`useTransition`, `useOptimistic`, `useActionState`). |
+| **Styling & Design System** | **Tailwind CSS v4** • **PostCSS** | `^4.0.0` | Modern CSS tokens, light emerald palette (`#16A34A` / `#F8FAF9`), glassmorphism, responsive grid layouts. |
+| **Component Primitives** | **Radix UI Primitives** • **CVA** • **clsx** • **tailwind-merge** | `latest` | Headless, accessible UI building blocks with dynamic variant composition. |
+| **Icons & Micro-Interactions**| **Lucide React** • **Sonner** • **Canvas Confetti** | `^1.16.0` | Scalable vector icon set, interactive toast notifications, milestone celebration animations. |
+| **Data Visualization** | **Recharts** | `^2.15.1` | Interactive radar charts for skill gap matrices, revenue metrics, and career analytics. |
+| **AI / LLM Orchestration** | **Groq API** • **LangChain** (`@langchain/core`, `@langchain/openai`) | `^1.2.9` | High-speed inference (`llama-3.3-70b-versatile`, `openai/gpt-oss-120b`), RAG agent workflows, multi-turn reasoning. |
+| **Fallback LLM Engines** | **xAI Grok** • **OpenAI GPT-4o-mini** • **Deterministic Fallback Engine** | Multi-LLM | Automatic fallback resilience layer ensuring zero downtime if primary AI APIs are unavailable. |
+| **RAG & Context Engine** | **Custom Database RAG Retriever** | Built-in | Grounded retrieval of live jobs, courses, mentors, and user portfolios with zero hallucination. |
+| **Form Handling & Validation**| **React Hook Form** • **Zod** • **@hookform/resolvers** | `^7.54` / `^3.24` | Strict client-side and server-side runtime schema validation and error handling. |
+| **Authentication & Security** | **Jose** • **JsonWebToken** • **Bcrypt.js** | `^5.9` / `^9.0` | Stateless JWT tokens, HTTP-only secure cookie sessions, salted password hashing, Role-Based Access Control (RBAC). |
+| **Database & ORM** | **Prisma ORM** • **PostgreSQL (Neon Serverless)** | `^6.4.1` | Type-safe database queries, declarative migrations, connection pooling, and multi-relational modeling. |
+| **Testing & Scripting** | **TSX** • **Node Test Runner** | `^4.19.3` | Direct TypeScript test execution for AI pipelines, job matching algorithms, and database seeding. |
+| **Code Quality & CI/CD** | **GitHub Actions** • **ESLint 9** • **TypeScript 5** | `^9.0` / `^5.0` | Automated CI pipeline: multi-platform dependencies, Prisma client generation, TypeScript checking, linting, and production builds. |
 
 ---
 
-## 🚀 Quick Start & Demo Accounts
+## 🌟 Key Platform Features & Modules
 
-### 1. Install & Setup
+### 1. 🎓 Learner Hub (`/student/dashboard`)
+- **AI Skill Gap Radar**: Evaluates current profile skills against target career paths (e.g., Full Stack, AI/ML, Cloud).
+- **Personalized Career Roadmaps**: Step-by-step 4-phase learning tracks with interactive ASCII workflow charts and milestone projects.
+- **Interactive Course System**: Video streaming, module progression checklists, mock checkout, and verifiable certificate generation.
+
+### 2. 💼 Professional Workspace (`/professional/dashboard`, `/jobs`)
+- **Dual Job Discovery**:
+  - **Global Remote Projects**: High-ticket freelance contracts and full-time remote opportunities.
+  - **Local Gigs**: On-site local projects filtered by city and state (e.g., Chennai, Bangalore, Hyderabad).
+- **AI Proposal Generator**: Generates customized client proposals with architecture outlines, timelines, and deliverables.
+- **Dynamic Portfolio Builder**: Interactive experience manager, skill endorsements, education credentials, and project highlights.
+
+### 3. 👨‍🏫 Mentor Coaching Studio (`/mentor/dashboard`, `/mentors`)
+- **1-on-1 Mentorship Marketplace**: Set hourly coaching rates, specialties, and bio.
+- **Session Booking Pipeline**: Review, accept, or decline student coaching requests with built-in meeting room links.
+- **Course Publishing**: Create and publish comprehensive video courses directly to the global catalog.
+
+### 4. 🏢 Company Hiring Pipeline (`/company/dashboard`)
+- **2-Way Job Posting**:
+  - **Quick Job Poster**: Fast 1-click modal for immediate job broadcasting.
+  - **Detailed Job Creator**: Multi-tier specifications (salary, experience level, remote/on-site, technical requirements).
+- **5-Factor Candidate Matcher**: Instantly ranks applicants with explainable score breakdowns.
+- **Applicant Tracking System (ATS)**: Manage applicant pipeline stages (Applied, Under Review, Interview, Hired, Rejected).
+
+### 5. 🌐 Professional Social Feed (`/feed`)
+- **Multi-Category Posts**: Share General updates, Hiring announcements, Project showcases, Certifications, and Career milestones.
+- **Real-Time Social Interactions**: Instant likes, threaded comments, user tags, and author profile links.
+
+### 6. 🤖 AI Career Advisor & Assistant (`/ai-assistant`)
+- **LangChain RAG Agent**: Chat with an AI advisor grounded in the platform's live database of jobs, courses, and mentors.
+- **Tone Polisher**: Transform draft messages into Professional, Friendly, Concise, Persuasive, or Grammar-Corrected variations.
+- **Resume Skill Parser**: Extract structured skills, experience levels, and domain proficiencies from raw resume text.
+
+---
+
+## 🧠 Explainable AI: 5-Factor Candidate Matching
+
+Candidate-to-job matching utilizes an explainable 5-factor weighted algorithm:
+
+$$\text{Total Match Score} = (S \times 0.50) + (E \times 0.20) + (L \times 0.10) + (G \times 0.10) + (A \times 0.10)$$
+
+Where:
+- **$S$ (Skills Match - 50%)**: Jaccard similarity between candidate skills and job technical requirements.
+- **$E$ (Experience Match - 20%)**: Delta between candidate years of experience and target job tier.
+- **$L$ (Location Fit - 10%)**: Geographic proximity for on-site gigs or full credit for remote positions.
+- **$G$ (Career Goal Alignment - 10%)**: Semantic match between user's target role and job title.
+- **$A$ (AI Semantic Relevance - 10%)**: LLM contextual relevance evaluation between candidate bio and job description.
+
+---
+
+## 🏛️ System Architecture
+
+```mermaid
+graph TD
+    Client["Next.js 16 App Router (React 19, Tailwind CSS v4, Lucide, Recharts)"]
+
+    subgraph API_Layer ["REST API & Route Handlers (/api)"]
+        AuthAPI["/api/auth/*"]
+        JobAPI["/api/jobs/*"]
+        CourseAPI["/api/courses/*"]
+        MentorAPI["/api/mentors/*"]
+        PostAPI["/api/posts/*"]
+        AIAPI["/api/ai/*"]
+    end
+
+    subgraph Core_Backend ["Clean Backend Architecture Pattern"]
+        Controllers["Controllers (Zod Validation, Route Handlers)"]
+        Services["Services (Business Rules & Domain Logic)"]
+        Repositories["Repositories (Prisma Data Access Queries)"]
+    end
+
+    subgraph AI_Subsystem ["AI & RAG Intelligence Engine (/lib/ai)"]
+        LangChainAgent["LangChain Agent (@langchain/openai)"]
+        RAGRetriever["Database RAG Retriever (Prisma Context)"]
+        GroqClient["Groq LLM Client (llama-3.3-70b / gpt-oss-120b)"]
+        AIFallback["OpenAI & Deterministic Fallback Engine"]
+        HybridMatcher["5-Factor Matcher & Roadmap Generator"]
+    end
+
+    subgraph Database_Layer ["Database & Persistence"]
+        PrismaClient["Prisma ORM Client 6.4"]
+        PostgresDB[("Neon Serverless PostgreSQL")]
+    end
+
+    Client --> API_Layer
+    API_Layer --> Controllers
+    Controllers --> Services
+    Services --> Repositories
+    Services --> AI_Subsystem
+    AI_Subsystem --> LangChainAgent
+    LangChainAgent --> RAGRetriever
+    LangChainAgent --> GroqClient
+    GroqClient -.->|On RateLimit / Error| AIFallback
+    RAGRetriever --> Repositories
+    Repositories --> PrismaClient
+    PrismaClient --> PostgresDB
+```
+
+---
+
+## 📁 Repository Directory Structure
+
+```
+g:/ufp/
+├── .github/
+│   └── workflows/
+│       └── ci.yml               # GitHub Actions CI pipeline configuration
+├── prisma/
+│   ├── schema.prisma            # Prisma schema (User, Profile, Job, Course, Mentor, Post, etc.)
+│   └── seed.ts                  # Database seed script with realistic demo data
+├── public/                      # Static assets and icons
+├── src/
+│   ├── app/                     # Next.js App Router (Pages & API routes)
+│   │   ├── api/                 # REST API Endpoints
+│   │   │   ├── ai/              # AI endpoints (chat, roadmap, proposal, resume, skill-analysis, message)
+│   │   │   ├── auth/            # Auth endpoints (login, register, logout, me, role-select)
+│   │   │   ├── candidates/      # Candidate discovery endpoints
+│   │   │   ├── courses/         # Course catalog, enrollment, and progress endpoints
+│   │   │   ├── dashboard/       # Aggregated dashboard metrics
+│   │   │   ├── health/          # Health check endpoint
+│   │   │   ├── jobs/            # Job directory, applications, and proposals endpoints
+│   │   │   ├── mentors/         # Mentorship directory and booking endpoints
+│   │   │   ├── notifications/   # User notifications endpoints
+│   │   │   ├── onboarding/      # Role-based onboarding flow
+│   │   │   ├── posts/           # Social feed, comments, and likes endpoints
+│   │   │   ├── profile/         # User profile and portfolio endpoints
+│   │   │   └── skills/          # Skills taxonomy endpoints
+│   │   ├── ai-assistant/        # AI Career Advisor & Message Polisher page
+│   │   ├── auth/role-select/    # Post-signup role selector page
+│   │   ├── company/dashboard/   # Company Hiring Dashboard & Candidate Search
+│   │   ├── courses/             # Course Catalog & Video Player
+│   │   ├── feed/                # Social Network Feed & Quick Post Card
+│   │   ├── freelancer/dashboard/# Freelancer Workspace
+│   │   ├── jobs/                # Global & Local Job Directory
+│   │   ├── login/               # User Authentication & 1-Click Demo Login
+│   │   ├── mentor/dashboard/    # Mentor Coaching Studio & Booking Manager
+│   │   ├── mentors/             # Mentorship Marketplace & Booking Modals
+│   │   ├── messages/            # Messaging Studio & AI Tone Polisher
+│   │   ├── onboarding/          # Role-Based User Onboarding Wizard
+│   │   ├── professional/dashboard/# Professional Dashboard & AI Proposal Generator
+│   │   ├── profile/             # Profile & Portfolio Management Studio
+│   │   ├── signup/              # Account Registration
+│   │   ├── student/dashboard/   # Learner Dashboard & Skill Radar Studio
+│   │   ├── globals.css          # Tailwind CSS v4 design tokens and utilities
+│   │   └── layout.tsx           # Global HTML layout with AuthProvider and Toaster
+│   ├── components/
+│   │   ├── feed/                # QuickPostCard and feed interaction components
+│   │   ├── layout/              # Navbar, Sidebar, Footer, Navigation
+│   │   └── ui/                  # Button, Card, Input, Avatar, Badge, Progress UI primitives
+│   ├── context/
+│   │   └── auth-context.tsx     # Client authentication state & role switching provider
+│   ├── controllers/             # Request handling and response formatting
+│   ├── lib/
+│   │   ├── ai/                  # AI Services, Groq Client, LangChain Agent, RAG Retriever
+│   │   │   ├── rag/             # LangChain agent and database retriever
+│   │   │   ├── ai-assistant.service.ts # Core AI assistant and tone polisher
+│   │   │   ├── ai-service.ts    # Unified multi-LLM service wrapper
+│   │   │   ├── grok-client.ts   # Groq / xAI / OpenAI HTTP client with fallbacks
+│   │   │   ├── hybrid-matcher.ts# 5-factor candidate matching algorithm
+│   │   │   ├── roadmap.service.ts# Visual ASCII career roadmap builder
+│   │   │   ├── schemas.ts       # AI response structured schemas
+│   │   │   ├── skill-analysis.service.ts # Skill gap evaluation service
+│   │   │   └── types.ts         # TypeScript AI interfaces and definitions
+│   │   ├── __tests__/           # Integration and unit test suites
+│   │   ├── auth.ts              # JWT signing, verification, and cookie session utils
+│   │   ├── constants.ts         # System constants, roles, and status enums
+│   │   ├── prisma.ts            # Prisma client singleton instance
+│   │   └── utils.ts             # Styling and helper utility functions
+│   ├── repositories/            # Database query layers (User, Job, Course, Mentor, Post)
+│   ├── services/                # Business logic services (Auth, Recommendations, User Context)
+│   └── validators/              # Zod schemas (Auth, Job, Course, Post)
+├── docs/                        # Architecture guides and project documentation
+├── eslint.config.mjs            # ESLint 9 Flat Configuration
+├── next.config.ts               # Next.js compiler & build configuration
+├── package.json                 # Project dependencies, scripts, and metadata
+├── postcss.config.mjs           # PostCSS configuration
+└── tsconfig.json                # TypeScript compiler configuration
+```
+
+---
+
+## ⚡ Quick Start Guide
+
+### 1. Prerequisites
+- **Node.js**: `v20.x` or higher
+- **npm**: `v10.x` or higher
+- **PostgreSQL Database** (e.g., [Neon Serverless PostgreSQL](https://neon.tech)) or local PostgreSQL instance.
+
+### 2. Installation
 ```bash
-# Clone and install dependencies
-npm install
+# Clone repository
+git clone https://github.com/tharuntej123/growearn.git
+cd growearn
 
-# Push database schema & generate Prisma client
+# Install dependencies (cross-platform compatible)
+npm install
+```
+
+### 3. Environment Configuration
+Create a `.env` file in the project root based on `.env.example`:
+
+```env
+# Database (Neon PostgreSQL connection string)
+DATABASE_URL="postgresql://user:password@ep-example-pooler.neon.tech/growearn?sslmode=require"
+
+# JWT Authentication
+JWT_SECRET="your-super-secure-jwt-secret-key-32-chars-minimum"
+JWT_EXPIRES_IN="7d"
+
+# AI Inference (Groq / xAI / OpenAI)
+MOCK_AI="false"
+GROQ_API_KEY="gsk_your_groq_api_key_here"
+GROQ_MODEL="llama-3.3-70b-versatile"
+OPENAI_API_KEY="sk-your-openai-api-key"
+
+# App Public URL
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+```
+
+### 4. Database Setup & Seeding
+```bash
+# Push Prisma schema to your PostgreSQL database
 npx prisma db push
 
-# Seed database with realistic users, courses, jobs, and posts
-npm run seed
+# Generate Prisma Client types
+npx prisma generate
 
-# Run local development server
+# Seed database with realistic users, jobs, courses, and social posts
+npm run seed
+```
+
+### 5. Start Development Server
+```bash
 npm run dev
 ```
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### 2. Pre-Seeded Demo Accounts (Password: `Demo1234!`)
-| Role | Email | Purpose |
-|---|---|---|
-| **👨‍🎓 Learner** | `student@example.com` | AI Skill Gap Analysis, Course Progress, Career Roadmap |
-| **💼 Professional** | `professional@example.com` | Local/Global Jobs, Resume Parsing, AI Proposal Generator |
-| **👨‍🏫 Mentor** | `mentor@example.com` | Student Coaching Requests, Video Meetings, Course Publishing |
-| **🏢 Company** | `company@example.com` | Post Jobs, AI Talent Search, Applicant Tracking Pipeline |
+---
 
-*Tip: The Landing Page and Login Page include 1-click autofill buttons for instant testing.*
+## 👥 Pre-Seeded Demo Accounts
+
+All demo accounts use the standard password: `Demo1234!`
+
+| Role | Email | Key Features to Test |
+| :--- | :--- | :--- |
+| **👨‍🎓 Learner** | `student@example.com` | AI Skill Gap Radar, 4-Phase Career Roadmap, Course Video Player & Certificate |
+| **💼 Professional** | `professional@example.com` | Global Remote & Local Gigs, AI Proposal Builder, Resume Parsing, Portfolio Studio |
+| **👨‍🏫 Mentor** | `mentor@example.com` | Coaching Request Approval, Video Meeting Studio, Course Authoring & Publishing |
+| **🏢 Company** | `company@example.com` | 2-Way Job Posting (Quick & Detailed), 5-Factor AI Candidate Matcher, ATS Pipeline |
+
+*Tip: The Landing Page and Login Page include 1-click quick-fill buttons for instant role switching without typing credentials.*
 
 ---
 
-## 🏗️ Architecture & Layered Structure
+## 🧪 Testing & Code Verification
 
-```mermaid
-graph TD
-    Client["Next.js App Router (React 19, Tailwind CSS, Lucide, Recharts)"]
-    
-    subgraph Backend_Layer ["Clean Backend Architecture"]
-        Controllers["Controllers (Zod Validation, Error Responses)"]
-        Services["Services (Business Rules & Domain Logic)"]
-        Repositories["Repositories (Prisma Data Access)"]
-        AIEngine["AI Engine (/lib/ai - Hybrid Matcher & Roadmap Generator)"]
-    end
-
-    subgraph Data_Layer ["Database Layer"]
-        Prisma["Prisma ORM Client"]
-        Database[("SQLite / PostgreSQL Database")]
-    end
-
-    Client --> Controllers --> Services --> Repositories --> Prisma --> Database
-    Services --> AIEngine
-```
+| Command | Description |
+| :--- | :--- |
+| `npx tsx src/lib/__tests__/test-all-ai-groq.ts` | Tests Groq API connectivity and multi-model fallbacks. |
+| `npx tsx src/lib/__tests__/ai-assistant.test.ts` | Runs the AI career advisor and skill gap analysis test suite. |
+| `npx tsx src/lib/__tests__/job-posting.test.ts` | Tests the 2-way job creation and candidate matching pipeline. |
+| `npx tsc --noEmit` | Performs full TypeScript static type checking. |
+| `npm run lint` | Executes ESLint 9 code quality and style validation. |
+| `npm run build` | Compiles the Next.js production bundle with Turbopack. |
 
 ---
 
-## 📁 Project Structure
+## 🔄 Automated CI/CD Pipeline
 
-```
-g:/ufp/
-├── src/
-│   ├── app/                    # Next.js App Router (Pages & API Routes)
-│   │   ├── api/                # REST API Endpoints (Auth, Jobs, Courses, AI, Mentors, Posts)
-│   │   ├── student/dashboard   # Learner Hub & AI Skill Profiling
-│   │   ├── professional/dashboard# Professional Workspace & AI Proposal Generator
-│   │   ├── mentor/dashboard    # Mentor Coaching Studio & Request Management
-│   │   ├── company/dashboard   # Company Hiring Pipeline & Candidate Search
-│   │   ├── feed/               # Professional Social Feed
-│   │   ├── jobs/               # Global & Local Job Directory
-│   │   ├── courses/            # Interactive Course Catalog & Video Player
-│   │   ├── mentors/            # Mentor Directory & 1-on-1 Booking
-│   │   ├── ai-assistant/       # AI Career Advisor & Message Polisher
-│   │   └── profile/            # Dynamic Portfolio & Skills Management
-│   ├── components/             # Reusable UI & Layout Components
-│   ├── context/                # Client Auth Context & Role Switcher
-│   ├── controllers/            # API Route Controllers
-│   ├── services/               # Business Service Layer
-│   ├── repositories/           # Database Query Repositories
-│   ├── validators/             # Zod Validation Schemas
-│   └── lib/                    # Prisma Singleton, Auth JWT, & AI Engine
-├── prisma/
-│   ├── schema.prisma           # Prisma Relational Schema
-│   └── seed.ts                 # Database Seed Script
-└── docs/                       # Architecture & API Documentation
-```
+The project features a continuous integration workflow automated with **GitHub Actions** (`.github/workflows/ci.yml`), triggered on pushes and pull requests to `main`, `master`, and `develop`:
+
+1. **Environment Setup**: Provisions Node.js 20 on Ubuntu with automated npm caching.
+2. **Resilient Dependency Installation**: Executes `npm ci || npm install --no-audit --prefer-offline`.
+3. **Database Schema Sync**: Generates the latest Prisma Client.
+4. **Static Type Validation**: Runs `npx tsc --noEmit` across all TypeScript modules.
+5. **Linting Check**: Runs `npm run lint` under ESLint 9 flat configuration.
+6. **Production Build**: Compiles and verifies the Next.js production bundle.
 
 ---
 
-## 🧪 Verification & CI/CD
+## 📄 License
 
-```bash
-# Run AI assistant test suite
-npx tsx src/lib/__tests__/ai-assistant.test.ts
-
-# Run Job posting integration test suite
-npx tsx src/lib/__tests__/job-posting.test.ts
-
-# Run ESLint code quality check
-npm run lint
-
-# Next.js production build
-npm run build
-```
-Automated GitHub Actions CI pipeline is configured in `.github/workflows/ci.yml`.
-
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
