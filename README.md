@@ -1,7 +1,7 @@
-# Groearn — Unified Freelancing & Career Ecosystem
+# Groearn — Career-to-Earning Ecosystem
 > **“Learn. Earn. Work. Grow — All in One.”**
 
-Groearn is an AI-powered, full-stack career and freelancing platform that unifies **E-Learning (Udemy)**, **Freelance & Local Jobs (Upwork/Fiverr)**, **1-on-1 Expert Mentorship**, **Professional Social Networking (LinkedIn)**, and an **Intelligent AI Career Assistant** into a single cohesive ecosystem.
+Groearn is an AI-powered career-to-earning ecosystem that continuously identifies what a person can do, what they need to learn, which opportunities they are actually ready for, and how to help them successfully transition from learning to earning.
 
 ---
 
