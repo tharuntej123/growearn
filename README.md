@@ -15,8 +15,8 @@ Groearn is an AI-powered, full-stack career and freelancing platform that unifie
 | **Component Primitives** | **Radix UI Primitives** • **CVA** • **clsx** • **tailwind-merge** | `latest` | Headless, accessible UI building blocks with dynamic variant composition. |
 | **Icons & Micro-Interactions**| **Lucide React** • **Sonner** • **Canvas Confetti** | `^1.16.0` | Scalable vector icon set, interactive toast notifications, milestone celebration animations. |
 | **Data Visualization** | **Recharts** | `^2.15.1` | Interactive radar charts for skill gap matrices, revenue metrics, and career analytics. |
-| **AI / LLM Orchestration** | **Groq API** • **LangChain** (`@langchain/core`, `@langchain/openai`) | `^1.2.9` | High-speed inference (`llama-3.3-70b-versatile`, `openai/gpt-oss-120b`), RAG agent workflows, multi-turn reasoning. |
-| **Fallback LLM Engines** | **xAI Grok** • **OpenAI GPT-4o-mini** • **Deterministic Fallback Engine** | Multi-LLM | Automatic fallback resilience layer ensuring zero downtime if primary AI APIs are unavailable. |
+| **AI / LLM Orchestration** | **Groq API** • **LangChain** (`@langchain/core`, `@langchain/openai`) | `^1.2.9` | Ultra-low latency inference (`openai/gpt-oss-120b`, `openai/gpt-oss-20b`, `qwen/qwen3.8-27b`), RAG agent workflows, multi-turn reasoning. |
+| **Resilience & Fallback Engine**| **Multi-Model Dynamic Fallback** • **Deterministic AI Engine** | Built-in | Seamless automatic fallback across models and offline rule-based heuristic engine ensuring zero downtime. |
 | **RAG & Context Engine** | **Custom Database RAG Retriever** | Built-in | Grounded retrieval of live jobs, courses, mentors, and user portfolios with zero hallucination. |
 | **Form Handling & Validation**| **React Hook Form** • **Zod** • **@hookform/resolvers** | `^7.54` / `^3.24` | Strict client-side and server-side runtime schema validation and error handling. |
 | **Authentication & Security** | **Jose** • **JsonWebToken** • **Bcrypt.js** | `^5.9` / `^9.0` | Stateless JWT tokens, HTTP-only secure cookie sessions, salted password hashing, Role-Based Access Control (RBAC). |
@@ -102,8 +102,8 @@ graph TD
     subgraph AI_Subsystem ["AI & RAG Intelligence Engine (/lib/ai)"]
         LangChainAgent["LangChain Agent (@langchain/openai)"]
         RAGRetriever["Database RAG Retriever (Prisma Context)"]
-        GroqClient["Groq LLM Client (llama-3.3-70b / gpt-oss-120b)"]
-        AIFallback["OpenAI & Deterministic Fallback Engine"]
+        GroqClient["Groq LLM Client (openai/gpt-oss-120b / 20b / qwen3.8)"]
+        DeterministicFallback["Deterministic AI & Rule-Based Fallback Engine"]
         HybridMatcher["5-Factor Matcher & Roadmap Generator"]
     end
 
@@ -120,7 +120,7 @@ graph TD
     AI_Subsystem --> LangChainAgent
     LangChainAgent --> RAGRetriever
     LangChainAgent --> GroqClient
-    GroqClient -.->|On RateLimit / Error| AIFallback
+    GroqClient -.->|On Offline / Limit| DeterministicFallback
     RAGRetriever --> Repositories
     Repositories --> PrismaClient
     PrismaClient --> PostgresDB
@@ -185,7 +185,7 @@ g:/ufp/
 │   │   │   ├── rag/             # LangChain agent and database retriever
 │   │   │   ├── ai-assistant.service.ts # Core AI assistant and tone polisher
 │   │   │   ├── ai-service.ts    # Unified multi-LLM service wrapper
-│   │   │   ├── grok-client.ts   # Groq / xAI / OpenAI HTTP client with fallbacks
+│   │   │   ├── grok-client.ts   # High-speed Groq LLM client with multi-model fallbacks
 │   │   │   ├── hybrid-matcher.ts# 5-factor candidate matching algorithm
 │   │   │   ├── roadmap.service.ts# Visual ASCII career roadmap builder
 │   │   │   ├── schemas.ts       # AI response structured schemas
@@ -230,20 +230,19 @@ npm install
 Create a `.env` file in the project root based on `.env.example`:
 
 ```env
-# Database (Neon PostgreSQL connection string)
-DATABASE_URL="postgresql://user:password@ep-example-pooler.neon.tech/growearn?sslmode=require"
+# Database Configuration (Neon Serverless PostgreSQL)
+DATABASE_URL="postgresql://user:password@ep-example-pooler.neon.tech/neondb?sslmode=require"
 
-# JWT Authentication
-JWT_SECRET="your-super-secure-jwt-secret-key-32-chars-minimum"
+# Authentication
+JWT_SECRET="ufp-super-secret-jwt-key-2026-production-grade"
 JWT_EXPIRES_IN="7d"
 
-# AI Inference (Groq / xAI / OpenAI)
+# AI Configuration (Groq High-Speed API)
 MOCK_AI="false"
 GROQ_API_KEY="gsk_your_groq_api_key_here"
-GROQ_MODEL="llama-3.3-70b-versatile"
-OPENAI_API_KEY="sk-your-openai-api-key"
+GROQ_MODEL="openai/gpt-oss-120b"
 
-# App Public URL
+# Application URL
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
 
@@ -286,9 +285,10 @@ All demo accounts use the standard password: `Demo1234!`
 
 | Command | Description |
 | :--- | :--- |
-| `npx tsx src/lib/__tests__/test-all-ai-groq.ts` | Tests Groq API connectivity and multi-model fallbacks. |
-| `npx tsx src/lib/__tests__/ai-assistant.test.ts` | Runs the AI career advisor and skill gap analysis test suite. |
-| `npx tsx src/lib/__tests__/job-posting.test.ts` | Tests the 2-way job creation and candidate matching pipeline. |
+| `npx tsx src/lib/__tests__/test-all-ai-groq.ts` | Complete Groq AI suite test (chat, roadmap, proposals, skill gap, tone polisher, resume). |
+| `npx tsx src/lib/__tests__/test-live-groq.ts` | Verifies live Groq API key connectivity and prompt completion. |
+| `npx tsx src/lib/__tests__/job-posting.test.ts` | Integration tests for database health, job validation, and role authorization. |
+| `npx tsx src/lib/__tests__/ai-assistant.test.ts` | Tests the conversational RAG assistant and classifier logic. |
 | `npx tsc --noEmit` | Performs full TypeScript static type checking. |
 | `npm run lint` | Executes ESLint 9 code quality and style validation. |
 | `npm run build` | Compiles the Next.js production bundle with Turbopack. |
