@@ -21,7 +21,6 @@ async function runTests() {
     }
   }
 
-  // --- 1. Database Health Check ---
   console.log('--- 1. Testing Database Health Check (SELECT 1) ---');
   try {
     const health = await checkDatabaseHealth();
@@ -31,20 +30,17 @@ async function runTests() {
     assert(false, 'Database health check executed without throwing', err.message);
   }
 
-  // --- 2. Zod Validation Rules ---
   console.log('\n--- 2. Testing Job Creation Zod Validation Rules ---');
-  
-  // 2a: Description under 20 characters
+
   const shortDescResult = createJobSchema.safeParse({
     title: 'Senior Engineer',
-    description: 'Too short', // < 20
+    description: 'Too short',
     skills: ['TypeScript'],
     minSalary: 20000,
     maxSalary: 40000,
   });
   assert(!shortDescResult.success, 'Rejects descriptions shorter than 20 characters');
 
-  // 2b: Empty skills list
   const emptySkillsResult = createJobSchema.safeParse({
     title: 'Senior Engineer',
     description: 'This is a sufficiently long description that satisfies the length requirement.',
@@ -54,7 +50,6 @@ async function runTests() {
   });
   assert(!emptySkillsResult.success, 'Rejects empty skills list');
 
-  // 2c: Negative salary
   const negSalaryResult = createJobSchema.safeParse({
     title: 'Senior Engineer',
     description: 'This is a sufficiently long description that satisfies the length requirement.',
@@ -64,7 +59,6 @@ async function runTests() {
   });
   assert(!negSalaryResult.success, 'Rejects negative minSalary');
 
-  // 2d: Valid job payload
   const validPayloadResult = createJobSchema.safeParse({
     title: 'Full Stack Next.js Architect',
     description: 'Leading the modern web application architecture and AI search systems for our enterprise client base.',
@@ -80,7 +74,6 @@ async function runTests() {
   });
   assert(validPayloadResult.success, 'Accepts valid job creation payload');
 
-  // --- 3. Role Authorization Matrix ---
   console.log('\n--- 3. Testing Role Authorization Matrix ---');
   const allowedRoles = ['COMPANY', 'EMPLOYER', 'ADMIN'];
   const deniedRoles = ['LEARNER', 'STUDENT', 'PROFESSIONAL', 'FREELANCER', 'MENTOR'];
@@ -95,10 +88,8 @@ async function runTests() {
     assert(!isAllowed, `Role "${role}" is forbidden from posting jobs`);
   });
 
-  // --- 4. Database Job Insertion and Querying ---
   console.log('\n--- 4. Testing JobRepository DB Persistence ---');
   try {
-    // Find or create employer user
     let employer = await prisma.user.findFirst({
       where: { role: { in: ['EMPLOYER', 'COMPANY'] } },
       include: { profile: true },
@@ -128,7 +119,6 @@ async function runTests() {
 
     assert(Boolean(employer.id), `Employer user confirmed: ${employer.name} (Role: ${employer.role})`);
 
-    // Create job via repository
     const testJobTitle = `Test Job Posting [${Date.now()}]`;
     const createdJob = await JobRepository.createJob(employer.id, {
       title: testJobTitle,
@@ -147,22 +137,18 @@ async function runTests() {
     assert(createdJob.title === testJobTitle, `Job title matches: "${createdJob.title}"`);
     assert(createdJob.skills.length === 3, `Job skills linked correctly (${createdJob.skills.length} skills)`);
 
-    // Fetch jobs for employer via repository
     const jobRepo = new JobRepository();
     const employerJobs = await jobRepo.getJobs({ companyId: employer.id });
     const found = employerJobs.some((j: any) => j.id === createdJob.id);
     assert(found, `Newly created job retrieved in employer job listings`);
 
-    // Clean up test job
     await prisma.jobSkill.deleteMany({ where: { jobId: createdJob.id } });
     await prisma.job.delete({ where: { id: createdJob.id } });
     console.log('🧹 Cleaned up temporary test job record.');
-
   } catch (err: any) {
     assert(false, 'Job repository persistence test', err.message);
   }
 
-  // --- Summary ---
   console.log('\n==============================================');
   console.log(`TEST RESULTS: ${passed} PASSED, ${failed} FAILED`);
   console.log('==============================================\n');

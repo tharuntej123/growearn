@@ -95,7 +95,6 @@ export class AuthService {
     const user = await UserRepository.findById(userId);
     if (!user) return null;
 
-    // exclude passwordHash
     const { passwordHash: _, ...safeUser } = user;
     return safeUser;
   }

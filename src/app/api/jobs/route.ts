@@ -75,7 +75,6 @@ export async function POST(req: NextRequest) {
       return apiError('Authentication required to post job opportunities', 'UNAUTHORIZED', 401);
     }
 
-    // Allow both canonical EMPLOYER and legacy COMPANY roles, as well as ADMIN
     const isCompanyRole = ['COMPANY', 'EMPLOYER', 'ADMIN'].includes(authUser.role);
     if (!isCompanyRole) {
       console.warn(
@@ -88,7 +87,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Verify company profile exists
     const userRecord = await prisma.user.findUnique({
       where: { id: authUser.id },
       include: { profile: true },
@@ -99,20 +97,17 @@ export async function POST(req: NextRequest) {
       return apiError('User account not found', 'NOT_FOUND', 404);
     }
 
-    // Parse request body
     try {
       body = await req.json();
     } catch {
       return apiError('Invalid JSON payload in request body', 'INVALID_JSON', 400);
     }
 
-    // Validate payload with Zod
     const validated = createJobSchema.safeParse(body);
     if (!validated.success) {
       const formattedErrors: Record<string, string[] | undefined> = validated.error.flatten().fieldErrors;
       console.warn(`[JobPost:ValidationFailed] User ${authUser.id} validation failed:`, formattedErrors);
-      
-      // Construct a helpful single-string summary for toasts alongside the detailed fieldErrors
+
       const firstKey = Object.keys(formattedErrors)[0];
       const firstMsg = formattedErrors[firstKey]?.[0] || 'Invalid field';
       const summaryMsg = `Validation failed on "${firstKey}": ${firstMsg}`;

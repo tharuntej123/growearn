@@ -69,7 +69,6 @@ export default function CompanyDashboardPage() {
   const [isLoadingCandidates, setIsLoadingCandidates] = useState(true);
   const [isLoadingJobs, setIsLoadingJobs] = useState(true);
 
-  // Job creation modal state
   const [showJobModal, setShowJobModal] = useState(false);
   const [isLocalJob, setIsLocalJob] = useState(false);
   const [jobTitle, setJobTitle] = useState('');
@@ -84,7 +83,6 @@ export default function CompanyDashboardPage() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
 
-  // Applicants pipeline state
   const [applicants, setApplicants] = useState([
     {
       id: 'app-1',
@@ -158,7 +156,6 @@ export default function CompanyDashboardPage() {
     setFieldErrors({});
     setFormError(null);
 
-    // Client-side quick checks
     const errors: Record<string, string> = {};
     if (!jobTitle.trim() || jobTitle.trim().length < 3) {
       errors.title = 'Job title must be at least 3 characters';
@@ -255,7 +252,6 @@ export default function CompanyDashboardPage() {
       <DashboardSidebar />
 
       <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-8">
-        {/* Company Welcome Banner */}
         <div className="p-6 sm:p-8 rounded-3xl border border-emerald-100 bg-gradient-to-r from-emerald-50 via-teal-50/50 to-white shadow-sm relative overflow-hidden">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
             <div>
@@ -291,7 +287,6 @@ export default function CompanyDashboardPage() {
           </div>
         </div>
 
-        {/* Company's Posted Job Listings */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
@@ -380,7 +375,6 @@ export default function CompanyDashboardPage() {
           )}
         </div>
 
-        {/* Applicant Tracking Pipeline */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
@@ -440,7 +434,6 @@ export default function CompanyDashboardPage() {
           </div>
         </div>
 
-        {/* AI Talent Sourcing Search */}
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
@@ -448,7 +441,6 @@ export default function CompanyDashboardPage() {
               <p className="text-xs text-slate-500">Discover pre-vetted engineers with verified skill scores</p>
             </div>
 
-            {/* Candidate Search Bar */}
             <div className="flex items-center gap-2 max-w-md w-full">
               <Input
                 placeholder="Search candidate name, headline, skills..."
@@ -466,7 +458,6 @@ export default function CompanyDashboardPage() {
             </div>
           </div>
 
-          {/* Candidate Cards Grid */}
           {isLoadingCandidates ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {[1, 2, 3].map((i) => (
@@ -487,7 +478,6 @@ export default function CompanyDashboardPage() {
                     <h4 className="font-bold text-base text-slate-900">{c.name}</h4>
                     <p className="text-xs text-slate-500 line-clamp-2 mt-0.5">{c.headline || c.role}</p>
 
-                    {/* Skill Tags */}
                     <div className="flex flex-wrap gap-1 mt-3">
                       {c.skills.slice(0, 4).map((s) => (
                         <span
@@ -516,7 +506,6 @@ export default function CompanyDashboardPage() {
           )}
         </div>
 
-        {/* Company Community Feed & Quick Post */}
         <div className="space-y-4 pt-2">
           <div>
             <h2 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
@@ -530,7 +519,6 @@ export default function CompanyDashboardPage() {
           />
         </div>
 
-        {/* Job Posting Modal */}
         {showJobModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
             <div className="w-full max-w-2xl bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
@@ -548,7 +536,6 @@ export default function CompanyDashboardPage() {
               )}
 
               <form onSubmit={handleCreateJob} className="space-y-3.5 text-xs">
-                {/* 2-Way Job Posting Scope Selector */}
                 <div className="space-y-1.5">
                   <label className="block font-semibold text-slate-700">Job Reach & Scope *</label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

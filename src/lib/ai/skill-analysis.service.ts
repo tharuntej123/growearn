@@ -1,11 +1,6 @@
 import { skillAnalysisSchema, SkillAnalysisOutput } from './schemas';
 
 export class SkillAnalysisService {
-  /**
-   * AI Skill Gap Analysis grounded strictly in user's actual entered skills and target role.
-   * 
-   * RULE: If skills is empty, NEVER invent skills.
-   */
   static analyze(
     skills: string[],
     targetRole?: string | null,
@@ -29,7 +24,6 @@ export class SkillAnalysisService {
     const skillsLower = cleanSkills.map((s) => s.toLowerCase());
     const targetLower = target.toLowerCase();
 
-    // Determine level from count and experience
     let level: 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert' = 'Beginner';
     if (cleanSkills.length >= 7 || exp === 'Professional' || exp === 'Advanced') {
       level = 'Advanced';
@@ -37,7 +31,6 @@ export class SkillAnalysisService {
       level = 'Intermediate';
     }
 
-    // Role-specific target skill trees
     let expectedSkills: { skill: string; category: string }[] = [];
 
     if (targetLower.includes('backend') || targetLower.includes('java')) {
@@ -77,7 +70,6 @@ export class SkillAnalysisService {
         { skill: 'SQL & Data Warehousing', category: 'Data' },
       ];
     } else {
-      // Full Stack / General
       expectedSkills = [
         { skill: 'TypeScript', category: 'Language' },
         { skill: 'React / Next.js', category: 'Frontend' },
@@ -89,17 +81,14 @@ export class SkillAnalysisService {
       ];
     }
 
-    // Strengths = user's actual entered skills
     const strengths = cleanSkills.slice(0, 5);
 
-    // Identified skills breakdown
     const identifiedSkills = cleanSkills.map((sk) => ({
       skill: sk,
       level: level === 'Advanced' ? 'Advanced' : 'Intermediate',
       reason: `Verified proficiency in ${sk}`,
     }));
 
-    // Missing Skill Gaps: expected skills not in user's skills
     const gaps = expectedSkills
       .filter((exp) => !skillsLower.some((s) => s.includes(exp.skill.toLowerCase()) || exp.skill.toLowerCase().includes(s)))
       .map((exp) => exp.skill);
@@ -117,7 +106,6 @@ export class SkillAnalysisService {
       summary,
     };
 
-    // Strict Zod validation
     return skillAnalysisSchema.parse(rawOutput);
   }
 }

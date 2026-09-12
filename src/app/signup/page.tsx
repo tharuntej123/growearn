@@ -21,7 +21,6 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Password rules validation
   const hasMinLength = password.length >= 8;
   const hasUppercase = /[A-Z]/.test(password);
   const hasNumber = /[0-9]/.test(password);
@@ -138,7 +137,6 @@ export default function SignupPage() {
               </div>
             </div>
 
-            {/* Password Requirements Checklist */}
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1 text-xs">
               <p className="text-[11px] font-semibold text-slate-500 mb-1">Password Requirements:</p>
               <div className="flex items-center gap-2">

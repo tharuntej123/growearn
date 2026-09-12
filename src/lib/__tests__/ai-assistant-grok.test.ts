@@ -7,7 +7,6 @@ async function runTests() {
   console.log('🧪 TESTING GROEARN AI ASSISTANT (BUG FIX VERIFICATION)');
   console.log('==============================================\n');
 
-  // Test 1: User's exact query "hat is python"
   const q1 = "hat is python";
   const res1 = await AIAssistantService.answer(q1, null);
   console.log(`Query: "${q1}"`);
@@ -21,7 +20,6 @@ async function runTests() {
     process.exit(1);
   }
 
-  // Test 2: "what is python"
   const q2 = "what is python";
   const res2 = await AIAssistantService.answer(q2, null);
   if (res2.directAnswer.includes('FastAPI') && res2.directAnswer.includes('GIL')) {
@@ -31,7 +29,6 @@ async function runTests() {
     process.exit(1);
   }
 
-  // Test 3: "what is typescript"
   const q3 = "what is typescript";
   const res3 = await AIAssistantService.answer(q3, null);
   if (res3.directAnswer.includes('TypeScript & JavaScript') && res3.directAnswer.includes('Event Loop')) {
@@ -41,7 +38,6 @@ async function runTests() {
     process.exit(1);
   }
 
-  // Test 4: "are these guys available in the application growearn"
   const q4 = "are these guys available in the application growearn";
   const res4 = await AIAssistantService.answer(q4, null);
   if (res4.directAnswer.includes('Marcus Vance') || res4.directAnswer.includes('Mentors')) {
@@ -51,7 +47,6 @@ async function runTests() {
     process.exit(1);
   }
 
-  // Test 5: "what is groearn"
   const q5 = "what is groearn";
   const res5 = await AIAssistantService.answer(q5, null);
   if (res5.directAnswer.includes('all-in-one AI career ecosystem')) {

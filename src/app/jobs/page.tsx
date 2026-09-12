@@ -30,14 +30,12 @@ export default function JobsPage() {
   const [emptyReason, setEmptyReason] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Search & Filter state
   const [query, setQuery] = useState('');
   const [cityFilter, setCityFilter] = useState('');
   const [locationType, setLocationType] = useState('ALL');
   const [jobType, setJobType] = useState('ALL');
   const [scopeFilter, setScopeFilter] = useState<'ALL' | 'FREELANCE' | 'LOCAL'>('ALL');
 
-  // Proposal modal
   const [selectedJob, setSelectedJob] = useState<any>(null);
   const [isGeneratingProposal, setIsGeneratingProposal] = useState(false);
   const [customProposal, setCustomProposal] = useState('');
@@ -141,7 +139,6 @@ export default function JobsPage() {
           </p>
         </div>
 
-        {/* Scope Selector Tabs */}
         <div className="flex items-center gap-2 bg-white border border-slate-200 p-1.5 rounded-2xl w-fit shadow-xs">
           <button
             onClick={() => setScopeFilter('ALL')}
@@ -175,7 +172,6 @@ export default function JobsPage() {
           </button>
         </div>
 
-        {/* Unpersonalized Callout if user has 0 skills */}
         {!isPersonalized && emptyReason && (
           <Card className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm">
             <div className="flex items-center gap-2.5 text-xs text-amber-800">
@@ -190,7 +186,6 @@ export default function JobsPage() {
           </Card>
         )}
 
-        {/* Filter Controls Bar */}
         <Card className="p-4 bg-white border-slate-200/90 shadow-sm rounded-2xl">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
             <div>
@@ -250,7 +245,6 @@ export default function JobsPage() {
           </div>
         </Card>
 
-        {/* Section Header */}
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-slate-900">
             {isPersonalized ? 'Recommended Jobs for You (Ranked by Skills)' : 'Browse All Marketplace Jobs'}
@@ -260,7 +254,6 @@ export default function JobsPage() {
           </Badge>
         </div>
 
-        {/* Job Listings List */}
         {isLoading ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
@@ -296,7 +289,6 @@ export default function JobsPage() {
                       {job.description}
                     </p>
 
-                    {/* Skill Tags */}
                     <div className="flex flex-wrap gap-1.5 pt-1">
                       {job.skills?.map((s: any) => {
                         const isMatched = job.matchedSkills?.includes(s.skill.name);
@@ -315,7 +307,6 @@ export default function JobsPage() {
                       })}
                     </div>
 
-                    {/* AI Match Explanation */}
                     {job.whyMatches && job.isPersonalized && (
                       <div className="p-3 rounded-xl bg-emerald-50/80 border border-emerald-200 text-xs text-emerald-800 flex items-center gap-2">
                         <Sparkles className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
@@ -324,7 +315,6 @@ export default function JobsPage() {
                     )}
                   </div>
 
-                  {/* Price & Action */}
                   <div className="flex flex-col sm:items-end justify-between shrink-0 gap-3">
                     <div className="text-left sm:text-right">
                       <p className="text-lg font-extrabold text-emerald-700">
@@ -348,7 +338,6 @@ export default function JobsPage() {
           </div>
         )}
 
-        {/* AI Proposal Modal */}
         {selectedJob && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
             <div className="w-full max-w-2xl bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">

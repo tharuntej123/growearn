@@ -148,7 +148,6 @@ export default function AIAssistantPage() {
 
   const userFirstName = user?.name ? user.name.split(' ')[0] : 'there';
 
-  // Career Chat State: Clean initial state with NO unprompted suggestions
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'm-1',
@@ -160,7 +159,6 @@ export default function AIAssistantPage() {
   const [inputQuery, setInputQuery] = useState('');
   const [isSending, setIsSending] = useState(false);
 
-  // Message Improver State
   const [rawMessage, setRawMessage] = useState('hi can u tell me about this job and how much u pay');
   const [improvedResult, setImprovedResult] = useState<any>(null);
   const [selectedTone, setSelectedTone] = useState<
@@ -239,7 +237,6 @@ export default function AIAssistantPage() {
       <DashboardSidebar />
 
       <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto w-full space-y-6">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
@@ -253,7 +250,6 @@ export default function AIAssistantPage() {
             </p>
           </div>
 
-          {/* Tab Switcher */}
           <div className="flex rounded-xl bg-white border border-slate-200 p-1 shadow-sm">
             <button
               onClick={() => setActiveTab('career_chat')}
@@ -278,10 +274,8 @@ export default function AIAssistantPage() {
           </div>
         </div>
 
-        {/* Tab 1: Career Advisor Chat */}
         {activeTab === 'career_chat' && (
           <Card className="bg-white border-slate-200/90 rounded-3xl p-5 shadow-sm flex flex-col h-[680px]">
-            {/* Messages Scroll Area */}
             <div className="flex-1 overflow-y-auto space-y-4 pr-2">
               {messages.map((m) => (
                 <div
@@ -309,7 +303,6 @@ export default function AIAssistantPage() {
                       <FormattedMessageContent content={m.text} />
                     )}
 
-                    {/* Quick action buttons only if explicitly provided */}
                     {m.actions && m.actions.length > 0 && (
                       <div className="mt-3 pt-3 border-t border-slate-200 flex flex-wrap gap-1.5">
                         {m.actions.map((act, idx) => (
@@ -338,7 +331,6 @@ export default function AIAssistantPage() {
               ))}
             </div>
 
-            {/* Input Form */}
             <div className="pt-4 border-t border-slate-100">
               <form
                 onSubmit={(e) => {
@@ -362,7 +354,6 @@ export default function AIAssistantPage() {
           </Card>
         )}
 
-        {/* Tab 2: Message Polisher */}
         {activeTab === 'message_improver' && (
           <Card className="bg-white border-slate-200/90 rounded-3xl p-6 shadow-sm space-y-6">
             <div>
@@ -375,7 +366,6 @@ export default function AIAssistantPage() {
             </div>
 
             <div className="space-y-4">
-              {/* Tone Selection Pills */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-2">Select Target Tone:</label>
                 <div className="flex flex-wrap gap-2 text-xs">
@@ -401,7 +391,6 @@ export default function AIAssistantPage() {
                 </div>
               </div>
 
-              {/* Draft Input */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Draft Message:</label>
                 <textarea
@@ -416,7 +405,6 @@ export default function AIAssistantPage() {
                 <Sparkles className="h-4 w-4" /> Enhance Message with AI
               </Button>
 
-              {/* Result Preview */}
               {improvedResult && (
                 <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-3 shadow-sm">
                   <div className="flex items-center justify-between">
@@ -450,4 +438,3 @@ export default function AIAssistantPage() {
     </div>
   );
 }
-

@@ -15,7 +15,6 @@ export interface JobFilterParams {
   companyId?: string;
 }
 
-// JobProvider abstraction to allow plugging in external job APIs in the future
 export interface IJobProvider {
   getJobs(filters: JobFilterParams): Promise<unknown[]>;
   getJobById(id: string): Promise<unknown | null>;
@@ -162,7 +161,6 @@ export class JobRepository implements IJobProvider {
     deadline?: Date;
     skillNames: string[];
   }) {
-    // Upsert skills and build job creation
     return prisma.job.create({
       data: {
         companyId,

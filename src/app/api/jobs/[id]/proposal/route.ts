@@ -34,7 +34,6 @@ export async function POST(
       milestonesJson: validated.data.milestones ? JSON.stringify(validated.data.milestones) : undefined,
     });
 
-    // Notify company
     await prisma.notification.create({
       data: {
         userId: job.companyId,

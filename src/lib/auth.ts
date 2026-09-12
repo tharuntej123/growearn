@@ -47,7 +47,6 @@ export async function getCurrentUserFromCookies(): Promise<JWTPayload | null> {
 }
 
 export function getCurrentUserFromRequest(req: NextRequest): JWTPayload | null {
-  // Check Authorization Bearer header first
   const authHeader = req.headers.get('authorization');
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.split(' ')[1];
@@ -55,7 +54,6 @@ export function getCurrentUserFromRequest(req: NextRequest): JWTPayload | null {
     if (payload) return payload;
   }
 
-  // Then check cookies
   const token = req.cookies.get(AUTH_COOKIE_NAME)?.value;
   if (token) {
     return verifyJwtToken(token);
@@ -78,5 +76,3 @@ export async function getCurrentUser(req?: NextRequest): Promise<(JWTPayload & {
     id: payload.userId,
   };
 }
-
-

@@ -104,7 +104,6 @@ export default function OnboardingPage() {
   const [step, setStep] = useState(1);
   const totalSteps = 3;
 
-  // Form State
   const [targetRole, setTargetRole] = useState('Full Stack Developer');
   const [customRoleInput, setCustomRoleInput] = useState('');
   const [selectedSkills, setSelectedSkills] = useState<string[]>(['React', 'TypeScript', 'Next.js']);
@@ -115,7 +114,6 @@ export default function OnboardingPage() {
   const [preferredWorkType, setPreferredWorkType] = useState('REMOTE');
   const [preferredLocation, setPreferredLocation] = useState('Chennai, Tamil Nadu');
 
-  // AI Generation Loading State
   const [isGenerating, setIsGenerating] = useState(false);
   const [loadingStage, setLoadingStage] = useState(0);
 
@@ -135,7 +133,7 @@ export default function OnboardingPage() {
   const handleSelectMarketRole = (roleObj: typeof IN_DEMAND_MARKET_ROLES[0]) => {
     setTargetRole(roleObj.role);
     setCustomRoleInput('');
-    // Pre-populate relevant suggested skills
+
     const newSkills = Array.from(new Set([...selectedSkills, ...roleObj.topSkills.slice(0, 3)]));
     setSelectedSkills(newSkills);
   };
@@ -232,7 +230,6 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 sm:p-6 bg-[#F8FAF9]">
       <div className="w-full max-w-2xl space-y-6">
-        {/* Progress Header */}
         <div className="text-center space-y-2">
           <Badge variant="default" className="gap-1.5 px-3 py-1">
             <Sparkles className="h-3.5 w-3.5" /> Step {step} of {totalSteps}
@@ -248,9 +245,7 @@ export default function OnboardingPage() {
           </div>
         </div>
 
-        {/* Multi-Step Card */}
         <Card className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
-          {/* STEP 1: In-Demand Market Job Roles */}
           {step === 1 && (
             <div className="space-y-5">
               <div>
@@ -262,7 +257,6 @@ export default function OnboardingPage() {
                 </p>
               </div>
 
-              {/* Market Job Roles Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                 {IN_DEMAND_MARKET_ROLES.map((r) => {
                   const isSelected = targetRole === r.role && !customRoleInput;
@@ -306,7 +300,6 @@ export default function OnboardingPage() {
                 })}
               </div>
 
-              {/* Custom Role Input */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                   Or specify a custom job title:
@@ -321,7 +314,6 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {/* STEP 2: Current Skills & Primary Career Goal */}
           {step === 2 && (
             <div className="space-y-5">
               <div>
@@ -333,7 +325,6 @@ export default function OnboardingPage() {
                 </p>
               </div>
 
-              {/* Selected Skills Chips */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-2">
                   Selected Baseline Skills ({selectedSkills.length}):
@@ -361,7 +352,6 @@ export default function OnboardingPage() {
                 </div>
               </div>
 
-              {/* Custom Skill Input */}
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -380,7 +370,6 @@ export default function OnboardingPage() {
                 </Button>
               </form>
 
-              {/* Popular Skill Suggestions */}
               <div>
                 <p className="text-xs font-semibold text-slate-500 mb-2">Popular technical skills:</p>
                 <div className="flex flex-wrap gap-1.5">
@@ -404,7 +393,6 @@ export default function OnboardingPage() {
                 </div>
               </div>
 
-              {/* Career Goal */}
               <div className="pt-2">
                 <label className="block text-xs font-semibold text-slate-700 mb-2">
                   Primary Career Goal:
@@ -429,7 +417,6 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {/* STEP 3: Experience Level & Preferences */}
           {step === 3 && (
             <div className="space-y-5">
               <div>
@@ -441,7 +428,6 @@ export default function OnboardingPage() {
                 </p>
               </div>
 
-              {/* Experience Level Cards */}
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { id: 'Beginner', title: 'Beginner', desc: '0-1 yrs • Learning foundations' },
@@ -465,7 +451,6 @@ export default function OnboardingPage() {
                 ))}
               </div>
 
-              {/* Work Mode */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-2">Preferred Work Mode:</label>
                 <div className="grid grid-cols-3 gap-2">
@@ -486,7 +471,6 @@ export default function OnboardingPage() {
                 </div>
               </div>
 
-              {/* Location */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Location / Region:</label>
                 <Input
@@ -497,7 +481,6 @@ export default function OnboardingPage() {
                 />
               </div>
 
-              {/* Summary Pill Preview */}
               <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2 text-xs">
                 <p className="font-bold text-emerald-800">Your AI Career Blueprint Summary:</p>
                 <div className="space-y-1 text-slate-700">
@@ -510,7 +493,6 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {/* Navigation Controls */}
           <div className="flex items-center justify-between pt-4 border-t border-slate-100">
             {step > 1 ? (
               <Button

@@ -43,7 +43,6 @@ interface CourseItem {
 export default function MentorDashboardPage() {
   const { user } = useAuth();
 
-  // Create Course Modal State
   const [showCourseModal, setShowCourseModal] = useState(false);
   const [courseTitle, setCourseTitle] = useState('');
   const [courseCategory, setCourseCategory] = useState('Full Stack Development');
@@ -52,7 +51,6 @@ export default function MentorDashboardPage() {
   const [courseFile, setCourseFile] = useState<File | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
 
-  // Published Courses List
   const [publishedCourses, setPublishedCourses] = useState<CourseItem[]>([
     {
       id: 'course-1',
@@ -76,7 +74,6 @@ export default function MentorDashboardPage() {
     },
   ]);
 
-  // Coaching Requests
   const [requests, setRequests] = useState([
     {
       id: 'req-1',
@@ -100,7 +97,6 @@ export default function MentorDashboardPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check 5 MB limit
     const maxBytes = 5 * 1024 * 1024;
     if (file.size > maxBytes) {
       toast.error('File size exceeds the 5 MB limit. Please select a smaller file.');
@@ -163,7 +159,6 @@ export default function MentorDashboardPage() {
       <DashboardSidebar />
 
       <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-8">
-        {/* Mentor Banner */}
         <div className="p-6 sm:p-8 rounded-3xl border border-emerald-100 bg-gradient-to-r from-emerald-50 via-teal-50/50 to-white shadow-sm relative overflow-hidden">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
             <div>
@@ -194,7 +189,6 @@ export default function MentorDashboardPage() {
           </div>
         </div>
 
-        {/* Performance Metrics */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="p-5 bg-white border border-slate-200 rounded-2xl shadow-xs">
             <div className="flex items-center justify-between text-slate-500 text-xs font-semibold">
@@ -233,7 +227,6 @@ export default function MentorDashboardPage() {
           </Card>
         </div>
 
-        {/* SECTION 1: PUBLISHED COURSES MANAGEMENT */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
@@ -275,7 +268,6 @@ export default function MentorDashboardPage() {
           </div>
         </div>
 
-        {/* SECTION 2: STUDENT COACHING SESSIONS */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
@@ -345,7 +337,6 @@ export default function MentorDashboardPage() {
           </div>
         </div>
 
-        {/* SECTION 3: COMMUNITY FEED & QUICK POST */}
         <div className="space-y-4 pt-2">
           <div>
             <h2 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
@@ -360,7 +351,6 @@ export default function MentorDashboardPage() {
         </div>
       </main>
 
-      {/* CREATE COURSE MODAL WITH 5MB FILE UPLOAD */}
       {showCourseModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
           <div className="w-full max-w-lg bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 relative animate-in fade-in zoom-in-95 duration-200">
@@ -429,7 +419,6 @@ export default function MentorDashboardPage() {
                 />
               </div>
 
-              {/* 5 MB FILE UPLOAD BOX */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Upload Course Materials / Syllabus (PDF, ZIP, DOCX — Max 5 MB)

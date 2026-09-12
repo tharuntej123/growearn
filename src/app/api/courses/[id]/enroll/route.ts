@@ -22,7 +22,6 @@ export async function POST(
   try {
     const enrollment = await CourseRepository.enrollStudent(userPayload.userId, courseId);
 
-    // Create payment record (mock payment provider)
     if (course.price > 0) {
       await prisma.payment.create({
         data: {
@@ -38,7 +37,6 @@ export async function POST(
       });
     }
 
-    // Create notification
     await prisma.notification.create({
       data: {
         userId: userPayload.userId,

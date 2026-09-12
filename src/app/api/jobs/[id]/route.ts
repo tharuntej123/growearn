@@ -17,7 +17,6 @@ export async function GET(
     return apiError('Job not found', 'NOT_FOUND', 404);
   }
 
-  // Calculate user AI match if logged in
   const userPayload = getCurrentUserFromRequest(req);
   let aiMatch = null;
   if (userPayload) {

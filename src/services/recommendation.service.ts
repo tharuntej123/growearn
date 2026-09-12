@@ -30,11 +30,6 @@ export interface ScoredJob {
 }
 
 export class RecommendationService {
-  /**
-   * Deterministic Job Recommendations
-   * 
-   * Score = (Skills 40%) + (Target Role 25%) + (Experience 15%) + (Location 10%) + (JobType 10%)
-   */
   static async getJobs(
     userContext: UserAIContext | null,
     limit = 10,
@@ -71,7 +66,6 @@ export class RecommendationService {
       take: 50,
     });
 
-    // If user has NO skills or no profile, return unpersonalized marketplace list
     if (!userContext || !userContext.hasSkills) {
       const generalJobs: ScoredJob[] = allJobs.slice(0, limit).map((j) => ({
         id: j.id,
@@ -123,10 +117,8 @@ export class RecommendationService {
         }
       });
 
-      // 1. Skill Match (40%)
       const skillScore = requiredSkills.length > 0 ? (matched.length / requiredSkills.length) * 100 : 70;
 
-      // 2. Role Match (25%)
       let roleScore = 40;
       const jobTitleLower = job.title.toLowerCase();
       if (targetRoleLower && (jobTitleLower.includes(targetRoleLower) || targetRoleLower.includes(jobTitleLower))) {
@@ -139,14 +131,12 @@ export class RecommendationService {
         roleScore = 85;
       }
 
-      // 3. Experience Match (15%)
       let expScore = 70;
       const userExp = userContext.profile?.experienceLevel || 'Beginner';
       if (job.experienceLevel === 'ENTRY' && (userExp === 'Beginner' || userExp === 'Intermediate')) expScore = 100;
       else if (job.experienceLevel === 'MID' && (userExp === 'Intermediate' || userExp === 'Advanced')) expScore = 100;
       else if (job.experienceLevel === 'SENIOR' && (userExp === 'Advanced' || userExp === 'Professional')) expScore = 100;
 
-      // 4. Location Match (10%)
       let locScore = 50;
       if (job.locationType === 'REMOTE') {
         locScore = 100;
@@ -154,7 +144,6 @@ export class RecommendationService {
         locScore = 100;
       }
 
-      // 5. Job Type Match (10%)
       let typeScore = 70;
       if (preferredJobType === 'ANY' || preferredJobType === job.locationType || preferredJobType === job.jobType) {
         typeScore = 100;
@@ -204,9 +193,6 @@ export class RecommendationService {
     };
   }
 
-  /**
-   * Deterministic Course Recommendations grounded in user's skill gaps
-   */
   static async getCourses(userContext: UserAIContext | null, limit = 6) {
     const allCourses = await prisma.course.findMany({
       where: { isPublished: true },
@@ -236,7 +222,6 @@ export class RecommendationService {
       const cCatLower = c.category.toLowerCase();
       const cSkillsLower = (c.skillsCovered || '').toLowerCase();
 
-      // Check if course teaches one of the user's identified skill gaps
       if (gapsLower.some((g) => cTitleLower.includes(g) || cSkillsLower.includes(g))) {
         score += 40;
       }
@@ -256,9 +241,6 @@ export class RecommendationService {
     };
   }
 
-  /**
-   * Deterministic Mentor Recommendations
-   */
   static async getMentors(userContext: UserAIContext | null, limit = 6) {
     const allMentors = await prisma.mentorProfile.findMany({
       where: { isAvailable: true },
@@ -283,7 +265,6 @@ export class RecommendationService {
       let score = 50;
       const expLower = m.expertise.toLowerCase();
 
-      // Intersect mentor expertise with user skills and target role
       if (userSkillsLower.some((s) => expLower.includes(s))) {
         score += 25;
       }
@@ -303,11 +284,6 @@ export class RecommendationService {
     };
   }
 
-  /**
-   * Professional Feed Personalization
-   * 
-   * Score = Skill match (+40) + Target role (+25) + Interests (+15) + Recent (+10)
-   */
   static async getFeed(userContext: UserAIContext | null, tab: 'for_you' | 'following' | 'latest' = 'for_you') {
     const allPosts = await prisma.post.findMany({
       include: {
@@ -337,15 +313,14 @@ export class RecommendationService {
       let score = 20;
       const contentLower = post.content.toLowerCase();
 
-      // Skill match (+40)
       if (userSkillsLower.some((sk) => contentLower.includes(sk))) {
         score += 40;
       }
-      // Target role match (+25)
+
       if (targetRoleLower && contentLower.includes(targetRoleLower)) {
         score += 25;
       }
-      // Post type bonus
+
       if (post.postType === 'ACHIEVEMENT' || post.postType === 'PROJECT') {
         score += 15;
       }

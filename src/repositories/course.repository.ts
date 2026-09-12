@@ -138,7 +138,6 @@ export class CourseRepository {
       },
     });
 
-    // Calculate total progress
     const enrollment = await prisma.enrollment.findUnique({
       where: { id: enrollmentId },
       include: {
@@ -168,7 +167,6 @@ export class CourseRepository {
         },
       });
 
-      // If completed, issue certificate
       if (percent >= 100) {
         const certNumber = `CERT-${enrollment.courseId.slice(-6).toUpperCase()}-${enrollment.studentId.slice(-6).toUpperCase()}`;
         await prisma.certificate.upsert({

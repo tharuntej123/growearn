@@ -9,9 +9,6 @@ export interface RAGDocument {
 }
 
 export class RAGRetriever {
-  /**
-   * Retrieves relevant platform context across database entities and knowledge repositories.
-   */
   static async retrieveContext(
     question: string,
     userContext: UserAIContext | null
@@ -19,7 +16,6 @@ export class RAGRetriever {
     const qLower = question.toLowerCase();
     const documents: RAGDocument[] = [];
 
-    // 1. Platform Knowledge Base Document
     documents.push({
       source: 'knowledge_base',
       title: 'Groearn Ecosystem & Platform Overview',
@@ -31,7 +27,6 @@ export class RAGRetriever {
 Community Feed: Cross-role knowledge sharing with verified role badges on every post.`,
     });
 
-    // 2. User Profile Context
     if (userContext) {
       const skills = userContext.skills?.join(', ') || 'None specified';
       const role = userContext.profile?.targetRole || userContext.profile?.careerGoal || 'Software Engineer';
@@ -45,7 +40,6 @@ Community Feed: Cross-role knowledge sharing with verified role badges on every 
       });
     }
 
-    // 3. Database Mentors Retrieval
     const isMentorQuery =
       qLower.includes('mentor') ||
       qLower.includes('coach') ||
@@ -87,7 +81,6 @@ Community Feed: Cross-role knowledge sharing with verified role badges on every 
       }
     }
 
-    // 4. Database Jobs Retrieval
     const isJobQuery =
       qLower.includes('job') ||
       qLower.includes('hire') ||
@@ -124,7 +117,6 @@ Community Feed: Cross-role knowledge sharing with verified role badges on every 
       }
     }
 
-    // 5. Database Courses Retrieval
     const isCourseQuery =
       qLower.includes('course') ||
       qLower.includes('learn') ||
@@ -160,9 +152,6 @@ Community Feed: Cross-role knowledge sharing with verified role badges on every 
     return documents;
   }
 
-  /**
-   * Formats retrieved documents into a clean context string for the LLM Prompt
-   */
   static formatContextForPrompt(documents: RAGDocument[]): string {
     if (documents.length === 0) return 'No external database records retrieved for this query.';
 

@@ -29,7 +29,6 @@ export default function CoursesPage() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('ALL');
 
-  // Selected Course Viewer Modal
   const [activeCourse, setActiveCourse] = useState<any>(null);
   const [activeLesson, setActiveLesson] = useState<any>(null);
   const [isEnrolling, setIsEnrolling] = useState(false);
@@ -108,7 +107,6 @@ export default function CoursesPage() {
           </p>
         </div>
 
-        {/* Filter Controls Bar */}
         <Card className="p-4 bg-white border-slate-200/90 shadow-sm rounded-2xl">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="w-full sm:w-96">
@@ -140,7 +138,6 @@ export default function CoursesPage() {
           </div>
         </Card>
 
-        {/* Course Cards Grid */}
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
@@ -155,9 +152,7 @@ export default function CoursesPage() {
                 className="bg-white border-slate-200/90 hover:border-emerald-500/50 hover:shadow-md transition-all rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between group"
               >
                 <div>
-                  {/* Thumbnail Banner */}
                   <div className="h-44 bg-slate-100 relative overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={course.thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=600'}
                       alt={course.title}
@@ -214,7 +209,6 @@ export default function CoursesPage() {
           </div>
         )}
 
-        {/* Interactive Course Player & Module Viewer Modal */}
         {activeCourse && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
             <div className="w-full max-w-5xl bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
@@ -227,7 +221,6 @@ export default function CoursesPage() {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left: Video Player & Lesson Details */}
                 <div className="lg:col-span-2 space-y-4">
                   <div className="aspect-video bg-black rounded-2xl overflow-hidden border border-slate-200 flex items-center justify-center relative shadow-sm">
                     <iframe
@@ -247,7 +240,6 @@ export default function CoursesPage() {
                   </div>
                 </div>
 
-                {/* Right: Modules & Lessons Playlist */}
                 <div className="space-y-4 bg-slate-50 p-4 rounded-2xl border border-slate-200 h-fit">
                   <div className="flex items-center justify-between pb-2 border-b border-slate-200">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600">Course Syllabus</h4>

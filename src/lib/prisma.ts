@@ -12,9 +12,6 @@ export const prisma =
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
-/**
- * Health check helper executing a trivial query to verify DB connectivity.
- */
 export async function checkDatabaseHealth(): Promise<{
   connected: boolean;
   latencyMs: number;

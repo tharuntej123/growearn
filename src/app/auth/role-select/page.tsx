@@ -97,7 +97,6 @@ export default function RoleSelectPage() {
           </p>
         </div>
 
-        {/* 4 Primary Choice Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
           {roleChoices.map((choice) => {
             const Icon = choice.icon;
@@ -142,7 +141,6 @@ export default function RoleSelectPage() {
           })}
         </div>
 
-        {/* Action Button */}
         <div className="flex justify-center">
           <Button
             size="lg"

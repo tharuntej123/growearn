@@ -26,7 +26,6 @@ export default function MentorsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
 
-  // Booking Modal
   const [selectedMentor, setSelectedMentor] = useState<any>(null);
   const [sessionTopic, setSessionTopic] = useState('');
   const [sessionMessage, setSessionMessage] = useState('');
@@ -106,7 +105,6 @@ export default function MentorsPage() {
           </p>
         </div>
 
-        {/* Search Bar */}
         <Card className="p-4 bg-white border-slate-200/90 shadow-sm rounded-2xl max-w-xl">
           <Input
             placeholder="Search by mentor name, skill (e.g. Java, System Design)..."
@@ -118,7 +116,6 @@ export default function MentorsPage() {
           />
         </Card>
 
-        {/* Mentor Cards Grid */}
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {[1, 2].map((i) => (
@@ -196,7 +193,6 @@ export default function MentorsPage() {
           </div>
         )}
 
-        {/* Booking Request Modal */}
         {selectedMentor && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
             <div className="w-full max-w-lg bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl space-y-4">

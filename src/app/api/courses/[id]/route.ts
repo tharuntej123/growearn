@@ -14,7 +14,6 @@ export async function GET(
     return apiError('Course not found', 'NOT_FOUND', 404);
   }
 
-  // Check enrollment status if logged in
   const userPayload = getCurrentUserFromRequest(req);
   let enrollment = null;
   if (userPayload) {

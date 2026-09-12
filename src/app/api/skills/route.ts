@@ -39,7 +39,6 @@ export async function POST(req: NextRequest) {
 
     const cleanName = validated.data.name.trim();
 
-    // Canonical skill lookup/creation
     const skill = await prisma.skill.upsert({
       where: { name: cleanName },
       update: {},
@@ -63,13 +62,11 @@ export async function POST(req: NextRequest) {
       include: { skill: true },
     });
 
-    // Mark isOnboarded if user has profile
     await prisma.profile.updateMany({
       where: { userId: authUser.id },
       data: { isOnboarded: true },
     });
 
-    // Recalculate AI analysis & roadmap
     const userContext = await getUserAIContext(authUser.id);
     if (userContext) {
       const analysis = SkillAnalysisService.analyze(

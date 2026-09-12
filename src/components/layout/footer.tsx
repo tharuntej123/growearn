@@ -8,7 +8,6 @@ export function Footer() {
   return (
     <footer className="border-t border-slate-200 bg-slate-50 text-slate-600 py-12 px-4 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl grid grid-cols-1 md:grid-cols-4 gap-8">
-        {/* Col 1 */}
         <div className="space-y-4 md:col-span-1">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-tr from-emerald-600 to-teal-600 text-white shadow-xs">
@@ -25,7 +24,6 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Col 2 */}
         <div>
           <h4 className="text-sm font-semibold text-slate-900 mb-3">Ecosystem Roles</h4>
           <ul className="space-y-2 text-xs">
@@ -36,7 +34,6 @@ export function Footer() {
           </ul>
         </div>
 
-        {/* Col 3 */}
         <div>
           <h4 className="text-sm font-semibold text-slate-900 mb-3">Features & AI</h4>
           <ul className="space-y-2 text-xs">
@@ -48,7 +45,6 @@ export function Footer() {
           </ul>
         </div>
 
-        {/* Col 4 */}
         <div>
           <h4 className="text-sm font-semibold text-slate-900 mb-3">Demo Accounts</h4>
           <div className="p-3 rounded-xl border border-slate-200 bg-white text-xs space-y-1.5 font-mono shadow-xs">

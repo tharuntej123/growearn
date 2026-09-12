@@ -60,7 +60,6 @@ export async function POST(
       matchExplanation: aiMatch.explanation,
     });
 
-    // Notify company
     await prisma.notification.create({
       data: {
         userId: job.companyId,

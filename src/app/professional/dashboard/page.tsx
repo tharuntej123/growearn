@@ -26,18 +26,15 @@ export default function ProfessionalDashboardPage() {
   const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Job Search & Filtering state
   const [searchQuery, setSearchQuery] = useState('');
   const [cityFilter, setCityFilter] = useState('');
   const [activeJobTab, setActiveJobTab] = useState<'ALL' | 'FREELANCE' | 'LOCAL'>('ALL');
 
-  // Resume upload modal & AI parsing
   const [showResumeModal, setShowResumeModal] = useState(false);
   const [resumeText, setResumeText] = useState('');
   const [isParsingResume, setIsParsingResume] = useState(false);
   const [extractedSkills, setExtractedSkills] = useState<string[] | null>(null);
 
-  // AI Proposal Generator modal
   const [selectedJobForProposal, setSelectedJobForProposal] = useState<any | null>(null);
   const [isGeneratingProposal, setIsGeneratingProposal] = useState(false);
   const [proposalData, setProposalData] = useState<any>(null);
@@ -68,7 +65,6 @@ export default function ProfessionalDashboardPage() {
   const hasSkills = Boolean(userContext?.hasSkills && userContext.skills.length > 0);
   const allJobs = data?.recommendedJobs || [];
 
-  // Filter jobs by searchQuery and cityFilter
   const filteredJobs = allJobs.filter((job: any) => {
     const q = searchQuery.toLowerCase().trim();
     const matchesQuery =
@@ -109,7 +105,6 @@ export default function ProfessionalDashboardPage() {
         setExtractedSkills(detected);
         toast.success(`AI detected ${detected.length} skills from resume!`);
 
-        // Automatically add detected skills to user profile
         for (const sk of detected) {
           await fetch('/api/skills', {
             method: 'POST',
@@ -192,7 +187,6 @@ export default function ProfessionalDashboardPage() {
       <DashboardSidebar />
 
       <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-8">
-        {/* Top Professional Banner */}
         <div className="p-6 sm:p-8 rounded-3xl border border-emerald-200/80 bg-white shadow-sm relative overflow-hidden">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
             <div>
@@ -231,7 +225,6 @@ export default function ProfessionalDashboardPage() {
           </div>
         </div>
 
-        {/* Dynamic Performance Metrics */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="p-5 bg-white border border-slate-200 rounded-2xl shadow-xs">
             <div className="flex items-center justify-between text-slate-500 text-xs font-semibold">
@@ -280,7 +273,6 @@ export default function ProfessionalDashboardPage() {
           </Card>
         </div>
 
-        {/* Unpersonalized Callout if user has 0 skills */}
         {!hasSkills && (
           <Card className="p-6 bg-white border border-amber-200 rounded-3xl shadow-xs space-y-4">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -307,7 +299,6 @@ export default function ProfessionalDashboardPage() {
           </Card>
         )}
 
-        {/* Search & Filter Bar */}
         <div className="bg-white border border-slate-200 rounded-3xl p-4 sm:p-5 shadow-xs space-y-4">
           <div className="flex flex-col sm:flex-row items-center gap-3">
             <div className="relative flex-1 w-full">
@@ -380,7 +371,6 @@ export default function ProfessionalDashboardPage() {
           </div>
         </div>
 
-        {/* Section 1: Main Freelancing & Global Jobs (shown when tab is ALL or FREELANCE) */}
         {(activeJobTab === 'ALL' || activeJobTab === 'FREELANCE') && (
           <div className="space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-2">
@@ -474,7 +464,6 @@ export default function ProfessionalDashboardPage() {
           </div>
         )}
 
-        {/* Section 2: Local Jobs (shown when tab is ALL or LOCAL) */}
         {(activeJobTab === 'ALL' || activeJobTab === 'LOCAL') && (
           <div className="space-y-4 pt-2">
             <div className="flex items-center justify-between border-b border-slate-100 pb-2">
@@ -571,7 +560,6 @@ export default function ProfessionalDashboardPage() {
           </div>
         )}
 
-        {/* Community Feed & Quick Post */}
         <div className="space-y-4 pt-2">
           <div>
             <h2 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
@@ -585,7 +573,6 @@ export default function ProfessionalDashboardPage() {
           />
         </div>
 
-        {/* AI Proposal Generator Modal */}
         {selectedJobForProposal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <div className="w-full max-w-2xl bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
@@ -653,7 +640,6 @@ export default function ProfessionalDashboardPage() {
           </div>
         )}
 
-        {/* Resume Parser Modal */}
         {showResumeModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <div className="w-full max-w-xl bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl space-y-4">

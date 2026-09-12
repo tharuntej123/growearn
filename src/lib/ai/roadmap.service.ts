@@ -2,10 +2,6 @@ import { roadmapSchema, RoadmapOutput, RoadmapPhaseOutput } from './schemas';
 import { SkillAnalysisService } from './skill-analysis.service';
 
 export class CareerRoadmapService {
-  /**
-   * Generates a structured multi-phase career roadmap based on actual user profile:
-   * Current Skills + Target Role + Experience Level + Identified Skill Gaps.
-   */
   static generate(
     skills: string[],
     targetRole?: string | null,
@@ -16,11 +12,9 @@ export class CareerRoadmapService {
     const target = (targetRole || careerGoal || 'Full Stack Developer').trim();
     const exp = experienceLevel || 'Beginner';
 
-    // Step 1: Run grounded skill gap analysis
     const analysis = SkillAnalysisService.analyze(cleanSkills, target, exp);
     const targetLower = target.toLowerCase();
 
-    // If 0 skills provided, generate foundational onboarding roadmap
     if (cleanSkills.length === 0) {
       const rawOutput = {
         targetRole: target,
@@ -85,7 +79,6 @@ export class CareerRoadmapService {
       return roadmapSchema.parse(rawOutput);
     }
 
-    // Role-specific roadmap generator for users WITH skills
     const primarySkill = cleanSkills[0] || 'Core Stack';
     const phases: RoadmapPhaseOutput[] = [];
 
@@ -197,7 +190,6 @@ export class CareerRoadmapService {
         }
       );
     } else {
-      // Full Stack / Frontend / General Software Engineer
       phases.push(
         {
           phaseNumber: 1,

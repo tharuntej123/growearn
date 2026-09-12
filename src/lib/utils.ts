@@ -6,7 +6,6 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// Standardized API response format
 export interface ApiResponseSuccess<T = unknown> {
   success: true;
   data: T;
@@ -42,7 +41,6 @@ export function apiError(
   let code = codeOrMessage;
   let message = messageOrCode;
 
-  // If first arg is an uppercase code (e.g. UNAUTHORIZED, FORBIDDEN, VALIDATION_ERROR) and second is human text
   if (
     /^[A-Z_0-9]+$/.test(messageOrCode) &&
     codeOrMessage &&

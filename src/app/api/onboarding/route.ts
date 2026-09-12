@@ -25,19 +25,15 @@ export async function POST(req: NextRequest) {
       interests = [],
     } = body;
 
-    // Normalize and clean skills
     const rawSkills: string[] = Array.isArray(skills) ? skills : [];
     const cleanSkills = Array.from(new Set(rawSkills.map((s) => s.trim()))).filter(Boolean);
 
-    // 1. Upsert skills in canonical Skill table and UserSkill
     if (cleanSkills.length > 0) {
-      // Remove any previously recorded user skills to replace with fresh onboarding list
       await prisma.userSkill.deleteMany({
         where: { userId: authUser.id },
       });
 
       for (const skillName of cleanSkills) {
-        // Find existing canonical skill or create
         const canonical = await prisma.skill.upsert({
           where: { name: skillName },
           update: {},
@@ -58,7 +54,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 2. Update user and profile
     if (preferredLocation) {
       await prisma.user.update({
         where: { id: authUser.id },
@@ -91,7 +86,6 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 3. Trigger Grounded AI Skill Analysis
     const skillAnalysis = SkillAnalysisService.analyze(cleanSkills, targetRole, experienceLevel);
 
     await prisma.aIProfile.upsert({
@@ -115,10 +109,8 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 4. Generate & Save Structured Career Roadmap
     const roadmap = CareerRoadmapService.generate(cleanSkills, targetRole, experienceLevel, careerGoal);
 
-    // Delete old roadmap items
     const existingRoadmap = await prisma.careerRoadmap.findUnique({
       where: { userId: authUser.id },
     });
@@ -153,7 +145,6 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Create relational roadmap items for phases
     for (let i = 0; i < roadmap.phases.length; i++) {
       const p = roadmap.phases[i];
       await prisma.roadmapItem.create({
@@ -168,7 +159,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 5. Fetch fresh user AI context
     const userContext = await getUserAIContext(authUser.id);
 
     return apiSuccess({

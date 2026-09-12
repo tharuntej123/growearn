@@ -7,9 +7,6 @@ import {
 import { GrokLLMClient } from './grok-client';
 
 export class AIService {
-  /**
-   * AI Skill Gap Analysis via Groq LLM with deterministic fallback
-   */
   static async analyzeSkills(
     skills: string[],
     careerGoal: string
@@ -63,7 +60,6 @@ Rules:
       }
     }
 
-    // Deterministic Fallback
     const skillsLower = cleanSkills.map((s) => s.toLowerCase());
     const goalLower = goal.toLowerCase();
 
@@ -108,9 +104,6 @@ Rules:
     };
   }
 
-  /**
-   * AI Career Roadmap Generator via Groq LLM with deterministic fallback
-   */
   static async generateRoadmap(
     skills: string[],
     targetRole: string
@@ -169,7 +162,6 @@ Return ONLY valid JSON matching this schema:
       }
     }
 
-    // Deterministic Fallback
     const nodes = [
       {
         step: 1,
@@ -225,9 +217,6 @@ Return ONLY valid JSON matching this schema:
     };
   }
 
-  /**
-   * AI Proposal Generator for Freelance & Full-time Jobs via Groq LLM
-   */
   static async generateProposal(
     jobTitle: string,
     jobDescription: string,
@@ -279,7 +268,6 @@ Generate a concise, high-converting client proposal in JSON.`,
       }
     }
 
-    // Deterministic Fallback
     const matched = cleanSkills.slice(0, 3).join(', ') || 'modern full-stack web technologies';
 
     return {
@@ -297,9 +285,6 @@ Generate a concise, high-converting client proposal in JSON.`,
     };
   }
 
-  /**
-   * AI Communication Assistant for Message Polishing via Groq LLM
-   */
   static async improveMessage(
     message: string,
     tone: 'professional' | 'friendly' | 'concise' | 'persuasive' | 'grammar_fix' = 'professional'
@@ -339,7 +324,6 @@ Return ONLY valid JSON matching:
       }
     }
 
-    // Deterministic Fallback
     let improved = trimmed;
     let explanation = 'Enhanced for clarity, tone, and professional courtesy.';
 
@@ -357,7 +341,6 @@ Return ONLY valid JSON matching:
       improved = `I would love the opportunity to collaborate on this. ${trimmed} I am confident my expertise will provide immediate value to your project.`;
       explanation = 'Strengthened value proposition and call to action.';
     } else {
-      // grammar fix
       improved = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
       if (!/[.!?]$/.test(improved)) improved += '.';
       explanation = 'Corrected punctuation, casing, and sentence structure.';
@@ -371,9 +354,6 @@ Return ONLY valid JSON matching:
     };
   }
 
-  /**
-   * AI Career Assistant Chat with Groq Grounding
-   */
   static async answerCareerQuestion(
     question: string,
     userContext: {
@@ -421,7 +401,6 @@ User Question: "${question}"`,
       }
     }
 
-    // Deterministic fallback
     if (qLower.includes('learn') || qLower.includes('course')) {
       return {
         response: `Hello ${userContext.name}! Given your current skills in ${skillsList} and your goal of becoming a ${goal}, I recommend prioritizing: 1) System Design & Microservices, 2) Modern Cloud CI/CD Pipelines, and 3) Next.js App Router with Server Actions. Check our Courses tab for interactive modules!`,
@@ -445,9 +424,6 @@ User Question: "${question}"`,
     };
   }
 
-  /**
-   * Resume Parser & Skill Extractor via Groq LLM
-   */
   static async extractResumeSkills(resumeText: string): Promise<{
     detectedSkills: string[];
     suggestedTitle: string;
@@ -492,7 +468,6 @@ Return ONLY valid JSON matching:
       }
     }
 
-    // Deterministic Fallback
     const knownSkills = [
       'React', 'Next.js', 'TypeScript', 'JavaScript', 'Node.js', 'Express',
       'Java', 'Spring Boot', 'Python', 'Django', 'FastAPI', 'PostgreSQL',

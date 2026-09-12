@@ -54,7 +54,6 @@ export default function ProfilePage() {
   const [profileData, setProfileData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Edit Modal State
   const [showEditModal, setShowEditModal] = useState(false);
   const [headline, setHeadline] = useState('');
   const [bio, setBio] = useState('');
@@ -67,18 +66,15 @@ export default function ProfilePage() {
   const [companyWebsite, setCompanyWebsite] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  // Add Skill State
   const [newSkillName, setNewSkillName] = useState('');
   const [newSkillProficiency, setNewSkillProficiency] = useState('INTERMEDIATE');
   const [isAddingSkill, setIsAddingSkill] = useState(false);
 
-  // Resume File Upload (1 MB Max)
   const [resumeFile, setResumeFile] = useState<{ name: string; size: string; url?: string } | null>({
     name: 'Alex_Chen_Resume_2026.pdf',
     size: '480 KB',
   });
 
-  // Education items state
   const [educations, setEducations] = useState<EducationItem[]>([
     {
       id: 'edu-1',
@@ -94,7 +90,6 @@ export default function ProfilePage() {
   const [eduField, setEduField] = useState('');
   const [eduYear, setEduYear] = useState('');
 
-  // Experience items state
   const [experiences, setExperiences] = useState<ExperienceItem[]>([
     {
       id: 'exp-1',
@@ -202,12 +197,11 @@ export default function ProfilePage() {
     }
   };
 
-  // 1 MB Resume Upload Handler
   const handleResumeUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const maxBytes = 1 * 1024 * 1024; // 1 MB
+    const maxBytes = 1 * 1024 * 1024;
     if (file.size > maxBytes) {
       toast.error('Resume file exceeds the 1 MB limit. Please select a smaller PDF or DOCX file.');
       return;
@@ -223,7 +217,6 @@ export default function ProfilePage() {
     toast.success(`✅ Resume "${file.name}" (${kbSize} KB) uploaded successfully!`);
   };
 
-  // Add Education
   const handleAddEducation = (e: React.FormEvent) => {
     e.preventDefault();
     if (!eduSchool.trim() || !eduDegree.trim()) {
@@ -246,7 +239,6 @@ export default function ProfilePage() {
     setEduYear('');
   };
 
-  // Add Experience
   const handleAddExperience = (e: React.FormEvent) => {
     e.preventDefault();
     if (!expCompany.trim() || !expTitle.trim()) {
@@ -278,7 +270,6 @@ export default function ProfilePage() {
       <DashboardSidebar />
 
       <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto w-full space-y-6">
-        {/* Profile Header Banner */}
         <Card className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm relative overflow-hidden">
           <div className="flex flex-col sm:flex-row items-start justify-between gap-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
@@ -315,19 +306,14 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Bio / About */}
           <div className="mt-6 pt-6 border-t border-slate-100 text-xs sm:text-sm text-slate-600 leading-relaxed">
             <p className="font-bold text-slate-900 mb-1">About</p>
             <p>{p?.bio || 'Building modern software solutions and mastering full-stack engineering principles with Groearn.'}</p>
           </div>
         </Card>
 
-        {/* ------------------------------------------------------------- */}
-        {/* ROLE 1: LEARNER PROFILE (ORDER: EDUCATION -> SKILLS -> RESUME) */}
-        {/* ------------------------------------------------------------- */}
         {(userRole === 'LEARNER' || (userRole as string) === 'STUDENT') && (
           <div className="space-y-6">
-            {/* 1. Education Section */}
             <Card className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -359,7 +345,6 @@ export default function ProfilePage() {
               </div>
             </Card>
 
-            {/* 2. Skills ("What I Learn") Section */}
             <Card className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -370,7 +355,6 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Add Skill Form */}
               <form onSubmit={handleAddSkill} className="flex flex-col sm:flex-row items-center gap-2 pt-1">
                 <Input
                   placeholder="Add skill (e.g. Next.js, Docker, Java, PostgreSQL, PyTorch)..."
@@ -393,7 +377,6 @@ export default function ProfilePage() {
                 </Button>
               </form>
 
-              {/* Skills Badges Grid */}
               <div className="flex flex-wrap gap-2 pt-2">
                 {userSkills.length === 0 ? (
                   <p className="text-xs text-slate-500 italic">No skills recorded yet. Add your first skill above.</p>
@@ -416,7 +399,6 @@ export default function ProfilePage() {
               </div>
             </Card>
 
-            {/* 3. Resume Upload Section (1 MB File) */}
             <Card className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
               <div>
                 <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -466,12 +448,8 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* ------------------------------------------------------------- */}
-        {/* ROLE 2: MENTOR PROFILE (PORTFOLIO, EDUCATION, SKILLS, EXP)    */}
-        {/* ------------------------------------------------------------- */}
         {userRole === 'MENTOR' && (
           <div className="space-y-6">
-            {/* Portfolio & Bio */}
             <Card className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
               <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                 <Globe className="h-5 w-5 text-emerald-600" /> Mentor Portfolio & Coaching Bio
@@ -490,7 +468,6 @@ export default function ProfilePage() {
               </div>
             </Card>
 
-            {/* Education */}
             <Card className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -511,7 +488,6 @@ export default function ProfilePage() {
               </div>
             </Card>
 
-            {/* Skills */}
             <Card className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
               <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                 <Code2 className="h-5 w-5 text-emerald-600" /> Mentorship Expertise & Tech Stacks
@@ -528,7 +504,6 @@ export default function ProfilePage() {
               </div>
             </Card>
 
-            {/* Experience */}
             <Card className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -551,12 +526,8 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* ------------------------------------------------------------- */}
-        {/* ROLE 3: PROFESSIONAL PROFILE (EDU, SKILLS, RESUME, EXP)       */}
-        {/* ------------------------------------------------------------- */}
         {(userRole === 'PROFESSIONAL' || (userRole as string) === 'FREELANCER') && (
           <div className="space-y-6">
-            {/* Education */}
             <Card className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -577,7 +548,6 @@ export default function ProfilePage() {
               </div>
             </Card>
 
-            {/* Skills */}
             <Card className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -596,7 +566,6 @@ export default function ProfilePage() {
               </div>
             </Card>
 
-            {/* Resume Upload (1 MB File) */}
             <Card className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
               <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                 <FileText className="h-5 w-5 text-emerald-600" /> Professional Resume Upload (Max 1 MB)
@@ -631,7 +600,6 @@ export default function ProfilePage() {
               )}
             </Card>
 
-            {/* Experience */}
             <Card className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -654,12 +622,8 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* ------------------------------------------------------------- */}
-        {/* ROLE 4: COMPANY PROFILE (ABOUT COMPANY, JOBS POSTED)          */}
-        {/* ------------------------------------------------------------- */}
         {(userRole === 'EMPLOYER' || (userRole as string) === 'COMPANY') && (
           <div className="space-y-6">
-            {/* About Company */}
             <Card className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
               <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                 <Building2 className="h-5 w-5 text-emerald-600" /> Company Information & Headquarters
@@ -682,7 +646,6 @@ export default function ProfilePage() {
               </div>
             </Card>
 
-            {/* Active Jobs Posted */}
             <Card className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -709,7 +672,6 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* EDIT PROFILE MODAL */}
         {showEditModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
             <div className="w-full max-w-lg bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
@@ -794,7 +756,6 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* ADD EDUCATION MODAL */}
         {showAddEduModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
             <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl space-y-4">
@@ -851,7 +812,6 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* ADD EXPERIENCE MODAL */}
         {showAddExpModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
             <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl space-y-4">

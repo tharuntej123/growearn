@@ -101,9 +101,7 @@ export default function LandingPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-[#F8FAF9] text-slate-900 overflow-hidden">
-      {/* 1. HERO SECTION */}
       <section className="relative pt-20 pb-16 md:pt-28 md:pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center">
-        {/* Top Floating Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-800 mb-8 shadow-xs">
           <Sparkles className="h-4 w-4 text-emerald-600 animate-pulse" />
           <span className="text-xs font-semibold">
@@ -111,18 +109,15 @@ export default function LandingPage() {
           </span>
         </div>
 
-        {/* Hero Tagline & Heading */}
         <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-slate-900 max-w-5xl mx-auto leading-[1.15]">
           Learn. Work. Mentor. Grow —{' '}
           <span className="text-gradient-emerald">All in One.</span>
         </h1>
 
-        {/* Supporting Text */}
         <p className="mt-6 text-lg sm:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed font-normal">
           A modern professional platform connecting learning, mentorship, contract gigs, and AI-powered hiring into one continuous career journey.
         </p>
 
-        {/* CTA Buttons */}
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link href="/signup">
             <Button size="lg" variant="default" className="w-full sm:w-auto gap-2 text-base px-8 h-12 shadow-sm font-semibold">
@@ -141,7 +136,6 @@ export default function LandingPage() {
           </Link>
         </div>
 
-        {/* 1-Click Demo Accounts Bar */}
         <div className="mt-12 p-4 rounded-2xl border border-slate-200 bg-white shadow-xs max-w-4xl mx-auto">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2 text-slate-700 font-semibold">
@@ -174,9 +168,7 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Floating Ecosystem Live Cards */}
         <div className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-left">
-          {/* Card 1: Student / Learning */}
           <div className="bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-md transition-all p-5 rounded-2xl relative overflow-hidden group shadow-xs">
             <div className="flex items-center justify-between mb-3">
               <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -192,7 +184,6 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Card 2: Professional / Job */}
           <div className="bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-md transition-all p-5 rounded-2xl relative overflow-hidden group shadow-xs">
             <div className="flex items-center justify-between mb-3">
               <div className="p-2.5 rounded-xl bg-teal-50 text-teal-700 border border-teal-200">
@@ -208,7 +199,6 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Card 3: Mentorship */}
           <div className="bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-md transition-all p-5 rounded-2xl relative overflow-hidden group shadow-xs">
             <div className="flex items-center justify-between mb-3">
               <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -224,7 +214,6 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Card 4: Company Talent */}
           <div className="bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-md transition-all p-5 rounded-2xl relative overflow-hidden group shadow-xs">
             <div className="flex items-center justify-between mb-3">
               <div className="p-2.5 rounded-xl bg-slate-100 text-slate-800 border border-slate-200">
@@ -242,7 +231,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 2. STATS & METRICS BAR */}
       <section className="border-y border-slate-200 bg-white py-10 px-4">
         <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           <div>
@@ -264,7 +252,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 3. INTERACTIVE ROLE JOURNEY SWITCHER */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="text-center max-w-3xl mx-auto mb-12">
           <Badge variant="default" className="mb-3">Connected Lifecycle</Badge>
@@ -277,7 +264,6 @@ export default function LandingPage() {
           </p>
         </div>
 
-        {/* Role Tabs */}
         <div className="flex flex-wrap items-center justify-center gap-2 mb-10">
           {(['student', 'professional', 'mentor', 'company'] as const).map((tab) => (
             <button
@@ -297,7 +283,6 @@ export default function LandingPage() {
           ))}
         </div>
 
-        {/* Role Content Card */}
         {(() => {
           const activeJourney = roleJourneys[activeRoleTab];
           return (
@@ -318,7 +303,6 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                {/* Stepper Progression */}
                 <div className="lg:w-2/3 space-y-4 w-full">
                   {activeJourney.steps.map((step, idx) => (
                     <div
@@ -341,7 +325,6 @@ export default function LandingPage() {
         })()}
       </section>
 
-      {/* 4. CORE PLATFORM PILLARS */}
       <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-slate-200">
         <div className="text-center max-w-3xl mx-auto mb-14">
           <Badge variant="default" className="mb-3">Unified Features</Badge>
@@ -384,7 +367,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 5. CALL TO ACTION */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto text-center">
         <div className="p-10 sm:p-14 rounded-3xl border border-emerald-200 bg-white shadow-sm relative overflow-hidden">
           <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">

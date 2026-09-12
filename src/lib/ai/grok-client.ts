@@ -1,13 +1,3 @@
-/**
- * Groq, Grok (xAI), OpenAI & Multi-Provider LLM Client for Groearn
- * 
- * Supports:
- * - Groq (llama-3.3-70b-versatile, llama-3.1-8b-instant) via GROQ_API_KEY or keys starting with gsk_
- * - xAI Grok (grok-2-latest, grok-beta, grok-2) via GROK_API_KEY or XAI_API_KEY (xai-...)
- * - OpenAI (gpt-4o, gpt-4o-mini) via OPENAI_API_KEY (sk-...)
- * - Google Gemini via GEMINI_API_KEY
- */
-
 export interface LLMMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
@@ -26,16 +16,10 @@ export interface LLMCompletionResult {
 }
 
 export class GrokLLMClient {
-  /**
-   * Check if any LLM API key is available
-   */
   static isAvailable(): boolean {
     return this.getActiveProvider() !== 'none';
   }
 
-  /**
-   * Determine the active provider
-   */
   static getActiveProvider(): 'groq' | 'grok' | 'openai' | 'gemini' | 'none' {
     const groqKey = process.env.GROQ_API_KEY;
     if (groqKey && groqKey.trim() !== '') return 'groq';
@@ -59,9 +43,6 @@ export class GrokLLMClient {
     return 'none';
   }
 
-  /**
-   * Complete chat using the detected provider
-   */
   static async complete(options: LLMCompletionOptions): Promise<LLMCompletionResult | null> {
     const provider = this.getActiveProvider();
     if (provider === 'none') return null;
@@ -79,20 +60,17 @@ export class GrokLLMClient {
     return null;
   }
 
-  /**
-   * Complete chat and parse the result as JSON
-   */
   static async completeJSON<T>(options: LLMCompletionOptions): Promise<{ data: T; provider: string; model: string } | null> {
     const res = await this.complete(options);
     if (!res || !res.text) return null;
 
     try {
       let cleaned = res.text.trim();
-      // Strip markdown code fences if present
+
       if (cleaned.startsWith('```')) {
         cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
       }
-      // If there is still leading/trailing text outside the first { or [, slice to valid JSON
+
       const firstBrace = cleaned.indexOf('{');
       const firstBracket = cleaned.indexOf('[');
       let startIndex = -1;
@@ -121,9 +99,6 @@ export class GrokLLMClient {
     }
   }
 
-  /**
-   * Call Groq API (https://api.groq.com/openai/v1/chat/completions)
-   */
   private static async callGroq(options: LLMCompletionOptions): Promise<LLMCompletionResult | null> {
     const apiKey = (process.env.GROQ_API_KEY || process.env.GROK_API_KEY || process.env.OPENAI_API_KEY || '').trim();
     if (!apiKey) return null;
@@ -176,9 +151,6 @@ export class GrokLLMClient {
     return null;
   }
 
-  /**
-   * Call xAI Grok API (https://api.x.ai/v1/chat/completions)
-   */
   private static async callGrok(options: LLMCompletionOptions): Promise<LLMCompletionResult | null> {
     const apiKey = (process.env.GROK_API_KEY || process.env.XAI_API_KEY || '').trim();
     if (!apiKey) return null;
@@ -253,9 +225,6 @@ export class GrokLLMClient {
     }
   }
 
-  /**
-   * Call OpenAI API
-   */
   private static async callOpenAI(options: LLMCompletionOptions): Promise<LLMCompletionResult | null> {
     const apiKey = (process.env.OPENAI_API_KEY || '').trim();
     if (!apiKey) return null;
@@ -295,9 +264,6 @@ export class GrokLLMClient {
     }
   }
 
-  /**
-   * Call Gemini API (via v1beta API)
-   */
   private static async callGemini(options: LLMCompletionOptions): Promise<LLMCompletionResult | null> {
     const apiKey = (process.env.GEMINI_API_KEY || '').trim();
     if (!apiKey) return null;

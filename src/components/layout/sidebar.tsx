@@ -49,7 +49,6 @@ export function DashboardSidebar() {
 
   return (
     <aside className="w-64 shrink-0 hidden md:block border-r border-slate-200 bg-white p-4 min-h-[calc(100vh-4rem)]">
-      {/* User Role Card */}
       <div className="mb-6 p-3.5 rounded-xl border border-slate-200 bg-slate-50/70">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-full bg-emerald-600 flex items-center justify-center font-bold text-white shadow-xs">
@@ -67,7 +66,6 @@ export function DashboardSidebar() {
         </div>
       </div>
 
-      {/* Navigation list */}
       <div className="space-y-1">
         <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider px-3 mb-2">
           Navigation
@@ -100,7 +98,6 @@ export function DashboardSidebar() {
         })}
       </div>
 
-      {/* Career Evolution Box */}
       <div className="mt-8 p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/50">
         <div className="flex items-center gap-2 text-xs font-bold text-emerald-800 mb-1">
           <TrendingUp className="h-4 w-4 text-emerald-600" />

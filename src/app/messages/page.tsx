@@ -68,7 +68,6 @@ export default function MessagesPage() {
     },
   ]);
 
-  // AI Improver state inside chat
   const [showAiImprover, setShowAiImprover] = useState(false);
   const [improving, setImproving] = useState(false);
 
@@ -116,7 +115,6 @@ export default function MessagesPage() {
 
       <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto w-full">
         <Card className="bg-white border-slate-200/90 rounded-3xl shadow-sm overflow-hidden h-[700px] flex flex-col md:flex-row">
-          {/* Left Conversations Sidebar */}
           <div className="w-full md:w-80 border-r border-slate-200 bg-slate-50/70 p-4 flex flex-col justify-between">
             <div className="space-y-3">
               <h2 className="text-lg font-bold text-slate-900">Direct Messages</h2>
@@ -129,7 +127,6 @@ export default function MessagesPage() {
                 />
               </div>
 
-              {/* Conversation list */}
               <div className="space-y-1.5 pt-2">
                 {conversations.map((c) => {
                   const isSelected = activeConv?.id === c.id;
@@ -162,9 +159,7 @@ export default function MessagesPage() {
             </div>
           </div>
 
-          {/* Right Chat Thread */}
           <div className="flex-1 flex flex-col justify-between bg-white">
-            {/* Thread Header */}
             <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Avatar src={activeConv?.avatarUrl} fallback={activeConv?.name} size="md" />
@@ -180,7 +175,6 @@ export default function MessagesPage() {
               </div>
             </div>
 
-            {/* Messages Scroll Area */}
             <div className="flex-1 p-4 overflow-y-auto space-y-3">
               {messagesList.map((m) => (
                 <div
@@ -201,7 +195,6 @@ export default function MessagesPage() {
               ))}
             </div>
 
-            {/* AI Message Polish Drawer */}
             {showAiImprover && (
               <div className="p-3 bg-emerald-50 border-t border-emerald-200 flex flex-wrap items-center justify-between gap-2 text-xs">
                 <span className="font-bold text-emerald-800 flex items-center gap-1.5">
@@ -223,7 +216,6 @@ export default function MessagesPage() {
               </div>
             )}
 
-            {/* Input Bar */}
             <div className="p-3 bg-white border-t border-slate-100">
               <div className="flex items-center gap-2">
                 <button

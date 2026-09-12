@@ -7,7 +7,7 @@ export interface SkillGapAnalysisResult {
 }
 
 export interface HybridMatchResult {
-  overallScore: number; // 0 - 100
+  overallScore: number;
   factors: {
     skillMatch: { score: number; weight: number; matched: string[]; missing: string[] };
     experienceMatch: { score: number; weight: number; userYears: number; requiredYears: number };

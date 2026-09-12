@@ -11,29 +11,18 @@ export interface LangChainRAGResponse {
 }
 
 export class LangChainRAGService {
-  /**
-   * Check if live LLM credentials (Grok / OpenAI / Gemini) are configured
-   */
   static isLLMAvailable(): boolean {
     return GrokLLMClient.isAvailable();
   }
 
-  /**
-   * Executes the RAG pipeline:
-   * 1. Retrieve grounded documents from DB (Jobs, Courses, Mentors, Profile, Knowledge Base)
-   * 2. Format context into LLM system prompt
-   * 3. Invoke Grok (xAI) or multi-provider LLM (or fallback if offline/failed)
-   */
   static async executeRAG(
     question: string,
     userContext: UserAIContext | null,
     fallbackSynthesizer?: () => Promise<string> | string
   ): Promise<LangChainRAGResponse> {
-    // Step 1: RAG Retrieval from platform DB
     const retrievedDocs = await RAGRetriever.retrieveContext(question, userContext);
     const contextString = RAGRetriever.formatContextForPrompt(retrievedDocs);
 
-    // Step 2: Check for live LLM API key
     if (!this.isLLMAvailable()) {
       const fallbackAnswer = fallbackSynthesizer ? await fallbackSynthesizer() : '';
       return {
@@ -76,7 +65,6 @@ ${contextString}`;
         };
       }
 
-      // Fallback if LLM returned null
       const fallbackAnswer = fallbackSynthesizer ? await fallbackSynthesizer() : '';
       return {
         answer: fallbackAnswer,

@@ -83,7 +83,6 @@ export default function StudentDashboardPage() {
       <DashboardSidebar />
 
       <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-8">
-        {/* Dynamic Welcome Banner */}
         <div className="p-6 sm:p-8 rounded-3xl border border-emerald-200/80 bg-white shadow-sm relative overflow-hidden">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
             <div>
@@ -126,7 +125,6 @@ export default function StudentDashboardPage() {
           </div>
         </div>
 
-        {/* SECTION 1: AI SUGGESTED CAREER ROADMAP */}
         {roadmap && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -170,7 +168,6 @@ export default function StudentDashboardPage() {
           </div>
         )}
 
-        {/* SECTION 2: RECOMMENDED SKILL-GAP COURSES */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
@@ -215,7 +212,6 @@ export default function StudentDashboardPage() {
           </div>
         </div>
 
-        {/* SECTION 3: RECOMMENDED EXPERT MENTORS */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
@@ -266,7 +262,6 @@ export default function StudentDashboardPage() {
           </div>
         </div>
 
-        {/* SECTION 4: COMMUNITY FEED & QUICK POST */}
         <div className="space-y-4 pt-2">
           <div className="flex items-center justify-between">
             <div>

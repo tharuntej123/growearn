@@ -21,7 +21,6 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // If already logged in, redirect
   React.useEffect(() => {
     if (user) {
       const target = ROLE_INFO[user.role]?.defaultDashboard || '/feed';
@@ -125,7 +124,6 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          {/* 1-Click Demo Accounts Quick-Fill */}
           <div className="pt-3 border-t border-slate-100">
             <div className="flex items-center gap-1.5 text-xs text-slate-600 font-semibold mb-2">
               <Zap className="h-3.5 w-3.5 text-emerald-600" />

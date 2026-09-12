@@ -90,7 +90,6 @@ export class UserRepository {
   }
 
   static async addSkill(userId: string, skillName: string, proficiencyLevel = 'INTERMEDIATE') {
-    // Find or create skill
     const skill = await prisma.skill.upsert({
       where: { name: skillName.trim() },
       update: {},

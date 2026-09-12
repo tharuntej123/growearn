@@ -70,7 +70,6 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-200/90 bg-white/95 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* Brand */}
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2.5 group">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-600 text-white shadow-sm group-hover:scale-105 transition-transform">
@@ -86,8 +85,6 @@ export function Navbar() {
             </div>
           </Link>
 
-          {/* Unified Search */}
-          {/* Unified Search - Only visible when logged in and not on landing page */}
           {!isLandingPage && user && (
             <form onSubmit={handleSearch} className="hidden md:block relative w-64 lg:w-80">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -102,7 +99,6 @@ export function Navbar() {
           )}
         </div>
 
-        {/* Navigation Links - ONLY VISIBLE WHEN USER IS AUTHENTICATED */}
         {user && (
           <nav className="hidden lg:flex items-center gap-1 text-sm font-medium">
             <Link
@@ -168,11 +164,9 @@ export function Navbar() {
           </nav>
         )}
 
-        {/* Right Section: Auth / Profile */}
         <div className="flex items-center gap-3">
           {user ? (
             <>
-              {/* Active Role Badge & Dashboard Link */}
               <Link href={ROLE_INFO[user.role]?.defaultDashboard || '/feed'}>
                 <Badge
                   variant="outline"
@@ -183,7 +177,6 @@ export function Navbar() {
                 </Badge>
               </Link>
 
-              {/* Notification Bell */}
               <div className="relative">
                 <button
                   onClick={() => setShowNotifications(!showNotifications)}
@@ -198,7 +191,6 @@ export function Navbar() {
                   )}
                 </button>
 
-                {/* Notifications Dropdown */}
                 {showNotifications && (
                   <div className="absolute right-0 mt-2 w-80 rounded-xl border border-slate-200 bg-white p-3 shadow-xl z-50">
                     <div className="flex items-center justify-between pb-2 border-b border-slate-100">
@@ -226,7 +218,6 @@ export function Navbar() {
                 )}
               </div>
 
-              {/* User Avatar Menu */}
               <div className="relative">
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
@@ -236,7 +227,6 @@ export function Navbar() {
                   <ChevronDown className="h-3.5 w-3.5 text-slate-500" />
                 </button>
 
-                {/* Dropdown WITHOUT Role Switcher */}
                 {showUserMenu && (
                   <div className="absolute right-0 mt-2 w-64 rounded-xl border border-slate-200 bg-white p-2 shadow-xl z-50">
                     <div className="px-3 py-2 border-b border-slate-100">

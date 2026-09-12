@@ -46,7 +46,6 @@ export async function PUT(req: NextRequest) {
       ...profileData
     } = validated.data;
 
-    // Update User table fields
     const userData: any = {};
     if (name !== undefined) userData.name = name;
     if (headline !== undefined) userData.headline = headline;
@@ -64,7 +63,6 @@ export async function PUT(req: NextRequest) {
       });
     }
 
-    // Upsert profile
     await prisma.profile.upsert({
       where: { userId: authUser.id },
       update: {
@@ -78,7 +76,6 @@ export async function PUT(req: NextRequest) {
       },
     });
 
-    // Recalculate AI analysis and roadmap
     const userContext = await getUserAIContext(authUser.id);
     if (userContext && userContext.hasSkills) {
       const analysis = SkillAnalysisService.analyze(

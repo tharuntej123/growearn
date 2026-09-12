@@ -10,7 +10,6 @@ async function testLiveGroq() {
   console.log('Provider detected:', GrokLLMClient.getActiveProvider());
   console.log('Is LLM Available:', GrokLLMClient.isAvailable());
 
-  // Test 1: Direct Groq LLM Call
   console.log('\n--- 1. Testing Direct Groq API Completion ---');
   const directResult = await GrokLLMClient.complete({
     messages: [
@@ -24,7 +23,6 @@ async function testLiveGroq() {
   console.log('Model:', directResult?.model);
   console.log('Groq Response:', directResult?.text);
 
-  // Test 2: Full AIAssistantService with RAG context
   console.log('\n--- 2. Testing AIAssistantService with live Groq ---');
   const answerResult = await AIAssistantService.answer('What are the best practices for building scalable backend APIs?', null);
   console.log('Answer Intent:', answerResult.intent);

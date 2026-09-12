@@ -1,8 +1,5 @@
 import { z } from 'zod';
 
-/**
- * AI Skill Analysis Schema
- */
 export const skillAnalysisSchema = z.object({
   identifiedSkills: z.array(
     z.object({
@@ -20,9 +17,6 @@ export const skillAnalysisSchema = z.object({
 
 export type SkillAnalysisOutput = z.infer<typeof skillAnalysisSchema>;
 
-/**
- * AI Career Roadmap Schemas
- */
 export const roadmapPhaseSchema = z.object({
   phaseNumber: z.number(),
   title: z.string(),
@@ -50,9 +44,6 @@ export const roadmapSchema = z.object({
 export type RoadmapOutput = z.infer<typeof roadmapSchema>;
 export type RoadmapPhaseOutput = z.infer<typeof roadmapPhaseSchema>;
 
-/**
- * AI Assistant Intent Schema
- */
 export const assistantIntentEnum = z.enum([
   'GENERAL_QUESTION',
   'CAREER_ADVICE',
@@ -77,5 +68,3 @@ export const assistantResponseSchema = z.object({
 });
 
 export type AssistantResponseOutput = z.infer<typeof assistantResponseSchema>;
-
-

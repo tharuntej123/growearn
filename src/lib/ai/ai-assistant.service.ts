@@ -6,14 +6,9 @@ import { CareerRoadmapService } from './roadmap.service';
 import { LangChainRAGService } from './rag/langchain-agent';
 
 export class AIAssistantService {
-
-  /**
-   * Classify user question intent
-   */
   static classifyIntent(question: string): AssistantIntent {
     const q = question.toLowerCase().trim();
 
-    // Roadmap intent patterns
     if (
       q.includes('roadmap') ||
       q.includes('road map') ||
@@ -110,9 +105,6 @@ export class AIAssistantService {
     return 'GENERAL_QUESTION';
   }
 
-  /**
-   * Helper to format a rich visual roadmap flow with aligned ASCII boxes
-   */
   private static formatRoadmapFlow(
     role: string,
     roadmap: ReturnType<typeof CareerRoadmapService.generate>
@@ -168,9 +160,6 @@ export class AIAssistantService {
     return output;
   }
 
-  /**
-   * Answer question grounded in actual user context and platform database
-   */
   static async answer(
     question: string,
     userContext: UserAIContext | null
@@ -184,7 +173,6 @@ export class AIAssistantService {
     const goal = userContext?.profile?.careerGoal || 'Advance Engineering Career';
     const hasSkills = userSkills.length > 0;
 
-    // Detect target role accurately from question or user profile
     let detectedRole =
       userContext?.profile?.targetRole ||
       userContext?.profile?.careerGoal ||
@@ -240,7 +228,6 @@ export class AIAssistantService {
       detectedRole = 'Full Stack Engineer';
     }
 
-    // --- 0. LangChain LLM + RAG Execution (When configured) ---
     if (LangChainRAGService.isLLMAvailable()) {
       const ragResult = await LangChainRAGService.executeRAG(
         question,
@@ -265,9 +252,6 @@ export class AIAssistantService {
     });
   }
 
-  /**
-   * Grounded Deterministic Synthesizer (Zero-latency RAG Fallback)
-   */
   private static async synthesizeGroundedAnswer(
     question: string,
     userContext: UserAIContext | null,
@@ -281,7 +265,6 @@ export class AIAssistantService {
     const goal = userContext?.profile?.careerGoal || 'Advance Engineering Career';
     const hasSkills = userSkills.length > 0;
 
-    // --- 1. Handle ROADMAP ---
     if (intent === 'ROADMAP') {
       const roadmap = CareerRoadmapService.generate(userSkills, detectedRole, exp, goal);
       let baseOutput = this.formatRoadmapFlow(detectedRole, roadmap);
@@ -317,15 +300,12 @@ export class AIAssistantService {
           }
         }
       } catch {
-        // Fallback gracefully if database is unavailable
       }
 
       baseOutput += `\n\n💡 *Tip: You can also manually customize your roadmap and skills at any time from your **Learner Dashboard**.*`;
       return baseOutput;
     }
 
-
-    // --- 2. Handle SKILL_ANALYSIS ---
     if (intent === 'SKILL_ANALYSIS') {
       const analysis = SkillAnalysisService.analyze(userSkills, detectedRole, exp);
 
@@ -349,7 +329,6 @@ export class AIAssistantService {
       return answer;
     }
 
-    // --- 3. Handle GENERAL_QUESTION (Deep, Authoritative Technical Q&A) ---
     if (intent === 'GENERAL_QUESTION') {
       let answer = '';
 
@@ -574,7 +553,6 @@ Here is a quick breakdown to guide you:
       return answer;
     }
 
-    // --- 4. Handle JOB_SEARCH ---
     if (intent === 'JOB_SEARCH') {
       const jobs = await prisma.job.findMany({
         where: { status: 'OPEN' },
@@ -601,7 +579,6 @@ Here is a quick breakdown to guide you:
       return answer;
     }
 
-    // --- 5. Handle COURSE_RECOMMENDATION ---
     if (intent === 'COURSE_RECOMMENDATION') {
       const courses = await prisma.course.findMany({
         where: { isPublished: true },
@@ -619,7 +596,6 @@ Here is a quick breakdown to guide you:
       return answer;
     }
 
-    // --- 6. Handle MENTOR_RECOMMENDATION ---
     if (intent === 'MENTOR_RECOMMENDATION') {
       const mentors = await prisma.mentorProfile.findMany({
         where: { isAvailable: true },
@@ -638,7 +614,6 @@ Here is a quick breakdown to guide you:
       return answer;
     }
 
-    // --- 7. Handle RESUME_HELP ---
     if (intent === 'RESUME_HELP') {
       const answer = `📄 **Actionable Resume Optimization Guidelines for ${detectedRole}**
 
@@ -654,10 +629,6 @@ Here is a quick breakdown to guide you:
       return answer;
     }
 
-    // --- 8. Default Fallback ---
     return `Hello ${userName}! With your background in ${userSkills.join(', ') || 'modern software engineering'}, I can help you generate comprehensive career roadmaps, analyze skill gaps for target roles, explain complex technical architectures, or discover matching jobs. What would you like to explore?`;
   }
 }
-
-
-

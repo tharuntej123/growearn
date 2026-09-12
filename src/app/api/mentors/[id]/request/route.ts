@@ -36,7 +36,6 @@ export async function POST(
       validated.data
     );
 
-    // Notify mentor
     await prisma.notification.create({
       data: {
         userId: mentor.userId,

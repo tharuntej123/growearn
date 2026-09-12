@@ -13,18 +13,14 @@ export interface JobMatchRequirement {
   title: string;
   description: string;
   requiredSkills: string[];
-  experienceLevel: string; // ENTRY, MID, SENIOR, LEAD
-  locationType: string; // REMOTE, ONSITE, HYBRID
+  experienceLevel: string;
+  locationType: string;
   country?: string;
   state?: string;
   city?: string;
 }
 
 export class HybridMatcher {
-  /**
-   * Calculates a 5-factor transparent explainable hybrid match score
-   * Skills: 50%, Experience: 20%, Location: 10%, Career Goal: 10%, AI Semantic: 10%
-   */
   static calculateJobMatch(
     user: UserMatchProfile,
     job: JobMatchRequirement
@@ -32,7 +28,6 @@ export class HybridMatcher {
     const userSkillsLower = user.skills.map((s) => s.toLowerCase().trim());
     const jobSkillsLower = job.requiredSkills.map((s) => s.toLowerCase().trim());
 
-    // 1. Skill Match (50% weight)
     const matchedSkills: string[] = [];
     const missingSkills: string[] = [];
 
@@ -52,7 +47,6 @@ export class HybridMatcher {
         ? Math.round((matchedSkills.length / jobSkillsLower.length) * 100)
         : 85;
 
-    // 2. Experience Match (20% weight)
     let requiredYears = 2;
     if (job.experienceLevel === 'ENTRY') requiredYears = 0;
     else if (job.experienceLevel === 'MID') requiredYears = 2;
@@ -64,7 +58,6 @@ export class HybridMatcher {
       expScore = Math.max(40, Math.round((user.yearsExperience / requiredYears) * 100));
     }
 
-    // 3. Location Match (10% weight)
     let locationScore = 100;
     let locationExplanation = 'Remote position — open globally';
 
@@ -92,7 +85,6 @@ export class HybridMatcher {
       }
     }
 
-    // 4. Career Goal Match (10% weight)
     let goalScore = 75;
     let goalExplanation = 'General alignment with career aspirations';
     if (user.careerGoal) {
@@ -112,7 +104,6 @@ export class HybridMatcher {
       }
     }
 
-    // 5. AI Semantic Score (10% weight)
     const combinedProfileText = `${user.headline || ''} ${user.bio || ''} ${user.skills.join(' ')}`.toLowerCase();
     const combinedJobText = `${job.title} ${job.description}`.toLowerCase();
     let semanticMatches = 0;
@@ -126,7 +117,6 @@ export class HybridMatcher {
     const semanticScore = Math.min(100, Math.max(60, 60 + semanticMatches * 8));
     const semanticReasoning = `Contextual domain similarity index evaluated at ${semanticScore}%`;
 
-    // Calculate weighted total: 50% + 20% + 10% + 10% + 10%
     const totalScore = Math.round(
       skillScore * 0.5 +
         expScore * 0.2 +
@@ -135,7 +125,6 @@ export class HybridMatcher {
         semanticScore * 0.1
     );
 
-    // Build human-readable explanation
     const matchDetails = matchedSkills.length > 0 ? `Matched: ${matchedSkills.join(', ')}` : 'No direct skill overlap';
     const gapDetails = missingSkills.length > 0 ? `• Missing: ${missingSkills.join(', ')}` : '• All required skills covered';
     const finalExplanation = `${totalScore}% Match — ${matchDetails}. ${gapDetails}. Experience (${user.yearsExperience} yrs vs ${requiredYears} yrs req).`;

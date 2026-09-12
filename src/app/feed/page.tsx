@@ -55,12 +55,10 @@ export default function FeedPage() {
   const [isPersonalized, setIsPersonalized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // New post state
   const [newContent, setNewContent] = useState('');
   const [postType, setPostType] = useState('GENERAL');
   const [isPosting, setIsPosting] = useState(false);
 
-  // Active comment box
   const [commentingPostId, setCommentingPostId] = useState<string | null>(null);
   const [commentText, setCommentText] = useState('');
 
@@ -176,7 +174,6 @@ export default function FeedPage() {
       <DashboardSidebar />
 
       <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto w-full space-y-6">
-        {/* Create Post Card */}
         <Card className="p-5 sm:p-6 bg-white border-slate-200/90 rounded-3xl shadow-sm space-y-4">
           <div className="flex items-start gap-3">
             <Avatar src={user?.avatarUrl} fallback={user?.name || 'User'} size="md" />
@@ -219,7 +216,6 @@ export default function FeedPage() {
           </div>
         </Card>
 
-        {/* Tab Switcher: For You vs Following vs Latest */}
         <div className="flex items-center justify-between border-b border-slate-200 pb-3">
           <div className="flex items-center gap-2">
             {[
@@ -248,7 +244,6 @@ export default function FeedPage() {
           )}
         </div>
 
-        {/* Posts Feed List */}
         {isLoading ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
@@ -268,7 +263,6 @@ export default function FeedPage() {
                   key={post.id}
                   className="p-5 sm:p-6 bg-white border-slate-200/90 rounded-3xl shadow-sm space-y-4"
                 >
-                  {/* Post Header */}
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       <Avatar src={post.author.avatarUrl} fallback={post.author.name} size="md" />
@@ -289,12 +283,10 @@ export default function FeedPage() {
                     )}
                   </div>
 
-                  {/* Post Content */}
                   <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line">
                     {post.content}
                   </p>
 
-                  {/* Actions Bar */}
                   <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs text-slate-500">
                     <button
                       onClick={() => handleLike(post.id)}
@@ -325,7 +317,6 @@ export default function FeedPage() {
                     </button>
                   </div>
 
-                  {/* Comments Section */}
                   {commentingPostId === post.id && (
                     <div className="pt-3 border-t border-slate-100 space-y-3">
                       <div className="flex gap-2">
@@ -342,7 +333,6 @@ export default function FeedPage() {
                         </Button>
                       </div>
 
-                      {/* Comments list */}
                       <div className="space-y-2 max-h-40 overflow-y-auto">
                         {post.comments?.map((c) => (
                           <div key={c.id} className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-0.5">

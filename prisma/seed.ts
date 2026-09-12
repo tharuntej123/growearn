@@ -6,7 +6,6 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting comprehensive database seed for Unified Freelancing Platform...');
 
-  // Clean existing data
   await prisma.notification.deleteMany();
   await prisma.aIInteraction.deleteMany();
   await prisma.aIRecommendation.deleteMany();
@@ -48,7 +47,6 @@ async function main() {
 
   const demoPasswordHash = await bcrypt.hash('Demo1234!', 10);
 
-  // 1. Create Skills (30 skills)
   const skillsData = [
     { name: 'TypeScript', category: 'Frontend' },
     { name: 'React', category: 'Frontend' },
@@ -89,8 +87,6 @@ async function main() {
   }
   console.log(`✅ Seeded ${skillsData.length} technical skills.`);
 
-  // 2. Demo Users & Realistic Personas
-  // Demo Student
   const demoStudent = await prisma.user.create({
     data: {
       email: 'student@example.com',
@@ -121,7 +117,6 @@ async function main() {
     },
   });
 
-  // Demo Mentor
   const demoMentor = await prisma.user.create({
     data: {
       email: 'mentor@example.com',
@@ -164,7 +159,6 @@ async function main() {
     },
   });
 
-  // Demo Professional
   const demoProfessional = await prisma.user.create({
     data: {
       email: 'professional@example.com',
@@ -197,7 +191,6 @@ async function main() {
     },
   });
 
-  // Demo Company
   const demoCompany = await prisma.user.create({
     data: {
       email: 'company@example.com',
@@ -224,7 +217,6 @@ async function main() {
     },
   });
 
-  // Additional Realistic Users
   const additionalUsers = [
     { name: 'Rahul Sharma', email: 'rahul.sharma@example.com', role: 'LEARNER', city: 'Chennai', state: 'Tamil Nadu', title: 'React & Node.js Enthusiast' },
     { name: 'Priya Sundaram', email: 'priya.sundaram@example.com', role: 'PROFESSIONAL', city: 'Chennai', state: 'Tamil Nadu', title: 'Mobile Developer (Flutter & React Native)' },
@@ -291,7 +283,6 @@ async function main() {
   }
   console.log(`✅ Seeded demo accounts and ${additionalUsers.length} active users.`);
 
-  // 3. Assign Skills to Users
   const studentSkills = ['Java', 'PostgreSQL', 'TypeScript', 'React'];
   for (const sk of studentSkills) {
     if (createdSkills[sk]) {
@@ -336,7 +327,6 @@ async function main() {
     }
   }
 
-  // 4. Seed 15 Comprehensive Courses
   const coursesData = [
     {
       instructorId: demoMentor.id,
@@ -498,7 +488,6 @@ async function main() {
   }
   console.log(`✅ Seeded ${coursesData.length} courses with full modules & lessons.`);
 
-  // Enroll demo student into Spring Boot course
   const firstCourse = await prisma.course.findFirst({ where: { slug: 'spring-boot-3-microservices' } });
   if (firstCourse) {
     await prisma.enrollment.create({
@@ -511,7 +500,6 @@ async function main() {
     });
   }
 
-  // 5. Seed 25 Realistic Jobs (Local & Global)
   const jobsData = [
     {
       companyId: demoCompany.id,
@@ -627,7 +615,6 @@ async function main() {
   }
   console.log(`✅ Seeded ${jobsData.length} realistic jobs with skills.`);
 
-  // 6. Seed 20 Professional Feed Posts
   const postsData = [
     {
       authorId: demoProfessional.id,
@@ -679,7 +666,6 @@ async function main() {
       },
     });
 
-    // Add a comment to each
     await prisma.comment.create({
       data: {
         postId: post.id,
@@ -690,7 +676,6 @@ async function main() {
   }
   console.log(`✅ Seeded ${postsData.length} professional social feed posts with comments.`);
 
-  // 7. Seed AI Profile & Career Roadmap for Demo Student
   await prisma.aIProfile.create({
     data: {
       userId: demoStudent.id,
@@ -734,7 +719,6 @@ async function main() {
   }
   console.log(`✅ Seeded AI Profile and structured Career Roadmap for Alex Chen.`);
 
-  // 8. Seed Mentorship Request
   const mentorProfile = await prisma.mentorProfile.findUnique({ where: { userId: demoMentor.id } });
   if (mentorProfile) {
     const req = await prisma.mentorshipRequest.create({
@@ -752,7 +736,7 @@ async function main() {
         requestId: req.id,
         studentId: demoStudent.id,
         mentorId: mentorProfile.id,
-        scheduledAt: new Date(Date.now() + 86400000 * 2), // 2 days from now
+        scheduledAt: new Date(Date.now() + 86400000 * 2),
         durationMinutes: 60,
         price: 85,
         status: 'SCHEDULED',
@@ -760,7 +744,6 @@ async function main() {
     });
   }
 
-  // 9. Seed Reviews & Ratings
   await prisma.review.create({
     data: {
       authorId: demoStudent.id,
@@ -781,7 +764,6 @@ async function main() {
     },
   });
 
-  // 10. Seed Notifications
   await prisma.notification.createMany({
     data: [
       {

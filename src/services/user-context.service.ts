@@ -53,12 +53,6 @@ export interface UserAIContext {
   } | null;
 }
 
-/**
- * Retrieve authenticated user's unified AI & profile context.
- * Single source of truth across AI, Roadmaps, Dashboards, and Recommendation services.
- * 
- * CRITICAL RULE: NEVER invent or assume user skills or goals if they do not exist.
- */
 export async function getUserAIContext(userId: string): Promise<UserAIContext | null> {
   if (!userId) return null;
 
@@ -92,14 +86,12 @@ export async function getUserAIContext(userId: string): Promise<UserAIContext | 
 
   if (!user) return null;
 
-  // Extract user's actual skills only
   const userSkills = user.skills.map((us) => us.skill.name.trim()).filter(Boolean);
   const skillLevels: Record<string, string> = {};
   user.skills.forEach((us) => {
     skillLevels[us.skill.name.trim()] = us.proficiencyLevel;
   });
 
-  // Calculate completeness flags
   const hasSkills = userSkills.length > 0;
   const hasCareerGoal = Boolean(user.profile?.careerGoal?.trim());
   const hasTargetRole = Boolean(user.profile?.targetRole?.trim());
@@ -111,8 +103,7 @@ export async function getUserAIContext(userId: string): Promise<UserAIContext | 
   const isOnboarded = Boolean(user.profile?.isOnboarded && hasSkills);
   const isNewUser = !isOnboarded || !hasSkills;
 
-  // Compute profile completion percentage
-  let score = 15; // Base account creation
+  let score = 15;
   const missingItems: string[] = [];
 
   if (hasSkills) score += 20;
@@ -138,7 +129,6 @@ export async function getUserAIContext(userId: string): Promise<UserAIContext | 
 
   const completionPercentage = Math.min(100, score);
 
-  // Parse roadmap phases if present
   let roadmapData = null;
   if (user.careerRoadmap) {
     let phases: any[] = [];
@@ -172,7 +162,6 @@ export async function getUserAIContext(userId: string): Promise<UserAIContext | 
     };
   }
 
-  // Parse interests
   let interests: string[] = [];
   if (user.profile?.interests) {
     try {

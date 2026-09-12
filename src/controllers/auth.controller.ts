@@ -20,13 +20,12 @@ export class AuthController {
 
       const result = await AuthService.register(validated.data);
       const response = apiSuccess(result, 201);
-      
-      // Set secure auth cookie
+
       response.cookies.set(AUTH_COOKIE_NAME, result.token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
+        maxAge: 60 * 60 * 24 * 7,
         path: '/',
       });
 
@@ -52,12 +51,11 @@ export class AuthController {
       const result = await AuthService.login(validated.data);
       const response = apiSuccess(result, 200);
 
-      // Set cookie
       response.cookies.set(AUTH_COOKIE_NAME, result.token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
+        maxAge: 60 * 60 * 24 * 7,
         path: '/',
       });
 

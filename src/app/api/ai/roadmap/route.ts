@@ -21,7 +21,6 @@ export async function POST(req: NextRequest) {
 
     const roadmap = CareerRoadmapService.generate(skills, targetRole, exp, goal);
 
-    // If authenticated, persist roadmap in database
     if (authUser) {
       const existing = await prisma.careerRoadmap.findUnique({
         where: { userId: authUser.id },

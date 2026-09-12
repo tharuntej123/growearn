@@ -22,7 +22,6 @@ async function runAITests() {
     }
   }
 
-  // 1. Test AIAssistantService General Questions (Exact Answers)
   console.log('--- 1. Testing AIAssistantService.answer (Technical Q&A) ---');
   try {
     const q1 = await AIAssistantService.answer('What is a REST API?', null);
@@ -36,7 +35,6 @@ async function runAITests() {
     assert(false, 'AIAssistantService general question', err.message);
   }
 
-  // 2. Test AIAssistantService Roadmap Generation with Visual Flow
   console.log('\n--- 2. Testing AIAssistantService.answer (Roadmap Flow) ---');
   try {
     const userContext: any = {
@@ -57,7 +55,6 @@ async function runAITests() {
     assert(qRoadmap.directAnswer.includes('┌───'), 'Contains visual ASCII learning flow diagram');
     assert(qRoadmap.directAnswer.includes('Milestone Project'), 'Contains milestone projects');
 
-    // Test clicking button string variants
     const qClick = await AIAssistantService.answer('View Career Roadmap', userContext);
     assert(qClick.intent === 'ROADMAP', 'Classifies "View Career Roadmap" as ROADMAP');
     assert(qClick.directAnswer.includes('Step-by-Step Learning & Career Roadmap'), 'Delivers full roadmap directly without looping');
@@ -65,7 +62,6 @@ async function runAITests() {
     assert(false, 'AIAssistantService roadmap generation', err.message);
   }
 
-  // 3. Test AIAssistantService Skill Analysis
   console.log('\n--- 3. Testing AIAssistantService.answer (Skill Gap Analysis) ---');
   try {
     const contextMock: any = {
@@ -84,7 +80,6 @@ async function runAITests() {
     assert(false, 'AIAssistantService skill analysis', err.message);
   }
 
-  // 4. Test AIService.improveMessage
   console.log('\n--- 4. Testing AIService.improveMessage ---');
   try {
     const res = await AIService.improveMessage('hi can u tell me about this job', 'professional');
@@ -94,7 +89,6 @@ async function runAITests() {
     assert(false, 'AIService improveMessage', err.message);
   }
 
-  // 5. Test Career Roadmap Generation Service
   console.log('\n--- 5. Testing CareerRoadmapService.generate ---');
   try {
     const roadmap = CareerRoadmapService.generate(['React', 'TypeScript'], 'Frontend Engineer', 'Beginner');
@@ -104,7 +98,6 @@ async function runAITests() {
     assert(false, 'CareerRoadmapService generate', err.message);
   }
 
-  // 6. Test Resume Skill Extractor
   console.log('\n--- 6. Testing AIService.extractResumeSkills ---');
   try {
     const extracted = await AIService.extractResumeSkills('Experienced with Java, Spring Boot, PostgreSQL, Docker, and React.');
@@ -126,4 +119,3 @@ runAITests().catch((err) => {
   console.error('Fatal AI test error:', err);
   process.exit(1);
 });
-
