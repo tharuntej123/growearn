@@ -39,7 +39,7 @@ function getDefaultDashboard(normalizedRole: string): string {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Ignore static assets, next internal files, and api health check
+  // Ignore static assets, next internal files, and api routes
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
@@ -66,12 +66,6 @@ export async function middleware(req: NextRequest) {
   const normalizedRole = getNormalizedRole(userPayload?.role);
   const isAuthenticated = Boolean(userPayload);
 
-  // If already authenticated and trying to access login/signup, redirect to their role dashboard
-  if (isAuthenticated && (pathname === '/login' || pathname === '/signup')) {
-    const targetDashboard = getDefaultDashboard(normalizedRole);
-    return NextResponse.redirect(new URL(targetDashboard, req.url));
-  }
-
   // 1. Student / Learner Route Protection: /student/*
   if (pathname.startsWith('/student')) {
     if (!isAuthenticated) {
@@ -80,7 +74,6 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
     if (normalizedRole !== 'STUDENT' && normalizedRole !== 'ADMIN') {
-      // Forbidden for non-student roles -> redirect to user's authorized dashboard
       const properDashboard = getDefaultDashboard(normalizedRole);
       return NextResponse.redirect(new URL(properDashboard, req.url));
     }
@@ -94,7 +87,6 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
     if (normalizedRole !== 'COMPANY' && normalizedRole !== 'ADMIN') {
-      // Forbidden for students, mentors, professionals -> redirect to user's authorized dashboard
       const properDashboard = getDefaultDashboard(normalizedRole);
       return NextResponse.redirect(new URL(properDashboard, req.url));
     }
@@ -147,7 +139,5 @@ export const config = {
     '/professional/:path*',
     '/freelancer/:path*',
     '/onboarding/:path*',
-    '/login',
-    '/signup',
   ],
 };

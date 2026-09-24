@@ -21,13 +21,6 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  React.useEffect(() => {
-    if (user) {
-      const target = ROLE_INFO[user.role]?.defaultDashboard || '/feed';
-      router.push(target);
-    }
-  }, [user, router]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
