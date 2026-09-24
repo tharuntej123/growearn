@@ -410,7 +410,7 @@ model MentorshipBooking {
   durationMinutes Int               @default(60)
   price           Float             @default(50)
   status          String            @default("SCHEDULED") // SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED
-  meetingUrl      String?           @default("https://meet.jit.si/ufp-mentorship-session")
+  meetingUrl      String?           @default("https://meet.jit.si/growearn-mentorship-session")
   feedback        String?
   createdAt       DateTime          @default(now())
 }

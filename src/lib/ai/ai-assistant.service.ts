@@ -347,7 +347,7 @@ from pydantic import BaseModel, Field
 from typing import List
 import asyncio
 
-app = FastAPI(title="Groearn AI Pipeline API")
+app = FastAPI(title="Growearn AI Pipeline API")
 
 class CandidateProfile(BaseModel):
     name: str
@@ -532,7 +532,7 @@ Decouples client business logic from concrete implementations, adhering to the *
         qLower.includes('how does groearn work') ||
         qLower.includes('how does growearn work')
       ) {
-        answer = `**Groearn** is an all-in-one AI career ecosystem and talent platform connecting 4 distinct profiles:
+        answer = `**Growearn** is an all-in-one AI career ecosystem and talent platform connecting 4 distinct profiles:
 
 1. 👨‍🎓 **Learner**: Explore in-demand tech roles, generate customized AI Roadmaps, track competencies in "What I Learn", and manage resumes.
 2. 👨‍🏫 **Mentor**: Conduct 1-on-1 coaching sessions and author courses with syllabus and study material uploads.
@@ -604,7 +604,7 @@ Here is a quick breakdown to guide you:
         orderBy: { rating: 'desc' },
       });
 
-      let answer = `Yes! The following verified industry leaders and mentors are actively available on **Groearn** for 1-on-1 coaching, architecture reviews, and mock interviews:\n\n`;
+      let answer = `Yes! The following verified industry leaders and mentors are actively available on **Growearn** for 1-on-1 coaching, architecture reviews, and mock interviews:\n\n`;
       mentors.forEach((m) => {
         answer += `• **${m.user.name}** — ${m.user.headline || 'Senior Architect'}\n`;
         answer += `  Expertise: \`${m.expertise}\` • Rate: **$${m.hourlyRate}/hr** • Rating: **⭐ ${m.rating}**\n\n`;

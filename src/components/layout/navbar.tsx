@@ -77,7 +77,7 @@ export function Navbar() {
             </div>
             <div className="flex flex-col">
               <span className="font-bold text-base tracking-tight text-slate-900 group-hover:text-emerald-600 transition-colors">
-                Groearn
+                Growearn
               </span>
               <span className="text-[10px] -mt-1 font-medium text-slate-500 tracking-wider uppercase">
                 Learn • Work • Grow

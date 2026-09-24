@@ -1,7 +1,7 @@
-# Groearn — Career-to-Earning Ecosystem
+# Growearn — Career-to-Earning Ecosystem
 > **“Learn. Earn. Work. Grow — All in One.”**
 
-Groearn is an AI-powered career-to-earning ecosystem that continuously identifies what a person can do, what they need to learn, which opportunities they are actually ready for, and how to help them successfully transition from learning to earning.
+Growearn is an AI-powered career-to-earning ecosystem that continuously identifies what a person can do, what they need to learn, which opportunities they are actually ready for, and how to help them successfully transition from learning to earning.
 
 ---
 
@@ -131,7 +131,7 @@ graph TD
 ## 📁 Repository Directory Structure
 
 ```
-g:/ufp/
+growearn/
 ├── .github/
 │   └── workflows/
 │       └── ci.yml               # GitHub Actions CI pipeline configuration
@@ -234,7 +234,7 @@ Create a `.env` file in the project root based on `.env.example`:
 DATABASE_URL="postgresql://user:password@ep-example-pooler.neon.tech/neondb?sslmode=require"
 
 # Authentication
-JWT_SECRET="ufp-super-secret-jwt-key-2026-production-grade"
+JWT_SECRET="growearn-super-secret-jwt-key-2026-production-grade"
 JWT_EXPIRES_IN="7d"
 
 # AI Configuration (Groq High-Speed API)

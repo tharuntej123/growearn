@@ -105,7 +105,7 @@ export default function LandingPage() {
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-800 mb-8 shadow-xs">
           <Sparkles className="h-4 w-4 text-emerald-600 animate-pulse" />
           <span className="text-xs font-semibold">
-            Groearn — The Unified Career & Talent Ecosystem
+            Growearn — The Unified Career & Talent Ecosystem
           </span>
         </div>
 

@@ -152,7 +152,7 @@ export default function AIAssistantPage() {
     {
       id: 'm-1',
       sender: 'ai',
-      text: `Hello ${userFirstName}! I am your Groearn AI Career Assistant. How can I help you today? You can ask me technical questions (like "What is a REST API?"), request structured career roadmaps (like "Give me a roadmap for Backend Developer"), or analyze your skills.`,
+      text: `Hello ${userFirstName}! I am your Growearn AI Career Assistant. How can I help you today? You can ask me technical questions (like "What is a REST API?"), request structured career roadmaps (like "Give me a roadmap for Backend Developer"), or analyze your skills.`,
       actions: [],
     },
   ]);
@@ -242,7 +242,7 @@ export default function AIAssistantPage() {
             <div className="flex items-center gap-2">
               <Sparkles className="h-6 w-6 text-emerald-600 animate-pulse" />
               <h1 className="text-2xl sm:3xl font-bold text-slate-900 tracking-tight">
-                Groearn AI Assistant
+                Growearn AI Assistant
               </h1>
             </div>
             <p className="text-xs sm:text-sm text-slate-600 mt-1">

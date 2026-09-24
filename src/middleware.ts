@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'ufp-super-secret-jwt-key-2026-production-grade'
+  process.env.JWT_SECRET || 'growearn-super-secret-jwt-key-2026-production-grade'
 );
 
-const AUTH_COOKIE_NAME = 'ufp_auth_token';
+const AUTH_COOKIE_NAME = 'growearn_auth_token';
+const LEGACY_COOKIE_NAME = 'ufp_auth_token';
 
 // Normalize user roles into canonical categories
 function getNormalizedRole(rawRole?: string): 'STUDENT' | 'COMPANY' | 'MENTOR' | 'PROFESSIONAL' | 'ADMIN' | 'UNKNOWN' {
@@ -51,7 +52,7 @@ export async function middleware(req: NextRequest) {
   }
 
   // Retrieve token from cookies
-  const token = req.cookies.get(AUTH_COOKIE_NAME)?.value;
+  const token = req.cookies.get(AUTH_COOKIE_NAME)?.value || req.cookies.get(LEGACY_COOKIE_NAME)?.value;
   let userPayload: { userId: string; email: string; role: string; name: string } | null = null;
 
   if (token) {

@@ -7,7 +7,7 @@ import { LangChainRAGService } from '../ai/rag/langchain-agent';
 
 async function runGroqSuite() {
   console.log('====================================================');
-  console.log('🚀 TESTING COMPLETE GROQ AI SUITE FOR GROEARN');
+  console.log('🚀 TESTING COMPLETE GROQ AI SUITE FOR GROWEARN');
   console.log('====================================================\n');
 
   console.log('1. Checking Groq Provider Detection...');
@@ -20,7 +20,7 @@ async function runGroqSuite() {
   console.log('\n2. Testing Live Groq Chat Completion...');
   const directChat = await GrokLLMClient.complete({
     messages: [
-      { role: 'system', content: 'You are an AI assistant on Groearn. Answer concisely.' },
+      { role: 'system', content: 'You are an AI assistant on Growearn. Answer concisely.' },
       { role: 'user', content: 'What is Python in 1 sentence?' },
     ],
     temperature: 0.2,

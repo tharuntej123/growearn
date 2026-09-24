@@ -46,12 +46,13 @@ Or error format:
 - `GET /api/mentors/:id` — Mentor public profile & ratings
 - `POST /api/mentors/:id/request` — Request 1-on-1 mentorship session
 
-### AI Services
+### AI & RAG Services
+- `POST /api/ai/rag-recommendations` — Execute grounded RAG vector retrieval (4-phase roadmap, top 5 courses, top 5 mentors)
 - `POST /api/ai/skill-analysis` — Generate skill gap analysis
 - `POST /api/ai/roadmap` — Generate structured career roadmap
 - `POST /api/ai/proposal` — Generate tailored freelance proposal
 - `POST /api/ai/message` — Polish message with specified tone
-- `POST /api/ai/chat` — Authenticated career assistant conversation
+- `POST /api/ai/chat` — Authenticated career assistant conversation with LangChain RAG agent
 - `POST /api/ai/resume-parse` — Extract skills from resume text
 
 ### Social & Feed

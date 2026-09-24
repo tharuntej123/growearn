@@ -342,7 +342,7 @@ export default function MentorDashboardPage() {
         <div className="space-y-4 pt-2">
           <div>
             <h2 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
-              <Compass className="h-5 w-5 text-emerald-600" /> Share with Groearn Community
+              <Compass className="h-5 w-5 text-emerald-600" /> Share with Growearn Community
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">Post architectural tips, course updates, and open mentorship slots.</p>
           </div>

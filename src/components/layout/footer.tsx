@@ -13,13 +13,13 @@ export function Footer() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-tr from-emerald-600 to-teal-600 text-white shadow-xs">
               <Sparkles className="h-4 w-4" />
             </div>
-            <span className="font-bold text-slate-900 text-base">Groearn</span>
+            <span className="font-bold text-slate-900 text-base">Growearn</span>
           </div>
           <p className="text-xs text-slate-600 leading-relaxed">
             The AI-powered talent ecosystem bridging learning, 1-on-1 mentorship, professional work contracts, and intelligent hiring.
           </p>
           <div className="flex items-center gap-3 text-slate-400">
-            <Link href="https://github.com" className="hover:text-emerald-600 transition-colors"><Globe className="h-4 w-4" /></Link>
+            <Link href="https://github.com/tharuntej123/growearn" className="hover:text-emerald-600 transition-colors"><Globe className="h-4 w-4" /></Link>
             <Link href="https://linkedin.com" className="hover:text-emerald-600 transition-colors"><Code2 className="h-4 w-4" /></Link>
           </div>
         </div>
@@ -58,8 +58,8 @@ export function Footer() {
       </div>
 
       <div className="mx-auto max-w-7xl mt-8 pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500">
-        <p>© 2026 Groearn. All rights reserved.</p>
-        <p>Built with Next.js 15, TypeScript, Prisma, and Tailwind CSS.</p>
+        <p>© 2026 Growearn. All rights reserved.</p>
+        <p>Built with Next.js 16, TypeScript, Prisma, and Tailwind CSS.</p>
       </div>
     </footer>
   );

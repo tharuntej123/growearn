@@ -5,7 +5,7 @@ import { Navbar } from '@/components/layout/navbar';
 import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
-  title: 'Groearn — AI Career Ecosystem & Talent Platform',
+  title: 'Growearn — AI Career Ecosystem & Talent Platform',
   description:
     'An AI-powered professional ecosystem unifying e-learning, mentorship, professional freelance/local jobs, and talent hiring into one connected platform.',
 };

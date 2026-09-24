@@ -532,7 +532,7 @@ export class RAGDatabaseEngine {
     return {
       skill,
       targetRole: `${skill} Specialist / Engineer`,
-      summary: `Tailored ${phases.length}-phase learning roadmap powered by Groearn RAG database to master ${skill} and build a job-ready portfolio.`,
+      summary: `Tailored ${phases.length}-phase learning roadmap powered by Growearn RAG database to master ${skill} and build a job-ready portfolio.`,
       currentLevel: currentExp,
       estimatedDurationWeeks: totalWeeks,
       phases,

@@ -67,7 +67,7 @@ export default function SignupPage() {
           </div>
           <CardTitle className="text-2xl font-bold text-slate-900">Create Your Account</CardTitle>
           <CardDescription className="text-xs text-slate-500">
-            Join Groearn for learning, contract projects, and mentorship
+            Join Growearn for learning, contract projects, and mentorship
           </CardDescription>
         </CardHeader>
 

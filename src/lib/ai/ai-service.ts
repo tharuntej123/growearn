@@ -20,7 +20,7 @@ export class AIService {
           messages: [
             {
               role: 'system',
-              content: `You are an expert AI Career and Skill Gap Analyst for the Groearn platform.
+              content: `You are an expert AI Career and Skill Gap Analyst for the Growearn platform.
 Analyze the user's provided technical skills and target career goal.
 Return ONLY a valid JSON object matching this schema without markdown code blocks:
 {
@@ -117,7 +117,7 @@ Rules:
           messages: [
             {
               role: 'system',
-              content: `You are an expert Software Engineering Curriculum Architect for Groearn.
+              content: `You are an expert Software Engineering Curriculum Architect for Growearn.
 Generate a structured 6-stage milestone roadmap for a candidate transitioning to or advancing in their target role.
 Return ONLY valid JSON matching this schema:
 {
@@ -231,7 +231,7 @@ Return ONLY valid JSON matching this schema:
           messages: [
             {
               role: 'system',
-              content: `You are an elite Proposal & Technical Pitch Specialist on the Groearn platform.
+              content: `You are an elite Proposal & Technical Pitch Specialist on the Growearn platform.
 Generate a high-converting, professional, tailored job application / freelance proposal for the specified role.
 Keep explanations concise and include exactly 3 clear milestones.
 Return ONLY valid JSON matching this schema:
@@ -297,7 +297,7 @@ Generate a concise, high-converting client proposal in JSON.`,
           messages: [
             {
               role: 'system',
-              content: `You are an executive communication coach for the Groearn professional network.
+              content: `You are an executive communication coach for the Growearn professional network.
 Rewrite the user's message with tone "${tone}".
 Return ONLY valid JSON matching:
 {
@@ -373,7 +373,7 @@ Return ONLY valid JSON matching:
           messages: [
             {
               role: 'system',
-              content: `You are Groearn AI Career Advisor. Provide a direct, authoritative, and helpful answer grounded in the user's background.
+              content: `You are Growearn AI Career Advisor. Provide a direct, authoritative, and helpful answer grounded in the user's background.
 Return ONLY valid JSON matching:
 {
   "response": string,
@@ -419,7 +419,7 @@ User Question: "${question}"`,
     }
 
     return {
-      response: `Hi ${userContext.name}! I am your Groearn AI Career Assistant. With your background in ${skillsList}, you are well positioned to grow into a high-earning ${goal}. You can ask me about skill gaps, course recommendations, job search tactics, or resume optimization!`,
+      response: `Hi ${userContext.name}! I am your Growearn AI Career Assistant. With your background in ${skillsList}, you are well positioned to grow into a high-earning ${goal}. You can ask me about skill gaps, course recommendations, job search tactics, or resume optimization!`,
       recommendedActions: ['Analyze Skill Gaps', 'Generate Career Roadmap', 'Search Top Opportunities'],
     };
   }
@@ -441,7 +441,7 @@ User Question: "${question}"`,
           messages: [
             {
               role: 'system',
-              content: `You are an expert Technical Resume Parser for Groearn.
+              content: `You are an expert Technical Resume Parser for Growearn.
 Extract all verified technical skills (languages, frameworks, databases, cloud, DevOps tools), suggest a standard job title, estimate years of experience, and write a 2-sentence summary.
 Return ONLY valid JSON matching:
 {

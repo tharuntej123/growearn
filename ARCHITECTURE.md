@@ -1,4 +1,4 @@
-# Groearn Architecture & System Design Guide
+# Growearn Architecture & System Design Guide
 
 > **Enterprise 4-Tier Architecture: Frontend • Backend • AI & RAG • Database**  
 > *A comprehensive technical blueprint and interview walkthrough guide.*
@@ -7,7 +7,7 @@
 
 ## 🏛️ System Architecture Overview
 
-Groearn is architected as an **enterprise-grade, full-stack career-to-earning ecosystem** combining Next.js App Router, stateless JWT authentication with Role-Based Access Control (RBAC), a custom Retrieval-Augmented Generation (RAG) vector database engine, and a PostgreSQL persistence layer managed by Prisma ORM.
+Growearn is architected as an **enterprise-grade, full-stack career-to-earning ecosystem** combining Next.js App Router, stateless JWT authentication with Role-Based Access Control (RBAC), a custom Retrieval-Augmented Generation (RAG) vector database engine, and a PostgreSQL persistence layer managed by Prisma ORM.
 
 ```mermaid
 graph TD
@@ -107,11 +107,10 @@ graph TD
 ## 📂 Project Directory Structure
 
 ```
-g:\ufp\
+growearn/
 ├── prisma/                          # 🗄️ DATABASE PERSISTENCE TIER
 │   ├── schema.prisma                # Relational schema (22 entity models)
-│   ├── seed.ts                      # Production database seed script
-│   └── dev.db                       # Local development cache
+│   └── seed.ts                      # Production database seed script
 │
 ├── src/
 │   ├── app/                         # 🎨 FRONTEND PAGES & API ROUTE HANDLERS

@@ -90,7 +90,7 @@ export default function RoleSelectPage() {
             <span>Choose Your Dedicated Profile</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-            How do you want to use Groearn?
+            How do you want to use Growearn?
           </h1>
           <p className="mt-2 text-sm text-slate-600 max-w-xl mx-auto leading-relaxed">
             Select your primary profile. This tailors your dashboard, AI roadmap recommendations, and workspace tools.

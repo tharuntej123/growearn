@@ -271,7 +271,7 @@ export default function FeedPage() {
                           <h4 className="font-bold text-sm text-slate-900">{post.author.name}</h4>
                           <Badge variant="outline" className="text-[10px] bg-slate-50">{post.author.role}</Badge>
                         </div>
-                        <p className="text-xs text-slate-500 line-clamp-1">{post.author.headline || 'Groearn Member'}</p>
+                        <p className="text-xs text-slate-500 line-clamp-1">{post.author.headline || 'Growearn Member'}</p>
                         <p className="text-[10px] text-slate-400">{formatDate(post.createdAt)}</p>
                       </div>
                     </div>

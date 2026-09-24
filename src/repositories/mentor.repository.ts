@@ -139,7 +139,7 @@ export class MentorRepository {
         scheduledAt: data.scheduledAt,
         durationMinutes: data.durationMinutes,
         price: data.price,
-        meetingUrl: data.meetingUrl || 'https://meet.jit.si/ufp-mentorship-session',
+        meetingUrl: data.meetingUrl || 'https://meet.jit.si/growearn-mentorship-session',
         status: 'SCHEDULED',
       },
     });

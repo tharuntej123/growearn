@@ -60,7 +60,7 @@ export default function LoginPage() {
           </div>
           <CardTitle className="text-2xl font-bold text-slate-900">Welcome Back</CardTitle>
           <CardDescription className="text-xs text-slate-500">
-            Sign in to access your Groearn workspace
+            Sign in to access your Growearn workspace
           </CardDescription>
         </CardHeader>
 

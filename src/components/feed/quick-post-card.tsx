@@ -46,7 +46,7 @@ export function QuickPostCard({ onPostCreated, placeholder }: QuickPostCardProps
       });
       const json = await res.json();
       if (json.success && json.data?.post) {
-        toast.success('Post published to Groearn community feed!');
+        toast.success('Post published to Growearn community feed!');
         setContent('');
         setMediaUrl('');
         setShowMediaInput(false);

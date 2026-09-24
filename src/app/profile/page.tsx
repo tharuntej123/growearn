@@ -308,7 +308,7 @@ export default function ProfilePage() {
 
           <div className="mt-6 pt-6 border-t border-slate-100 text-xs sm:text-sm text-slate-600 leading-relaxed">
             <p className="font-bold text-slate-900 mb-1">About</p>
-            <p>{p?.bio || 'Building modern software solutions and mastering full-stack engineering principles with Groearn.'}</p>
+            <p>{p?.bio || 'Building modern software solutions and mastering full-stack engineering principles with Growearn.'}</p>
           </div>
         </Card>
 

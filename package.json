@@ -1,5 +1,5 @@
 {
-  "name": "ufp",
+  "name": "growearn",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,10 +9,10 @@
     "lint": "eslint .",
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
-
     "prisma:push": "prisma db push",
     "prisma:seed": "tsx prisma/seed.ts",
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts",
+    "test": "tsx src/lib/__tests__/ai-assistant-grok.test.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

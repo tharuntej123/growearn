@@ -179,7 +179,7 @@ export default function StudentDashboardPage() {
                 </h1>
 
                 <p className="text-xs sm:text-sm text-slate-600 mt-1.5 max-w-2xl leading-relaxed">
-                  Choose any skill or topic below to activate the <span className="font-bold text-emerald-700">Groearn RAG Engine</span>. It retrieves the exact <span className="font-bold text-slate-800">4-Phase AI Roadmap</span>, the <span className="font-bold text-slate-800">Top 5 Matching Courses</span>, and the <span className="font-bold text-slate-800">Top 5 Verified Mentors</span> from our live platform database.
+                  Choose any skill or topic below to activate the <span className="font-bold text-emerald-700">Growearn RAG Engine</span>. It retrieves the exact <span className="font-bold text-slate-800">4-Phase AI Roadmap</span>, the <span className="font-bold text-slate-800">Top 5 Matching Courses</span>, and the <span className="font-bold text-slate-800">Top 5 Verified Mentors</span> from our live platform database.
                 </p>
               </div>
 
@@ -418,7 +418,7 @@ export default function StudentDashboardPage() {
                       )}
 
                       <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
-                        <span>Instructor: <strong className="text-slate-700">{course.instructor?.name || 'Groearn Mentor'}</strong></span>
+                        <span>Instructor: <strong className="text-slate-700">{course.instructor?.name || 'Growearn Mentor'}</strong></span>
                         <span className="font-bold text-amber-600">★ {course.rating || '4.9'}</span>
                       </div>
                     </div>

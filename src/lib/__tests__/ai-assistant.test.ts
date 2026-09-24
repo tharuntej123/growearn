@@ -5,7 +5,7 @@ import { CareerRoadmapService } from '../ai/roadmap.service';
 
 async function runAITests() {
   console.log('==============================================');
-  console.log('🚀 RUNNING GROEARN AI ASSISTANT TEST SUITE');
+  console.log('🚀 RUNNING GROWEARN AI ASSISTANT TEST SUITE');
   console.log('==============================================\n');
 
   let passed = 0;

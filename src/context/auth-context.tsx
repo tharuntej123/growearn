@@ -37,7 +37,8 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-const USER_STORAGE_KEY = 'ufp_user_session';
+const USER_STORAGE_KEY = 'growearn_user_session';
+const LEGACY_STORAGE_KEY = 'ufp_user_session';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -52,6 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(newUser));
         } else {
           localStorage.removeItem(USER_STORAGE_KEY);
+          localStorage.removeItem(LEGACY_STORAGE_KEY);
         }
       } catch {}
     }
@@ -81,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // 1. First hydrate quickly from localStorage cache if present
     if (typeof window !== 'undefined') {
       try {
-        const cached = localStorage.getItem(USER_STORAGE_KEY);
+        const cached = localStorage.getItem(USER_STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
         if (cached) {
           const parsed = JSON.parse(cached);
           setUser(parsed);

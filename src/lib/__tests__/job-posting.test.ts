@@ -4,7 +4,7 @@ import { JobRepository } from '../../repositories/job.repository';
 
 async function runTests() {
   console.log('==============================================');
-  console.log('🚀 RUNNING GROEARN V4 INTEGRATION TEST SUITE');
+  console.log('🚀 RUNNING GROWEARN V4 INTEGRATION TEST SUITE');
   console.log('==============================================\n');
 
   let passed = 0;
