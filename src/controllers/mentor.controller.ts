@@ -1,0 +1,32 @@
+import { NextRequest } from 'next/server';
+import { getCurrentUser } from '@/lib/auth';
+import { apiSuccess, apiError } from '@/lib/utils';
+import { getUserAIContext } from '@/services/user-context.service';
+import { RecommendationService } from '@/services/recommendation.service';
+
+export class MentorController {
+  static async getMentors(req: NextRequest) {
+    try {
+      const authUser = await getCurrentUser(req);
+      let userContext = null;
+      if (authUser) {
+        userContext = await getUserAIContext(authUser.id);
+      }
+
+      const { mentors, isPersonalized, label } = await RecommendationService.getMentors(userContext, 50);
+
+      return apiSuccess({
+        mentors,
+        isPersonalized,
+        label,
+      });
+    } catch (error: any) {
+      console.error('[Mentors:FetchError]', error);
+      return apiError(
+        error.message || 'Failed to fetch mentors',
+        'INTERNAL_ERROR',
+        500
+      );
+    }
+  }
+}
