@@ -22,10 +22,8 @@ export async function POST(req: NextRequest) {
       userContext = await getUserAIContext(authUser.id);
     }
 
-    // Execute RAG retrieval against application database
     const ragResult = await RAGDatabaseEngine.querySkillRAG(cleanSkill, userContext);
 
-    // If authenticated, persist the generated roadmap to the student's database record
     if (authUser) {
       try {
         await prisma.careerRoadmap.upsert({
@@ -49,7 +47,6 @@ export async function POST(req: NextRequest) {
           },
         });
 
-        // Also record an AI recommendation interaction
         await prisma.aIRecommendation.create({
           data: {
             userId: authUser.id,

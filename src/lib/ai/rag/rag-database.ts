@@ -78,7 +78,6 @@ export interface RAGSkillSearchResult {
   };
 }
 
-// Tokenize text into normalized words and n-grams for semantic scoring
 function tokenize(text: string): string[] {
   if (!text) return [];
   const normalized = text
@@ -93,7 +92,6 @@ function tokenize(text: string): string[] {
   return [...words, ...bigrams];
 }
 
-// Compute Cosine / TF-IDF Semantic Relevance Score (0 - 100)
 function computeSemanticMatchScore(
   queryTokens: string[],
   docTitle: string,
@@ -118,25 +116,21 @@ function computeSemanticMatchScore(
     if (token.length <= 1) continue;
     const isMultiWord = token.includes(' ');
 
-    // 1. Direct Skill Covered Match (Highest weight)
     if (skillsLower.some((s) => s === token || s.includes(token) || token.includes(s))) {
       rawPoints += isMultiWord ? 45 : 30;
       if (!matchedTerms.includes(token)) matchedTerms.push(token);
     }
 
-    // 2. Direct Title Match (High weight)
     if (titleLower.includes(token) || titleTokens.some((t) => t === token)) {
       rawPoints += isMultiWord ? 40 : 25;
       if (!matchedTerms.includes(token)) matchedTerms.push(token);
     }
 
-    // 3. Category Match
     if (catLower.includes(token) || catTokens.some((c) => c === token)) {
       rawPoints += 15;
       if (!matchedTerms.includes(token)) matchedTerms.push(token);
     }
 
-    // 4. Description Content Match
     if (descLower.includes(token)) {
       rawPoints += 6;
       if (!matchedTerms.includes(token)) matchedTerms.push(token);
@@ -172,7 +166,6 @@ export class RAGDatabaseEngine {
     const cleanSkill = (targetSkill || 'Full Stack Web Development').trim();
     const queryTokens = tokenize(cleanSkill);
 
-    // 1. Retrieve all published courses from application database
     const allCourses = await prisma.course.findMany({
       where: { isPublished: true },
       include: {
@@ -186,7 +179,6 @@ export class RAGDatabaseEngine {
       orderBy: { rating: 'desc' },
     });
 
-    // 2. Retrieve all active mentors from application database
     const allMentors = await prisma.mentorProfile.findMany({
       where: { isAvailable: true },
       include: {
@@ -207,7 +199,6 @@ export class RAGDatabaseEngine {
       orderBy: { rating: 'desc' },
     });
 
-    // 3. Compute semantic relevance score for Courses via RAG
     const scoredCourses: RAGCourseResult[] = allCourses.map((c) => {
       const skillsArr = c.skillsCovered
         ? c.skillsCovered.split(',').map((s) => s.trim()).filter(Boolean)
@@ -248,11 +239,9 @@ export class RAGDatabaseEngine {
       };
     });
 
-    // Sort by match score (highest first), then rating
     scoredCourses.sort((a, b) => b.matchScore - a.matchScore || b.rating - a.rating);
     const top5Courses = scoredCourses.slice(0, 5);
 
-    // 4. Compute semantic relevance score for Mentors via RAG
     const scoredMentors: RAGMentorResult[] = allMentors.map((m) => {
       const mentorSkills = m.user.skills?.map((s) => s.skill.name) || [];
       const expertiseArr = m.expertise
@@ -289,11 +278,9 @@ export class RAGDatabaseEngine {
       };
     });
 
-    // Sort by match score (highest first), then rating
     scoredMentors.sort((a, b) => b.matchScore - a.matchScore || b.rating - a.rating);
     const top5Mentors = scoredMentors.slice(0, 5);
 
-    // 5. Generate tailored 4-phase AI Career Roadmap for the chosen skill
     const roadmap = this.generateRAGRoadmap(cleanSkill, userContext);
 
     return {
@@ -478,7 +465,6 @@ export class RAGDatabaseEngine {
         },
       ];
     } else {
-      // Default: Full Stack / Web Development / React / Next.js / TypeScript
       phases = [
         {
           phaseNumber: 1,

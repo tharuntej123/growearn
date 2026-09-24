@@ -73,14 +73,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         updateUserState(null);
       }
     } catch {
-      // If network fails, keep current state or null
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    // 1. First hydrate quickly from localStorage cache if present
     if (typeof window !== 'undefined') {
       try {
         const cached = localStorage.getItem(USER_STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
@@ -92,7 +90,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch {}
     }
 
-    // 2. Validate session with server in background
     refreshUser();
   }, []);
 

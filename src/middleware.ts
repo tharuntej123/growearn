@@ -8,7 +8,6 @@ const JWT_SECRET = new TextEncoder().encode(
 const AUTH_COOKIE_NAME = 'growearn_auth_token';
 const LEGACY_COOKIE_NAME = 'ufp_auth_token';
 
-// Normalize user roles into canonical categories
 function getNormalizedRole(rawRole?: string): 'STUDENT' | 'COMPANY' | 'MENTOR' | 'PROFESSIONAL' | 'ADMIN' | 'UNKNOWN' {
   if (!rawRole) return 'UNKNOWN';
   const role = rawRole.toUpperCase();
@@ -40,7 +39,6 @@ function getDefaultDashboard(normalizedRole: string): string {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Ignore static assets, next internal files, and api routes
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
@@ -51,7 +49,6 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Retrieve token from cookies
   const token = req.cookies.get(AUTH_COOKIE_NAME)?.value || req.cookies.get(LEGACY_COOKIE_NAME)?.value;
   let userPayload: { userId: string; email: string; role: string; name: string } | null = null;
 
@@ -67,7 +64,6 @@ export async function middleware(req: NextRequest) {
   const normalizedRole = getNormalizedRole(userPayload?.role);
   const isAuthenticated = Boolean(userPayload);
 
-  // 1. Student / Learner Route Protection: /student/*
   if (pathname.startsWith('/student')) {
     if (!isAuthenticated) {
       const loginUrl = new URL('/login', req.url);
@@ -80,7 +76,6 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // 2. Company / Employer Route Protection: /company/* or /employer/*
   if (pathname.startsWith('/company') || pathname.startsWith('/employer')) {
     if (!isAuthenticated) {
       const loginUrl = new URL('/login', req.url);
@@ -93,7 +88,6 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // 3. Mentor Route Protection: /mentor/* (Note: /mentors is the public directory)
   if (pathname.startsWith('/mentor') && !pathname.startsWith('/mentors')) {
     if (!isAuthenticated) {
       const loginUrl = new URL('/login', req.url);
@@ -106,7 +100,6 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // 4. Professional / Freelancer Route Protection: /professional/* or /freelancer/*
   if (pathname.startsWith('/professional') || pathname.startsWith('/freelancer')) {
     if (!isAuthenticated) {
       const loginUrl = new URL('/login', req.url);
@@ -119,7 +112,6 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // 5. Onboarding Protection
   if (pathname.startsWith('/onboarding')) {
     if (!isAuthenticated) {
       const loginUrl = new URL('/login', req.url);

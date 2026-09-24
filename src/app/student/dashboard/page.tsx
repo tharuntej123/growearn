@@ -53,7 +53,6 @@ export default function StudentDashboardPage() {
   const [feedPosts, setFeedPosts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Interactive "What I Want to Learn" State
   const [selectedSkill, setSelectedSkill] = useState<string>('Full Stack Web Development');
   const [customSkillInput, setCustomSkillInput] = useState<string>('');
   const [isGeneratingRAG, setIsGeneratingRAG] = useState<boolean>(false);
@@ -84,7 +83,6 @@ export default function StudentDashboardPage() {
         setFeedPosts(feedJson.data.posts.slice(0, 3));
       }
 
-      // Initial RAG query for default skill
       const initialSkill =
         dashJson.data?.userContext?.profile?.targetRole ||
         dashJson.data?.userContext?.profile?.careerGoal ||
