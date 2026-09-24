@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/auth-context';
+import { RoleGuard } from '@/components/auth/role-guard';
 import { DashboardSidebar } from '@/components/layout/sidebar';
 import { QuickPostCard } from '@/components/feed/quick-post-card';
 import { Card } from '@/components/ui/card';
@@ -155,8 +156,9 @@ export default function MentorDashboardPage() {
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] bg-[#F8FAF9]">
-      <DashboardSidebar />
+    <RoleGuard allowedRoles={['MENTOR', 'ADMIN']} roleName="Mentor">
+      <div className="flex min-h-[calc(100vh-4rem)] bg-[#F8FAF9]">
+        <DashboardSidebar />
 
       <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-8">
         <div className="p-6 sm:p-8 rounded-3xl border border-emerald-100 bg-gradient-to-r from-emerald-50 via-teal-50/50 to-white shadow-sm relative overflow-hidden">
@@ -454,5 +456,6 @@ export default function MentorDashboardPage() {
         </div>
       )}
     </div>
+  </RoleGuard>
   );
 }
