@@ -29,19 +29,33 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  register: (name: string, email: string, password: string, confirmPassword: string, role?: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string; user?: User }>;
+  register: (name: string, email: string, password: string, confirmPassword: string, role?: string) => Promise<{ success: boolean; error?: string; user?: User }>;
   selectRole: (role: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const USER_STORAGE_KEY = 'ufp_user_session';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+
+  const updateUserState = (newUser: User | null) => {
+    setUser(newUser);
+    if (typeof window !== 'undefined') {
+      try {
+        if (newUser) {
+          localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(newUser));
+        } else {
+          localStorage.removeItem(USER_STORAGE_KEY);
+        }
+      } catch {}
+    }
+  };
 
   const refreshUser = async () => {
     try {
@@ -49,25 +63,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (res.ok) {
         const json = await res.json();
         if (json.success && json.data?.user) {
-          setUser(json.data.user);
+          updateUserState(json.data.user);
         } else {
-          setUser(null);
+          updateUserState(null);
         }
       } else {
-        setUser(null);
+        updateUserState(null);
       }
     } catch {
-      setUser(null);
+      // If network fails, keep current state or null
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
+    // 1. First hydrate quickly from localStorage cache if present
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem(USER_STORAGE_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          setUser(parsed);
+          setIsLoading(false);
+        }
+      } catch {}
+    }
+
+    // 2. Validate session with server in background
     refreshUser();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string; user?: User }> => {
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
@@ -78,14 +105,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!res.ok || !data.success) {
         return { success: false, error: data.error?.message || 'Login failed' };
       }
-      await refreshUser();
-      return { success: true };
+      const loggedUser = data.data?.user;
+      if (loggedUser) {
+        updateUserState(loggedUser);
+        setIsLoading(false);
+      } else {
+        await refreshUser();
+      }
+      return { success: true, user: loggedUser };
     } catch {
       return { success: false, error: 'Network error. Please try again.' };
     }
   };
 
-  const register = async (name: string, email: string, password: string, confirmPassword: string, role?: string) => {
+  const register = async (name: string, email: string, password: string, confirmPassword: string, role?: string): Promise<{ success: boolean; error?: string; user?: User }> => {
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
@@ -96,8 +129,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!res.ok || !data.success) {
         return { success: false, error: data.error?.message || 'Registration failed' };
       }
-      await refreshUser();
-      return { success: true };
+      const newUser = data.data?.user;
+      if (newUser) {
+        updateUserState(newUser);
+        setIsLoading(false);
+      } else {
+        await refreshUser();
+      }
+      return { success: true, user: newUser };
     } catch {
       return { success: false, error: 'Network error during registration' };
     }
@@ -114,7 +153,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!res.ok || !data.success) {
         return { success: false, error: data.error?.message || 'Role selection failed' };
       }
-      await refreshUser();
+      if (data.data?.user) {
+        updateUserState(data.data.user);
+      } else {
+        await refreshUser();
+      }
       return { success: true };
     } catch {
       return { success: false, error: 'Failed to update role' };
@@ -124,10 +167,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
-      setUser(null);
+      updateUserState(null);
       router.push('/');
     } catch {
-      setUser(null);
+      updateUserState(null);
       router.push('/');
     }
   };

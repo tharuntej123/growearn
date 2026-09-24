@@ -25,8 +25,8 @@ export function RoleGuard({
   useEffect(() => {
     if (isLoading) return;
 
+    // If not authenticated, redirect to login silently without spamming error toasts
     if (!user) {
-      toast.error('Authentication required. Please log in.');
       router.push('/login');
       return;
     }
@@ -34,10 +34,11 @@ export function RoleGuard({
     const currentRole = user.role?.toUpperCase();
     const isAllowed = allowedRoles.some((r) => r.toUpperCase() === currentRole || currentRole === 'ADMIN');
 
+    // If authenticated user is trying to access another role's dashboard, alert and redirect
     if (!isAllowed) {
       const userDashboard = ROLE_INFO[user.role]?.defaultDashboard || fallbackUrl || '/feed';
       toast.error(
-        `Access restricted: Only ${roleName} accounts can access this page. Redirecting to your dashboard.`
+        `Access restricted: Only ${roleName} accounts can access this section. Redirecting to your dashboard.`
       );
       router.push(userDashboard);
     }

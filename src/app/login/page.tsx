@@ -43,9 +43,7 @@ export default function LoginPage() {
 
     if (res.success) {
       toast.success('Welcome back!');
-      const meRes = await fetch('/api/auth/me');
-      const meJson = await meRes.json();
-      const currentRole = meJson.data?.user?.role || 'LEARNER';
+      const currentRole = res.user?.role || user?.role || 'LEARNER';
       const target = ROLE_INFO[currentRole]?.defaultDashboard || '/student/dashboard';
       router.push(target);
     } else {
