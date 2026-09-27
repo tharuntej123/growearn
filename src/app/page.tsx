@@ -121,17 +121,12 @@ export default function LandingPage() {
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link href="/signup">
             <Button size="lg" variant="default" className="w-full sm:w-auto gap-2 text-base px-8 h-12 shadow-sm font-semibold">
-              Get Started Free <ArrowRight className="h-4 w-4" />
-            </Button>
-          </Link>
-          <Link href="/jobs">
-            <Button size="lg" variant="outline" className="w-full sm:w-auto text-base px-8 h-12">
-              Explore Opportunities
+              Create Account (Choose Role) <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
           <Link href="/login">
-            <Button size="lg" variant="ghost" className="w-full sm:w-auto text-base text-slate-600 hover:text-slate-900">
-              Login to Account
+            <Button size="lg" variant="outline" className="w-full sm:w-auto text-base px-8 h-12 font-semibold">
+              Sign In to Workspace
             </Button>
           </Link>
         </div>
@@ -140,7 +135,7 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2 text-slate-700 font-semibold">
               <Zap className="h-4 w-4 text-emerald-600" />
-              <span>Instant Demo Account Logins:</span>
+              <span>1-Click Instant Guest Demo Logins:</span>
             </div>
             <div className="flex flex-wrap gap-2 justify-center">
               {DEMO_USERS.map((demo) => (
@@ -159,7 +154,7 @@ export default function LandingPage() {
                         : '/company/dashboard'
                     )
                   }
-                  className="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800 font-medium transition-all hover:border-emerald-400 flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800 font-medium transition-all hover:border-emerald-400 flex items-center gap-1.5 cursor-pointer"
                 >
                   <span className="font-bold text-emerald-700">{demo.role}:</span> {demo.name.split(' ')[0]}
                 </button>

@@ -120,6 +120,33 @@ export async function middleware(req: NextRequest) {
     }
   }
 
+  if (pathname.startsWith('/jobs')) {
+    if (isAuthenticated) {
+      if (normalizedRole === 'STUDENT' || normalizedRole === 'MENTOR') {
+        const properDashboard = getDefaultDashboard(normalizedRole);
+        return NextResponse.redirect(new URL(properDashboard, req.url));
+      }
+    }
+  }
+
+  if (pathname.startsWith('/courses')) {
+    if (isAuthenticated) {
+      if (normalizedRole === 'PROFESSIONAL' || normalizedRole === 'COMPANY') {
+        const properDashboard = getDefaultDashboard(normalizedRole);
+        return NextResponse.redirect(new URL(properDashboard, req.url));
+      }
+    }
+  }
+
+  if (pathname.startsWith('/mentors')) {
+    if (isAuthenticated) {
+      if (normalizedRole === 'PROFESSIONAL' || normalizedRole === 'COMPANY' || normalizedRole === 'MENTOR') {
+        const properDashboard = getDefaultDashboard(normalizedRole);
+        return NextResponse.redirect(new URL(properDashboard, req.url));
+      }
+    }
+  }
+
   return NextResponse.next();
 }
 
@@ -132,5 +159,8 @@ export const config = {
     '/professional/:path*',
     '/freelancer/:path*',
     '/onboarding/:path*',
+    '/jobs/:path*',
+    '/courses/:path*',
+    '/mentors/:path*',
   ],
 };

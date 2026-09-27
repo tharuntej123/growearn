@@ -99,70 +99,123 @@ export function Navbar() {
           )}
         </div>
 
-        {user && (
-          <nav className="hidden lg:flex items-center gap-1 text-sm font-medium">
-            <Link
-              href="/feed"
-              className={`px-3 py-1.5 rounded-lg transition-colors ${
-                pathname === '/feed'
-                  ? 'text-emerald-700 bg-emerald-50 font-semibold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-              }`}
-            >
-              <span className="flex items-center gap-1.5">
-                <Compass className="h-4 w-4" /> Feed
-              </span>
-            </Link>
-            <Link
-              href="/jobs"
-              className={`px-3 py-1.5 rounded-lg transition-colors ${
-                pathname.startsWith('/jobs')
-                  ? 'text-emerald-700 bg-emerald-50 font-semibold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-              }`}
-            >
-              <span className="flex items-center gap-1.5">
-                <Briefcase className="h-4 w-4" /> Jobs
-              </span>
-            </Link>
-            <Link
-              href="/courses"
-              className={`px-3 py-1.5 rounded-lg transition-colors ${
-                pathname.startsWith('/courses')
-                  ? 'text-emerald-700 bg-emerald-50 font-semibold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-              }`}
-            >
-              <span className="flex items-center gap-1.5">
-                <BookOpen className="h-4 w-4" /> Courses
-              </span>
-            </Link>
-            <Link
-              href="/mentors"
-              className={`px-3 py-1.5 rounded-lg transition-colors ${
-                pathname.startsWith('/mentors')
-                  ? 'text-emerald-700 bg-emerald-50 font-semibold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-              }`}
-            >
-              <span className="flex items-center gap-1.5">
-                <Users className="h-4 w-4" /> Mentors
-              </span>
-            </Link>
-            <Link
-              href="/ai-assistant"
-              className={`px-3 py-1.5 rounded-lg transition-colors ${
-                pathname === '/ai-assistant'
-                  ? 'text-emerald-700 bg-emerald-50 font-semibold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-              }`}
-            >
-              <span className="flex items-center gap-1.5 text-emerald-600 font-semibold">
-                <Sparkles className="h-4 w-4 text-emerald-500 animate-pulse" /> AI Assistant
-              </span>
-            </Link>
-          </nav>
-        )}
+        {user && (() => {
+          const rawRole = user.role?.toUpperCase();
+          const isStudent = rawRole === 'STUDENT' || rawRole === 'LEARNER';
+          const isMentor = rawRole === 'MENTOR';
+          const isFreelancer = rawRole === 'FREELANCER' || rawRole === 'PROFESSIONAL';
+          const isCompany = rawRole === 'COMPANY' || rawRole === 'EMPLOYER';
+
+          return (
+            <nav className="hidden lg:flex items-center gap-1 text-sm font-medium">
+              <Link
+                href="/feed"
+                className={`px-3 py-1.5 rounded-lg transition-colors ${
+                  pathname === '/feed'
+                    ? 'text-emerald-700 bg-emerald-50 font-semibold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                <span className="flex items-center gap-1.5">
+                  <Compass className="h-4 w-4" /> Feed
+                </span>
+              </Link>
+
+              {/* Jobs ONLY visible to Freelancers/Professionals */}
+              {isFreelancer && (
+                <Link
+                  href="/jobs"
+                  className={`px-3 py-1.5 rounded-lg transition-colors ${
+                    pathname.startsWith('/jobs')
+                      ? 'text-emerald-700 bg-emerald-50 font-semibold'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5">
+                    <Briefcase className="h-4 w-4" /> Jobs & Contracts
+                  </span>
+                </Link>
+              )}
+
+              {/* Courses ONLY visible to Students/Learners */}
+              {isStudent && (
+                <Link
+                  href="/courses"
+                  className={`px-3 py-1.5 rounded-lg transition-colors ${
+                    pathname.startsWith('/courses')
+                      ? 'text-emerald-700 bg-emerald-50 font-semibold'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5">
+                    <BookOpen className="h-4 w-4" /> Courses
+                  </span>
+                </Link>
+              )}
+
+              {/* Mentors ONLY visible to Students/Learners */}
+              {isStudent && (
+                <Link
+                  href="/mentors"
+                  className={`px-3 py-1.5 rounded-lg transition-colors ${
+                    pathname.startsWith('/mentors')
+                      ? 'text-emerald-700 bg-emerald-50 font-semibold'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5">
+                    <Users className="h-4 w-4" /> Find Mentors
+                  </span>
+                </Link>
+              )}
+
+              {/* Mentor Studio link for Mentors */}
+              {isMentor && (
+                <Link
+                  href="/mentor/dashboard"
+                  className={`px-3 py-1.5 rounded-lg transition-colors ${
+                    pathname.startsWith('/mentor')
+                      ? 'text-emerald-700 bg-emerald-50 font-semibold'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5">
+                    <Sparkles className="h-4 w-4 text-emerald-600" /> Coaching Studio
+                  </span>
+                </Link>
+              )}
+
+              {/* Company ATS link for Companies */}
+              {isCompany && (
+                <Link
+                  href="/company/dashboard"
+                  className={`px-3 py-1.5 rounded-lg transition-colors ${
+                    pathname.startsWith('/company')
+                      ? 'text-emerald-700 bg-emerald-50 font-semibold'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5">
+                    <Building2 className="h-4 w-4 text-slate-700" /> ATS Candidate Hub
+                  </span>
+                </Link>
+              )}
+
+              <Link
+                href="/ai-assistant"
+                className={`px-3 py-1.5 rounded-lg transition-colors ${
+                  pathname === '/ai-assistant'
+                    ? 'text-emerald-700 bg-emerald-50 font-semibold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                <span className="flex items-center gap-1.5 text-emerald-600 font-semibold">
+                  <Sparkles className="h-4 w-4 text-emerald-500 animate-pulse" /> AI Assistant
+                </span>
+              </Link>
+            </nav>
+          );
+        })()}
 
         <div className="flex items-center gap-3">
           {user ? (
