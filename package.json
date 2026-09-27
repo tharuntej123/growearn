@@ -12,7 +12,8 @@
     "prisma:push": "prisma db push",
     "prisma:seed": "tsx prisma/seed.ts",
     "seed": "tsx prisma/seed.ts",
-    "test": "tsx src/lib/__tests__/production-rag.test.ts"
+    "test": "tsx src/lib/__tests__/e2e-production-data-validation.ts",
+    "test:rag": "tsx src/lib/__tests__/production-rag.test.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
