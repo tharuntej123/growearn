@@ -1,13 +1,13 @@
-# Growearn Architecture & System Design Guide
+# Growearn Architecture & Technical Interview Walkthrough Guide
 
-> **Enterprise 4-Tier Architecture: Frontend • Backend • AI & RAG • Database**  
-> *A comprehensive technical blueprint and interview walkthrough guide.*
+> **Production 4-Tier Architecture: Frontend • Backend • AI & pgvector RAG • Database**  
+> *A comprehensive technical blueprint and senior software engineering interview guide.*
 
 ---
 
 ## 🏛️ System Architecture Overview
 
-Growearn is architected as an **enterprise-grade, full-stack career-to-earning ecosystem** combining Next.js App Router, stateless JWT authentication with Role-Based Access Control (RBAC), a custom Retrieval-Augmented Generation (RAG) vector database engine, and a PostgreSQL persistence layer managed by Prisma ORM.
+Growearn is architected as an **enterprise-grade, full-stack career-to-earning platform** combining Next.js App Router, stateless JWT authentication with Role-Based Access Control (RBAC), an official LangChain + PostgreSQL `pgvector` RAG pipeline, and a PostgreSQL persistence layer managed by Prisma ORM.
 
 ```mermaid
 graph TD
@@ -15,7 +15,7 @@ graph TD
         UI_Learner["Learner Dashboard (/student/dashboard)"]
         UI_Company["Company ATS Dashboard (/company/dashboard)"]
         UI_Mentor["Mentor Coaching Studio (/mentor/dashboard)"]
-        UI_Pro["Professional Workspace (/professional/dashboard)"]
+        UI_Pro["Freelancer Workspace (/professional/dashboard)"]
         UI_Auth["RoleGuard & Auth Context Provider"]
     end
 
@@ -40,14 +40,15 @@ graph TD
         Repo_Mentor["MentorRepository"]
     end
 
-    subgraph AI_RAG_Layer["4. AI & RAG Intelligence Engine"]
-        RAG_DB["RAG Vector & Semantic Database Engine"]
-        RAG_Retriever["Database RAG Retriever"]
-        LangChain_Agent["LangChain RAG Agent"]
-        LLM_Client["Groq / Grok LLM Client (GPT-OSS-120B)"]
-        Roadmap_Engine["Career Roadmap Synthesizer"]
-        Skill_Engine["Skill Gap Analysis Engine"]
-        Hybrid_Matcher["5-Factor Candidate Matcher"]
+    subgraph AI_RAG_Layer["4. AI & LangChain pgvector RAG Engine"]
+        Ingest["Document Ingestion (RecursiveCharacterTextSplitter 800/120)"]
+        Embeddings["Embedding Model (1536-dim vector generator)"]
+        VectorStore["PgVectorStore (PostgreSQL pgvector <=> Cosine Distance)"]
+        Retriever["PgVectorRetriever (LangChain BaseRetriever Top-K)"]
+        IntentClassifier["Structured Intent Classifier (JSON Schema Router)"]
+        RAG_Chain["ProductionRAGChain (LangChain RunnableSequence & ChatPromptTemplate)"]
+        Skill_RAG["SkillRAGService (Roadmaps, Mentors, Courses)"]
+        LLM_Client["Groq LLM Client (Llama 3 70B / Mixtral 8x7B)"]
     end
 
     subgraph Persistence_Layer["5. Database Persistence Layer (Neon PostgreSQL & Prisma ORM)"]
@@ -56,7 +57,7 @@ graph TD
         DB_Courses["Courses, Modules & Lessons"]
         DB_Mentors["Mentor Profiles & Bookings"]
         DB_Jobs["Jobs, Proposals & Applications"]
-        DB_RAG_Meta["Career Roadmaps & AI Recommendations"]
+        DB_PgVector["pgvector document_chunks Table (vector(1536))"]
     end
 
     UI_Learner --> MW
@@ -78,11 +79,13 @@ graph TD
     Ctrl_Dash --> Svc_Rec
     Ctrl_Dash --> Svc_UserCtx
 
-    Svc_Rec --> RAG_DB
-    Svc_Rec --> Skill_Engine
-    Svc_Rec --> Roadmap_Engine
-    RAG_DB --> LangChain_Agent
-    LangChain_Agent --> LLM_Client
+    Svc_Rec --> Skill_RAG
+    Skill_RAG --> Retriever
+    Retriever --> VectorStore
+    VectorStore --> DB_PgVector
+    RAG_Chain --> Retriever
+    RAG_Chain --> LLM_Client
+    IntentClassifier --> RAG_Chain
 
     Svc_Auth --> Repo_User
     Svc_Rec --> Repo_Job
@@ -93,180 +96,151 @@ graph TD
     Repo_Job --> Prisma_Client
     Repo_Course --> Prisma_Client
     Repo_Mentor --> Prisma_Client
-    RAG_DB --> Prisma_Client
 
     Prisma_Client --> DB_Users
     Prisma_Client --> DB_Courses
     Prisma_Client --> DB_Mentors
     Prisma_Client --> DB_Jobs
-    Prisma_Client --> DB_RAG_Meta
 ```
 
 ---
 
-## 📂 Project Directory Structure
+## 📂 Project Directory Structure (Explainable in Logical Order)
 
 ```
 growearn/
-├── prisma/                          # 🗄️ DATABASE PERSISTENCE TIER
-│   ├── schema.prisma                # Relational schema (22 entity models)
-│   └── seed.ts                      # Production database seed script
+├── prisma/                          # 🗄️ 1. DATABASE PERSISTENCE TIER
+│   ├── schema.prisma                # Relational schema (22 entity models + pgvector extension)
+│   └── seed.ts                      # Production database seed script (12 mentors, 10 companies, 20 courses, 25 jobs)
 │
 ├── src/
-│   ├── app/                         # 🎨 FRONTEND PAGES & API ROUTE HANDLERS
-│   │   ├── (auth)/                  # Authentication Pages
-│   │   │   ├── login/page.tsx       # Sign In with demo autofill
-│   │   │   └── signup/page.tsx      # Sign Up with role selection
-│   │   ├── student/                 # Learner / Student Workspace
-│   │   │   └── dashboard/page.tsx   # Interactive RAG learning hub
-│   │   ├── company/                 # Company / Employer Workspace
-│   │   │   └── dashboard/page.tsx   # ATS candidate pipeline & job poster
-│   │   ├── mentor/                  # Mentor Coaching Studio
-│   │   │   └── dashboard/page.tsx   # 1-on-1 session manager & course publishing
-│   │   ├── professional/            # Freelancer & Professional Workspace
-│   │   │   └── dashboard/page.tsx   # Proposal generator & portfolio manager
+│   ├── lib/                         # 🧠 2. CORE ENGINES & INFRASTRUCTURE
+│   │   ├── ai/                      # 🤖 Production LangChain RAG Subsystem
+│   │   │   ├── embeddings.ts        # 1536-dimensional vector embedding generator
+│   │   │   ├── vector-store.ts      # PostgreSQL pgvector store with cosine distance (<=>)
+│   │   │   ├── retriever.ts         # Official LangChain BaseRetriever implementation
+│   │   │   ├── rag-chain.ts         # LangChain RunnableSequence + ChatPromptTemplate
+│   │   │   ├── prompt.ts            # System prompt templates & context formatting
+│   │   │   ├── ingest.ts            # RecursiveCharacterTextSplitter (800 / 120) & PDF/MD parser
+│   │   │   ├── intent-classifier.ts # Structured JSON router (roadmap, mentor, jobs, course, profile)
+│   │   │   ├── skill-rag.service.ts # Grounded skill gap and roadmap generator
+│   │   │   ├── grok-client.ts       # High-speed LLM client with Groq Llama-3-70b & multi-model fallback
+│   │   │   └── index.ts             # Central AI barrel export
+│   │   │
+│   │   ├── auth.ts                  # Server JWT verification (jose) & cookie session handlers
+│   │   ├── constants.ts             # System roles, demo personas, navigation paths
+│   │   ├── prisma.ts                # PrismaClient singleton with connection pooling
+│   │   ├── utils.ts                 # Standardized response envelopes (apiSuccess, apiError)
+│   │   └── __tests__/               # Automated integration and RAG test suites
+│   │
+│   ├── controllers/                 # 🎮 3. BACKEND API CONTROLLERS (HTTP & Serialization)
+│   │   ├── auth.controller.ts       # Registration, login, cookie session management
+│   │   ├── job.controller.ts        # Job creation, filtering & query routing
+│   │   ├── course.controller.ts     # Course catalog endpoints
+│   │   ├── mentor.controller.ts     # Mentorship endpoints
+│   │   ├── post.controller.ts       # Feed posts & community interaction
+│   │   └── dashboard.controller.ts  # Role statistics aggregator
+│   │
+│   ├── services/                    # ⚙️ 4. BUSINESS LOGIC TIER
+│   │   ├── auth.service.ts          # Password hashing (bcrypt), JWT signing, role resolution
+│   │   ├── recommendation.service.ts# Multi-entity ranking and scoring
+│   │   └── user-context.service.ts  # User competency profile aggregation
+│   │
+│   ├── repositories/                # 📦 5. DATA ACCESS LAYER (DAL)
+│   │   ├── user.repository.ts       # User and profile CRUD
+│   │   ├── job.repository.ts        # Job queries and applicant relations
+│   │   ├── course.repository.ts     # Course, module, and lesson queries
+│   │   ├── mentor.repository.ts     # Mentor profile queries
+│   │   └── post.repository.ts       # Post, like, and comment queries
+│   │
+│   ├── validators/                  # 🛡️ 6. RUNTIME SCHEMA VALIDATION (ZOD)
+│   │   ├── auth.schema.ts           # Login, registration, role update schemas
+│   │   └── job.schema.ts            # Job posting validation schema
+│   │
+│   ├── components/                  # 🧩 7. REUSABLE UI & PRESENTATION COMPONENTS
+│   │   ├── auth/                    # RoleGuard and route barrier wrappers
+│   │   ├── layout/                  # Navbar, Sidebar, Footer, Multi-Role Switcher
+│   │   ├── feed/                    # Post cards, quick poster, comment drawers
+│   │   └── ui/                      # Atomic design primitives (Button, Card, Badge, Input, Avatar)
+│   │
+│   ├── context/                     # 🌐 8. CLIENT STATE MANAGEMENT
+│   │   └── auth-context.tsx         # AuthProvider with instant session caching
+│   │
+│   ├── app/                         # 🎨 9. FRONTEND PAGES & API ROUTE HANDLERS
+│   │   ├── student/dashboard/       # Learner Workspace (RAG Roadmap & Course Recommendations)
+│   │   ├── mentor/dashboard/        # Mentor Coaching Studio (1-on-1 Sessions & Course Publishing)
+│   │   ├── professional/dashboard/  # Freelancer Workspace (AI Proposals & Job Matching)
+│   │   ├── company/dashboard/       # Company ATS Dashboard (Job Postings & Candidate Pipeline)
 │   │   ├── courses/                 # Public Course Catalog & Video Player
 │   │   ├── jobs/                    # Dual Global/Local Job Board
 │   │   ├── mentors/                 # Mentor Marketplace Directory
 │   │   ├── feed/                    # Professional Community Feed
 │   │   ├── messages/                # Real-time Conversation Drawer
 │   │   ├── profile/                 # User Portfolio & Verified Skills
-│   │   ├── ai-assistant/            # Conversational AI Career Advisor
-│   │   └── api/                     # 🔌 REST API Route Handlers
-│   │       ├── ai/                  # RAG Recommendations, Chat & Proposals
-│   │       ├── auth/                # Login, Register, Logout, Me, Role-Select
-│   │       ├── courses/             # Course listing, enrollment & progress
-│   │       ├── dashboard/           # Aggregated workspace statistics
-│   │       ├── jobs/                # Job queries & candidate applications
-│   │       ├── mentors/             # Mentorship queries & booking requests
-│   │       └── posts/               # Social feed queries & interactions
+│   │   ├── ai-assistant/            # Conversational AI Career Advisor with RAG grounding
+│   │   └── api/                     # REST API Handlers (/api/ai, /api/auth, /api/jobs, etc.)
 │   │
-│   ├── components/                  # 🧩 REUSABLE UI & PRESENTATION COMPONENTS
-│   │   ├── auth/                    # RoleGuard and route barrier wrappers
-│   │   ├── layout/                  # Navbar, Sidebar, Footer, Navigation
-│   │   ├── feed/                    # Post cards, quick poster, comment drawers
-│   │   └── ui/                      # Atomic design primitives (Button, Card, Badge, Input, Avatar)
-│   │
-│   ├── context/                     # 🌐 CLIENT STATE MANAGEMENT
-│   │   └── auth-context.tsx         # AuthProvider with instant session caching
-│   │
-│   ├── controllers/                 # 🎮 BACKEND API CONTROLLERS
-│   │   ├── auth.controller.ts       # Registration, login, cookie session management
-│   │   ├── job.controller.ts        # Job creation, filtering & query routing
-│   │   ├── course.controller.ts     # Course catalog endpoints
-│   │   ├── mentor.controller.ts     # Mentorship endpoints
-│   │   ├── post.controller.ts       # Feed posts & community interaction
-│   │   ├── dashboard.controller.ts  # Role statistics aggregator
-│   │   └── index.ts                 # Unified controller barrel
-│   │
-│   ├── services/                    # ⚙️ BUSINESS LOGIC TIER
-│   │   ├── auth.service.ts          # Password hashing, JWT signing, role resolution
-│   │   ├── recommendation.service.ts# Multi-entity ranking and scoring
-│   │   ├── user-context.service.ts  # User competency profile aggregation
-│   │   └── index.ts                 # Unified service barrel
-│   │
-│   ├── repositories/                # 📦 DATA ACCESS LAYER (DAL)
-│   │   ├── user.repository.ts       # User and profile CRUD
-│   │   ├── job.repository.ts        # Job queries and applicant relations
-│   │   ├── course.repository.ts     # Course, module, and lesson queries
-│   │   ├── mentor.repository.ts     # Mentor profile queries
-│   │   ├── post.repository.ts       # Post, like, and comment queries
-│   │   └── index.ts                 # Unified repository barrel
-│   │
-│   ├── validators/                  # 🛡️ RUNTIME SCHEMA VALIDATION (ZOD)
-│   │   ├── auth.schema.ts           # Login, registration, role update schemas
-│   │   └── job.schema.ts            # Job posting validation schema
-│   │
-│   ├── lib/                         # 🧠 CORE ENGINES & INFRASTRUCTURE
-│   │   ├── ai/                      # 🤖 AI & RAG SYSTEM TIER
-│   │   │   ├── rag/                 # RAG Subsystem
-│   │   │   │   ├── rag-database.ts  # TF-IDF & Vector Semantic Search Engine
-│   │   │   │   ├── retriever.ts     # Grounded multi-entity document retriever
-│   │   │   │   ├── langchain-agent.ts # LangChain agentic conversational loop
-│   │   │   │   └── index.ts         # RAG barrel export
-│   │   │   ├── grok-client.ts       # Groq/Grok high-speed LLM client with multi-model fallback
-│   │   │   ├── roadmap.service.ts   # 4-Phase AI Roadmap Generator
-│   │   │   ├── skill-analysis.service.ts # Radar gap analysis engine
-│   │   │   ├── hybrid-matcher.ts    # 5-Factor Candidate-to-Job matcher
-│   │   │   ├── ai-assistant.service.ts # High-level conversational synthesizer
-│   │   │   └── index.ts             # AI module barrel export
-│   │   ├── auth.ts                  # Server JWT verification & cookie utilities
-│   │   ├── constants.ts             # System roles, navigation paths, demo personas
-│   │   ├── prisma.ts                # PrismaClient singleton & database health checks
-│   │   └── utils.ts                 # Response envelope helpers & formatting
-│   │
-│   └── middleware.ts                # 🚦 EDGE ROUTE PROTECTION & RBAC PROXY
+│   └── middleware.ts                # 🚦 10. EDGE ROUTE PROTECTION & RBAC PROXY
 ```
 
 ---
 
-## 🎯 4-Tier Architectural Breakdown
+## 🚀 Step-by-Step Technical Walkthrough for Interviewers
 
-### 1. Presentation Tier (Frontend)
-- **Framework**: Next.js 15 (App Router) + React 19.
-- **Styling**: Tailwind CSS v4 design system with custom tokens and dark/light glassmorphic cards.
-- **Client State**: `AuthProvider` with synchronous `localStorage` session caching and background server validation to eliminate unauthenticated screen flickers.
-- **Route Guards**: `RoleGuard` wrapper components protecting each private dashboard on client-side router transitions.
-
-### 2. Application Tier (Backend)
-- **Design Pattern**: **Controller → Service → Repository (CSR)** enterprise pattern.
-- **Controllers**: Handle HTTP serialization, parse parameters, and return standardized JSON responses (`apiSuccess`, `apiError`).
-- **Services**: Execute domain business logic (ranking algorithms, role resolution, recommendation synthesis).
-- **Repositories**: Encapsulate database queries and Prisma ORM data transformations.
-- **Validation**: Strict Zod schemas validated before processing any write mutation.
-
-### 3. Intelligence Tier (AI & RAG)
-- **Vector & Semantic Search (`rag-database.ts`)**:
-  - Tokenizes input queries into normalized unigrams and n-grams.
-  - Computes weighted TF-IDF cosine relevance scores across database course titles, skills covered, category taxonomies, and mentor expertise profiles.
-  - Guarantees strict top 5 ranking for courses and mentors matching the queried skill.
-- **Roadmap Synthesis (`roadmap.service.ts`)**:
-  - Dynamically constructs a tailored 4-phase learning trajectory with weekly pacing, core topics, hands-on tasks, and capstone projects.
-- **LLM Client (`grok-client.ts`)**:
-  - High-speed Groq API integration (`openai/gpt-oss-120b`) with deterministic rule-based offline fallback.
-
-### 4. Persistence Tier (Database)
-- **Database Engine**: Neon Serverless PostgreSQL with connection pooling.
-- **ORM**: Prisma ORM with type-safe schema definitions.
-- **Data Models**: 22 relational models covering Users, Profiles, UserSkills, Courses, CourseModules, Lessons, Enrollments, Certificates, MentorProfiles, MentorshipBookings, Jobs, Applications, Proposals, Posts, Comments, Likes, Notifications, and CareerRoadmaps.
+### Step 1: High-Level Pitch (30 Seconds)
+> *"GrowEarn is a full-stack career and freelancing platform with Role-Based Access Control across four distinct user personas: Learners, Mentors, Freelancers, and Companies. At its core, we built a production Retrieval-Augmented Generation (RAG) pipeline utilizing LangChain and PostgreSQL `pgvector` to semantically match students to career roadmaps, real industry courses, and verified Indian mentors with exact cosine similarity scoring."*
 
 ---
 
-## 🔒 Role-Based Access Control (RBAC) Matrix
-
-| User Role | Allowed Dashboards | Restricted Dashboards | Action on Unauthorized Access |
-| :--- | :--- | :--- | :--- |
-| **LEARNER / STUDENT** | `/student/*`, `/feed`, `/jobs`, `/courses`, `/mentors`, `/profile`, `/ai-assistant` | `/company/*`, `/employer/*`, `/mentor/*`, `/professional/*`, `/freelancer/*` | Auto-redirect to `/student/dashboard` |
-| **EMPLOYER / COMPANY** | `/company/*`, `/feed`, `/jobs`, `/courses`, `/mentors`, `/profile`, `/ai-assistant` | `/student/*`, `/mentor/*`, `/professional/*`, `/freelancer/*` | Auto-redirect to `/company/dashboard` |
-| **MENTOR** | `/mentor/*`, `/feed`, `/jobs`, `/courses`, `/mentors`, `/profile`, `/ai-assistant` | `/student/*`, `/company/*`, `/employer/*`, `/professional/*`, `/freelancer/*` | Auto-redirect to `/mentor/dashboard` |
-| **PROFESSIONAL / FREELANCER** | `/professional/*`, `/freelancer/*`, `/feed`, `/jobs`, `/courses`, `/mentors`, `/profile`, `/ai-assistant` | `/student/*`, `/company/*`, `/employer/*`, `/mentor/*` | Auto-redirect to `/professional/dashboard` |
-| **GUEST (Unauthenticated)** | `/`, `/login`, `/signup`, `/feed`, `/jobs`, `/courses`, `/mentors` | All `*/dashboard` routes and `/onboarding` | Auto-redirect to `/login?redirect=...` |
+### Step 2: Explain the RAG & pgvector Architecture (Deep Dive)
+1. **Document Ingestion Pipeline (`src/lib/ai/ingest.ts`)**:
+   - Accepts raw text, Markdown files, PDF buffers (via `pdf-parse`), and database platform entities.
+   - Splits text using LangChain's `RecursiveCharacterTextSplitter` with a `chunkSize` of 800 characters and `chunkOverlap` of 120 characters to preserve cross-chunk context.
+2. **Embeddings Generation (`src/lib/ai/embeddings.ts`)**:
+   - Generates 1536-dimensional dense vector embeddings with batching and local fallback.
+3. **Vector Database (`src/lib/ai/vector-store.ts`)**:
+   - Utilizes native PostgreSQL `pgvector` extension with a `document_chunks` table storing `vector(1536)`.
+   - Executes raw SQL cosine distance queries (`ORDER BY embedding <=> $1::vector LIMIT $2`) with `1 - cosine_distance` calculating exact mathematical similarity.
+4. **LangChain Retriever (`src/lib/ai/retriever.ts`)**:
+   - Extends the official LangChain `BaseRetriever` class, implementing `_getRelevantDocuments(query)` to return typed LangChain `Document` objects.
+5. **Chain Orchestration (`src/lib/ai/rag-chain.ts`)**:
+   - Built with LangChain `RunnableSequence` and `ChatPromptTemplate`.
+   - Binds Groq `llama-3-70b-versatile` / `mixtral-8x7b-32768` to guarantee grounded answers cited directly from database documents.
 
 ---
 
-## 🎤 Interview Cheatsheet & Talking Points
+### Step 3: Explain the Multi-Role RBAC & Security
+1. **4 Pure User Roles**:
+   - `STUDENT` / `LEARNER`: Access to Learning Roadmaps, Courses, AI Career Assistant, Mentor Booking.
+   - `MENTOR`: Access to Mentorship Requests, 1-on-1 Sessions, Course Publishing, Coaching Earnings.
+   - `FREELANCER` / `PROFESSIONAL`: Access to Job Board, Contract Gigs, AI Proposal Generator, Portfolio.
+   - `COMPANY` / `EMPLOYER`: Access to ATS Candidate Pipeline, Job Posting, AI Matching Score.
+2. **Defense-in-Depth Authorization**:
+   - **Edge Middleware (`src/middleware.ts`)**: Validates the HTTP-only JWT before the route renders.
+   - **Client `RoleGuard` (`src/components/auth/role-guard.tsx`)**: Prevents layout access with 1-click role switcher.
+   - **API Controller Authorization**: Every API mutation checks `userPayload.role` on the server before mutating data.
 
-### Q1: "How does the RAG system work in your application?"
-> **Answer**:  
-> *"Our RAG system is grounded directly in our live PostgreSQL application database. When a student chooses or types a skill (like Java & Spring Boot or Generative AI), our RAG Engine tokenizes the query into unigrams and n-grams and executes a weighted TF-IDF cosine similarity search across indexed courses and mentor profiles. It scores candidate items on title tokens, skills covered, and domain expertise to return the Top 5 most relevant courses and Top 5 expert mentors, alongside a synthesized 4-phase learning roadmap."*
+---
 
-### Q2: "How did you implement Role-Based Route Protection?"
-> **Answer**:  
-> *"We implemented a defense-in-depth security model:  
-> 1. **Server Edge Middleware (`src/middleware.ts`)**: Decodes the HTTP-only JWT using `jose` before routes render and prevents unauthorized cross-role access (e.g., employers accessing student pages or students accessing employer ATS dashboards).  
-> 2. **Client-side `RoleGuard` Component**: Enforces layout-level authorization during client-side router transitions with synchronous session hydration to prevent blank white screens."*
+### Step 4: Explain Code Cleanliness & Architecture Patterns
+1. **Controller-Service-Repository (CSR) Pattern**:
+   - **Controllers (`src/controllers/`)**: HTTP requests, headers, and validation error formatting.
+   - **Services (`src/services/`)**: Business logic, ranking algorithms, and AI orchestrations.
+   - **Repositories (`src/repositories/`)**: Database queries encapsulated via Prisma ORM.
+2. **Runtime Schema Validation**:
+   - Strict Zod schemas in `src/validators/` ensure all incoming JSON payloads are type-safe.
+3. **Automated Verification**:
+   - Zero TypeScript compiler errors (`npx tsc --noEmit`).
+   - Integrated unit test suite verifying intent classification, cosine search, and end-to-end RAG chains (`npm test`).
 
-### Q3: "What architectural pattern does the backend follow?"
-> **Answer**:  
-> *"The backend follows the **Controller-Service-Repository (CSR)** pattern:  
-> - **Controllers (`src/controllers/`)** handle HTTP requests, headers, and validation errors.  
-> - **Services (`src/services/`)** encapsulate business rules, RAG ranking, and recommendation synthesis.  
-> - **Repositories (`src/repositories/`)** manage data access through Prisma ORM."*
+---
 
-### Q4: "How does the frontend handle authentication state without hydration flicker?"
-> **Answer**:  
-> *"We use an `AuthProvider` with instant session caching. Upon login, the user profile is stored synchronously in React state and local session cache, allowing pages to render immediately without waiting for an asynchronous network round-trip to `/api/auth/me` on every navigation."*
+## 🎤 Top 5 Interview Questions & Ready Answers
 
-### Q5: "How does the system ensure zero downtime if the external LLM provider fails?"
-> **Answer**:  
-> *"Our AI Engine uses a **Multi-Tier Fallback Architecture**. If the Groq LLM API is unavailable, the system automatically falls back to our deterministic rule-based heuristic engine in `src/lib/ai/`, guaranteeing that roadmaps, skill analyses, and candidate scores are always returned without throwing 500 errors."*
+| Question | Strongest Technical Answer |
+| :--- | :--- |
+| **"Why did you use PostgreSQL pgvector instead of Pinecone/Chroma?"** | *"Using PostgreSQL `pgvector` eliminates distributed state synchronization issues. Our transactional data (Users, Courses, Mentors) and vector embeddings live in the same PostgreSQL database, allowing atomic transactions, consistent backups, and eliminating external SaaS vector DB costs."* |
+| **"How do you prevent hallucinations in the AI assistant?"** | *"We enforce strict grounded RAG. The system prompt instructs the model to ONLY answer using context chunks retrieved from the `document_chunks` table via cosine similarity (`<=>`). If similarity is low or no context is found, it explicitly declares lack of database records rather than fabricating answers."* |
+| **"How does the Candidate-Job matching algorithm work?"** | *"Our `hybrid-matcher.ts` uses a 5-factor weighted scoring algorithm: (1) Skill Overlap (40%), (2) Experience Level Match (20%), (3) Vector Semantic Proximity (20%), (4) Location/Work-mode alignment (10%), and (5) Profile Completeness (10%)."* |
+| **"How do you handle JWT authentication with Next.js App Router?"** | *"We issue signed, HTTP-only, SameSite=Lax JWT tokens containing user ID and role. The Next.js Edge Middleware decodes the JWT using `jose` before server components execute, preventing unauthorized route transitions with zero client-side latency."* |
+| **"How is the codebase structured for scaling?"** | *"The codebase follows a modular Controller-Service-Repository architecture with Zod schema validation, a centralized barrel export system, and clear separation between AI services, database access, and UI components."* |
