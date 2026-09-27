@@ -257,13 +257,69 @@ export function Navbar() {
                         <Layers className="h-4 w-4 text-slate-400" />
                         Dashboard
                       </Link>
-                      <button
-                        onClick={logout}
-                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 transition-colors font-medium"
-                      >
-                        <LogOut className="h-4 w-4" />
-                        Sign Out
-                      </button>
+
+                      <div className="pt-1.5 pb-1 border-t border-slate-100 mt-1">
+                        <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                          <Sparkles className="h-3 w-3 text-emerald-600" />
+                          <span>Switch Demo Role</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-1 px-1 mt-1">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              setShowUserMenu(false);
+                              await logout();
+                              router.push('/login');
+                            }}
+                            className="text-left px-2 py-1 rounded bg-slate-50 hover:bg-emerald-50 text-[11px] font-semibold text-slate-700 hover:text-emerald-700 border border-slate-200 truncate"
+                          >
+                            🎓 Student
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              setShowUserMenu(false);
+                              await logout();
+                              router.push('/login');
+                            }}
+                            className="text-left px-2 py-1 rounded bg-slate-50 hover:bg-emerald-50 text-[11px] font-semibold text-slate-700 hover:text-emerald-700 border border-slate-200 truncate"
+                          >
+                            🌟 Mentor
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              setShowUserMenu(false);
+                              await logout();
+                              router.push('/login');
+                            }}
+                            className="text-left px-2 py-1 rounded bg-slate-50 hover:bg-emerald-50 text-[11px] font-semibold text-slate-700 hover:text-emerald-700 border border-slate-200 truncate"
+                          >
+                            💼 Freelancer
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              setShowUserMenu(false);
+                              await logout();
+                              router.push('/login');
+                            }}
+                            className="text-left px-2 py-1 rounded bg-slate-50 hover:bg-emerald-50 text-[11px] font-semibold text-slate-700 hover:text-emerald-700 border border-slate-200 truncate"
+                          >
+                            🏢 Company
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="pt-1 border-t border-slate-100">
+                        <button
+                          onClick={logout}
+                          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 transition-colors font-medium"
+                        >
+                          <LogOut className="h-4 w-4" />
+                          Sign Out
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
