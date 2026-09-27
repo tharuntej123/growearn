@@ -1,11 +1,54 @@
+/**
+ * @file seed.ts
+ * @description Production Database Seed Script for GrowEarn Platform.
+ * 
+ * Generates:
+ * - 12 Mentors (Realistic Indian Professionals with bio, skills, experience, LinkedIn, hourly rate)
+ * - 10 Companies (Realistic fictional tech companies)
+ * - 20 Technical Courses (Real curriculum with modules and lessons)
+ * - 25 Industry Job Postings (Realistic salaries, locations, skill requirements)
+ * - Active Learner and Professional demo accounts
+ * - Ingests all platform knowledge, mentors, courses, and jobs into PostgreSQL pgvector (document_chunks)
+ */
+
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { generateEmbedding } from '../src/lib/ai/embeddings';
 
 const prisma = new PrismaClient();
 
-async function main() {
-  console.log('🌱 Starting comprehensive database seed for Unified Freelancing Platform...');
+function formatVectorForPg(vector: number[]): string {
+  return `[${vector.join(',')}]`;
+}
 
+async function insertChunk(
+  content: string,
+  source: string,
+  sourceType: string,
+  metadata: Record<string, any> = {}
+) {
+  const embedding = await generateEmbedding(content);
+  const vectorStr = formatVectorForPg(embedding);
+  const metadataStr = JSON.stringify(metadata);
+
+  await prisma.$executeRawUnsafe(
+    `
+    INSERT INTO document_chunks (id, content, source, source_type, metadata, embedding, created_at)
+    VALUES (gen_random_uuid()::text, $1, $2, $3, $4::jsonb, $5::vector, NOW())
+    `,
+    content,
+    source,
+    sourceType,
+    metadataStr,
+    vectorStr
+  );
+}
+
+async function main() {
+  console.log('🌱 Starting GrowEarn Production Database Seed...');
+
+  // Clean existing records
+  await prisma.$executeRawUnsafe(`TRUNCATE TABLE document_chunks CASCADE;`).catch(() => {});
   await prisma.notification.deleteMany();
   await prisma.aIInteraction.deleteMany();
   await prisma.aIRecommendation.deleteMany();
@@ -47,6 +90,7 @@ async function main() {
 
   const demoPasswordHash = await bcrypt.hash('Demo1234!', 10);
 
+  // 1. Technical Skills (30 In-Demand Skills)
   const skillsData = [
     { name: 'TypeScript', category: 'Frontend' },
     { name: 'React', category: 'Frontend' },
@@ -87,18 +131,19 @@ async function main() {
   }
   console.log(`✅ Seeded ${skillsData.length} technical skills.`);
 
+  // 2. Demo Learner Account (Alex Chen)
   const demoStudent = await prisma.user.create({
     data: {
       email: 'student@example.com',
       passwordHash: demoPasswordHash,
       name: 'Alex Chen',
-      role: 'STUDENT',
+      role: 'LEARNER',
       headline: 'Computer Science Student & Aspiring Full Stack Developer',
       location: 'Chennai, Tamil Nadu, India',
       country: 'India',
       state: 'Tamil Nadu',
       city: 'Chennai',
-      bio: 'Enthusiastic CS student eager to master modern distributed systems, Spring Boot, and Next.js. Active open source learner seeking mentorship and entry-level projects.',
+      bio: 'Enthusiastic CS learner eager to master modern distributed backends, Spring Boot, and Next.js. Seeking 1-on-1 mentorship and full-stack projects.',
       avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       isVerified: true,
       profile: {
@@ -108,7 +153,7 @@ async function main() {
           targetRole: 'Backend Developer',
           experienceLevel: 'Beginner',
           isOnboarded: true,
-          aiScore: 82,
+          aiScore: 84,
           yearsOfExperience: 1,
           githubUrl: 'https://github.com/alexchen',
           linkedinUrl: 'https://linkedin.com/in/alexchen',
@@ -117,225 +162,473 @@ async function main() {
     },
   });
 
-  const demoMentor = await prisma.user.create({
-    data: {
-      email: 'mentor@example.com',
-      passwordHash: demoPasswordHash,
-      name: 'Dr. Marcus Vance',
-      role: 'MENTOR',
-      headline: 'Principal Distributed Systems Architect @ CloudScale (10+ Yrs Exp)',
-      location: 'Bangalore, Karnataka, India',
-      country: 'India',
-      state: 'Karnataka',
-      city: 'Bangalore',
-      bio: 'Passionate about engineering leadership, high-throughput microservices, and coaching the next generation of software engineers. Over 150+ students mentored.',
-      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-      isVerified: true,
-      profile: {
-        create: {
-          title: 'Principal Systems Architect',
-          yearsOfExperience: 10,
-          hourlyRate: 85,
-          aiScore: 98,
-          githubUrl: 'https://github.com/marcusvance',
-          linkedinUrl: 'https://linkedin.com/in/marcusvance',
-        },
-      },
-      mentorProfile: {
-        create: {
-          hourlyRate: 85,
-          bio: '10+ years architecting fault-tolerant distributed backends with Java Spring Boot, Go, and Kafka. Let us optimize your system design and accelerate your career.',
-          expertise: 'Java, Spring Boot, System Design, PostgreSQL, Kubernetes, Kafka',
-          yearsExperience: 10,
-          company: 'CloudScale Technologies',
-          title: 'Principal Architect',
-          rating: 4.95,
-          studentsCount: 142,
-          sessionCount: 260,
-          isAvailable: true,
-          availability: 'Weekdays 7 PM - 10 PM IST, Weekends Flexible',
-        },
-      },
-    },
-  });
-
+  // 3. Demo Professional Freelancer (Pooja Verma)
   const demoProfessional = await prisma.user.create({
     data: {
       email: 'professional@example.com',
       passwordHash: demoPasswordHash,
-      name: 'Elena Rostova',
+      name: 'Pooja Verma',
       role: 'PROFESSIONAL',
-      headline: 'Senior Full Stack & Generative AI Application Developer',
-      location: 'Chennai, Tamil Nadu, India',
+      headline: 'Senior Mobile & Full Stack Specialist',
+      location: 'Bangalore, Karnataka, India',
       country: 'India',
-      state: 'Tamil Nadu',
-      city: 'Chennai',
-      bio: 'Specialist in building high-conversion SaaS web apps, Next.js full-stack architectures, and custom LLM integrations. 100% job success rate across 35+ contracts.',
-      avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+      state: 'Karnataka',
+      city: 'Bangalore',
+      bio: 'Specialist in building high-conversion SaaS web apps, Next.js full-stack architectures, and cross-platform mobile apps. 100% job success rate across 35+ contracts.',
+      avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
       isVerified: true,
       profile: {
         create: {
-          title: 'Senior Full Stack & AI Specialist',
+          title: 'Senior Mobile & Full Stack Specialist',
           hourlyRate: 65,
-          yearsOfExperience: 6,
-          aiScore: 94,
-          careerGoal: 'AI Application Engineering Consultant',
-          targetRole: 'Full Stack AI Developer',
+          yearsOfExperience: 7,
+          aiScore: 95,
+          careerGoal: 'Full Stack & Mobile Engineering Consultant',
+          targetRole: 'Senior Full Stack Specialist',
           experienceLevel: 'Advanced',
           isOnboarded: true,
-          portfolioUrl: 'https://elena-portfolio.dev',
-          githubUrl: 'https://github.com/elenarostova',
-          linkedinUrl: 'https://linkedin.com/in/elenarostova',
+          portfolioUrl: 'https://pooja-verma.dev',
+          githubUrl: 'https://github.com/poojaverma',
+          linkedinUrl: 'https://linkedin.com/in/pooja-verma-mobile',
         },
       },
     },
   });
 
-  const demoCompany = await prisma.user.create({
-    data: {
-      email: 'company@example.com',
-      passwordHash: demoPasswordHash,
-      name: 'Nexus Dynamics Inc.',
-      role: 'EMPLOYER',
-      headline: 'Next-Gen Cloud & AI Enterprise Software Innovations',
-      location: 'Chennai, Tamil Nadu, India',
-      country: 'India',
-      state: 'Tamil Nadu',
-      city: 'Chennai',
-      bio: 'Leading innovator building automated enterprise workflows, intelligent data pipelines, and scalable cloud solutions for Fortune 500 organizations.',
+  // 4. Seed 10 Realistic Companies
+  const companiesData = [
+    {
+      name: 'NovaTech Solutions',
+      email: 'careers@novatech-solutions.io',
+      city: 'Bangalore',
+      state: 'Karnataka',
+      industry: 'Enterprise Cloud & FinTech Platforms',
+      size: '250-500 Employees',
+      website: 'https://novatech-solutions.io',
+      headline: 'Next-Generation Distributed Cloud & Financial Systems',
+      bio: 'Leading innovator building high-throughput microservices, banking APIs, and scalable distributed data platforms.',
       avatarUrl: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=150&auto=format&fit=crop&q=80',
-      isVerified: true,
-      profile: {
-        create: {
-          title: 'Enterprise Technology Provider',
-          companyName: 'Nexus Dynamics Inc.',
-          companyIndustry: 'Enterprise Software & Artificial Intelligence',
-          companyWebsite: 'https://nexusdynamics.io',
-          companySize: '250-500 Employees',
-        },
-      },
     },
-  });
-
-  const additionalUsers = [
-    { name: 'Rahul Sharma', email: 'rahul.sharma@example.com', role: 'LEARNER', city: 'Chennai', state: 'Tamil Nadu', title: 'React & Node.js Enthusiast' },
-    { name: 'Priya Sundaram', email: 'priya.sundaram@example.com', role: 'PROFESSIONAL', city: 'Chennai', state: 'Tamil Nadu', title: 'Mobile Developer (Flutter & React Native)' },
-    { name: 'Vikram Patel', email: 'vikram.patel@example.com', role: 'MENTOR', city: 'Bangalore', state: 'Karnataka', title: 'Senior AI/ML Lead @ NeuralLabs', expertise: 'Machine Learning, Deep Learning, Python, PyTorch, Scikit-Learn', hourlyRate: 95 },
-    { name: 'Sarah Jenkins', email: 'sarah.j@example.com', role: 'MENTOR', city: 'San Francisco', state: 'CA', country: 'United States', title: 'Staff Frontend & UI/UX Architect @ Stripe', expertise: 'React, Next.js, TypeScript, UI/UX Design (Figma), Tailwind CSS', hourlyRate: 110 },
-    { name: 'Apex Software Labs', email: 'careers@apexsoftware.com', role: 'EMPLOYER', city: 'Chennai', state: 'Tamil Nadu', title: 'High-growth FinTech Startup' },
-    { name: 'David Kim', email: 'david.kim@example.com', role: 'MENTOR', city: 'Hyderabad', state: 'Telangana', title: 'Staff Python & Data Systems Engineer', expertise: 'Python, FastAPI, Django, PostgreSQL, Redis, System Design', hourlyRate: 85 },
-    { name: 'Ananya Deshmukh', email: 'ananya.d@example.com', role: 'MENTOR', city: 'Mumbai', state: 'Maharashtra', title: 'Staff Frontend Engineer @ DevCore', expertise: 'React, TypeScript, Next.js, Vue.js, GraphQL', hourlyRate: 80 },
-    { name: 'Quantix Cloud Solutions', email: 'talent@quantix.io', role: 'EMPLOYER', city: 'Bangalore', state: 'Karnataka', title: 'Cloud Infrastructure & DevOps Enterprise' },
-    { name: 'Karthik Raja', email: 'karthik.raja@example.com', role: 'MENTOR', city: 'Chennai', state: 'Tamil Nadu', title: 'Principal Database & Storage Architect', expertise: 'PostgreSQL, Database & Architecture, Redis, MongoDB, System Design', hourlyRate: 90 },
-    { name: 'Jessica Miller', email: 'jessica.m@example.com', role: 'MENTOR', city: 'Austin', state: 'TX', country: 'United States', title: 'Engineering Director & System Design Coach', expertise: 'System Design, Kubernetes, AWS, Microservices, CI/CD Pipelines', hourlyRate: 120 },
-    { name: 'Alex Morgan', email: 'alex.morgan@example.com', role: 'MENTOR', city: 'Seattle', state: 'WA', country: 'United States', title: 'Principal Cloud DevOps & SRE Lead @ AWS', expertise: 'Docker, Kubernetes, AWS, Google Cloud Platform, CI/CD Pipelines', hourlyRate: 115 },
-    { name: 'Carlos Rodriguez', email: 'carlos.r@example.com', role: 'MENTOR', city: 'Boston', state: 'MA', country: 'United States', title: 'Lead Cybersecurity & Cloud Security Architect', expertise: 'Cybersecurity, Spring Security, System Design, Docker, AWS', hourlyRate: 105 },
-    { name: 'Mei Ling', email: 'mei.ling@example.com', role: 'MENTOR', city: 'Singapore', country: 'Singapore', title: 'Staff Generative AI & LLM Systems Specialist', expertise: 'LangChain & RAG, LLM Engineering, PyTorch, Python, Machine Learning', hourlyRate: 125 },
-    { name: 'Arjun Swaminathan', email: 'arjun.s@example.com', role: 'MENTOR', city: 'Chennai', state: 'Tamil Nadu', title: 'Lead Mobile App Architect (Flutter & React Native)', expertise: 'Flutter, React Native, Mobile Development, TypeScript, GraphQL', hourlyRate: 75 },
+    {
+      name: 'PixelForge Labs',
+      email: 'talent@pixelforgelabs.dev',
+      city: 'Chennai',
+      state: 'Tamil Nadu',
+      industry: 'Modern Web Applications & Design Systems',
+      size: '50-100 Employees',
+      website: 'https://pixelforgelabs.dev',
+      headline: 'Next.js, UI/UX Design Systems & High-Conversion Digital Products',
+      bio: 'Digital product studio crafting accessible design systems, real-time collaboration tools, and modern web platforms.',
+      avatarUrl: 'https://images.unsplash.com/photo-1572021335469-31706a17aaef?w=150&auto=format&fit=crop&q=80',
+    },
+    {
+      name: 'CloudVista Systems',
+      email: 'hiring@cloudvistasystems.com',
+      city: 'Hyderabad',
+      state: 'Telangana',
+      industry: 'Cloud Infrastructure & SRE Automation',
+      size: '100-250 Employees',
+      website: 'https://cloudvistasystems.com',
+      headline: 'Multi-Cloud Architecture, Kubernetes Orchestration & SRE Consulting',
+      bio: 'Empowering enterprises to scale reliably with automated CI/CD pipelines, Kubernetes clusters, and zero-trust cloud security.',
+      avatarUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=150&auto=format&fit=crop&q=80',
+    },
+    {
+      name: 'DataSphere Analytics',
+      email: 'careers@datasphere-analytics.io',
+      city: 'Pune',
+      state: 'Maharashtra',
+      industry: 'High-Volume Data Engineering & Business Intelligence',
+      size: '100-250 Employees',
+      website: 'https://datasphere-analytics.io',
+      headline: 'Real-time Telemetry, Data Warehousing & PostgreSQL Optimization',
+      bio: 'Building mission-critical data pipelines, real-time analytics dashboards, and optimized PostgreSQL architectures.',
+      avatarUrl: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=150&auto=format&fit=crop&q=80',
+    },
+    {
+      name: 'HyperScale Networks',
+      email: 'team@hyperscalenetworks.net',
+      city: 'Mumbai',
+      state: 'Maharashtra',
+      industry: 'Distributed Networking & High-Throughput Infrastructure',
+      size: '500-1000 Employees',
+      website: 'https://hyperscalenetworks.net',
+      headline: 'Low-Latency Event Streaming & High-Availability Network Backends',
+      bio: 'Developing resilient distributed networking hardware and high-throughput Apache Kafka streaming engines.',
+      avatarUrl: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=150&auto=format&fit=crop&q=80',
+    },
+    {
+      name: 'NextWave Digital',
+      email: 'careers@nextwavedigital.co',
+      city: 'Bangalore',
+      state: 'Karnataka',
+      industry: 'Full Stack Digital Products & SaaS Accelerators',
+      size: '50-100 Employees',
+      website: 'https://nextwavedigital.co',
+      headline: 'Modern React 19, TypeScript & Cloud Native SaaS Platforms',
+      bio: 'Engineering scalable full-stack applications with high reliability, test-driven development, and clean architecture.',
+      avatarUrl: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=150&auto=format&fit=crop&q=80',
+    },
+    {
+      name: 'QuantumLeap Innovations',
+      email: 'join@quantumleap-tech.io',
+      city: 'Chennai',
+      state: 'Tamil Nadu',
+      industry: 'Event-Driven Microservices & Real-time Telemetry',
+      size: '100-250 Employees',
+      website: 'https://quantumleap-tech.io',
+      headline: 'Golang, Distributed Transactions & Microservices Innovation',
+      bio: 'Engineering high-concurrency microservices, gRPC backends, and distributed streaming engines.',
+      avatarUrl: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=150&auto=format&fit=crop&q=80',
+    },
+    {
+      name: 'Synthetix AI',
+      email: 'careers@synthetix-ai.org',
+      city: 'Bangalore',
+      state: 'Karnataka',
+      industry: 'Enterprise Large Language Models & Vector Search',
+      size: '50-100 Employees',
+      website: 'https://synthetix-ai.org',
+      headline: 'Production RAG Architectures, Vector Databases & LLM Agents',
+      bio: 'Pioneering production-grade AI search, vector embeddings, and LangChain orchestration for enterprise software.',
+      avatarUrl: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=150&auto=format&fit=crop&q=80',
+    },
+    {
+      name: 'ZenPulse Technologies',
+      email: 'talent@zenpulse.tech',
+      city: 'Hyderabad',
+      state: 'Telangana',
+      industry: 'HealthTech Software & Intelligent Care Platforms',
+      size: '100-250 Employees',
+      website: 'https://zenpulse.tech',
+      headline: 'Secure Medical Data Systems & Asynchronous FastAPI Backends',
+      bio: 'Creating HIPAA-compliant medical software, real-time diagnostic telemetry, and secure cloud storage.',
+      avatarUrl: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?w=150&auto=format&fit=crop&q=80',
+    },
+    {
+      name: 'UrbanByte Systems',
+      email: 'careers@urbanbyte.in',
+      city: 'Chennai',
+      state: 'Tamil Nadu',
+      industry: 'Smart Mobility & Cross-Platform Mobile Solutions',
+      size: '50-100 Employees',
+      website: 'https://urbanbyte.in',
+      headline: 'Cross-Platform Mobile Apps with Flutter & React Native',
+      bio: 'Connecting millions of urban commuters with high-performance mobile apps, geolocation tracking, and instant payments.',
+      avatarUrl: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=150&auto=format&fit=crop&q=80',
+    },
   ];
 
-  const userIds: Record<string, string> = {
-    student: demoStudent.id,
-    mentor: demoMentor.id,
-    professional: demoProfessional.id,
-    company: demoCompany.id,
-  };
-
-  for (const u of additionalUsers) {
-    const created = await prisma.user.create({
+  const companyUserIds: Record<string, string> = {};
+  for (const c of companiesData) {
+    const user = await prisma.user.create({
       data: {
-        email: u.email,
+        email: c.email,
         passwordHash: demoPasswordHash,
-        name: u.name,
-        role: u.role,
-        headline: u.title,
-        location: `${u.city}${u.state ? `, ${u.state}` : ''}, ${u.country || 'India'}`,
-        country: u.country || 'India',
-        state: u.state,
-        city: u.city,
-        bio: `Professional profile for ${u.name}. Passionate about technology leadership, career mentorship, and software craftsmanship.`,
+        name: c.name,
+        role: 'EMPLOYER',
+        headline: c.headline,
+        location: `${c.city}, ${c.state}, India`,
+        country: 'India',
+        state: c.state,
+        city: c.city,
+        bio: c.bio,
+        avatarUrl: c.avatarUrl,
         isVerified: true,
         profile: {
           create: {
-            title: u.title,
-            yearsOfExperience: u.role === 'MENTOR' ? 9 : u.role === 'FREELANCER' ? 4 : 2,
-            hourlyRate: (u as any).hourlyRate || (u.role === 'MENTOR' ? 85 : 50),
-            aiScore: 92,
-            companyName: u.role === 'COMPANY' ? u.name : undefined,
+            title: c.industry,
+            companyName: c.name,
+            companyIndustry: c.industry,
+            companyWebsite: c.website,
+            companySize: c.size,
           },
         },
-        ...(u.role === 'MENTOR'
-          ? {
-              mentorProfile: {
-                create: {
-                  hourlyRate: (u as any).hourlyRate || 85,
-                  bio: `Senior industry coach with extensive production leadership. Specializing in ${(u as any).expertise || 'System Architecture, Full Stack Engineering, and Career Coaching'}.`,
-                  expertise: (u as any).expertise || 'System Design, React, Node.js, Cloud Architecture',
-                  yearsExperience: 9,
-                  title: u.title,
-                  company: 'Global Tech Enterprises',
-                  rating: 4.92,
-                  studentsCount: 88,
-                  sessionCount: 160,
-                  isAvailable: true,
-                  availability: 'Weekdays 6 PM - 9 PM, Weekends Flexible',
-                },
-              },
-            }
-          : {}),
       },
     });
-    userIds[u.email] = created.id;
+    companyUserIds[c.name] = user.id;
   }
-  console.log(`✅ Seeded demo accounts and ${additionalUsers.length} active users.`);
+  console.log(`✅ Seeded ${companiesData.length} realistic tech companies.`);
 
-  const studentSkills = ['Java', 'PostgreSQL', 'TypeScript', 'React'];
-  for (const sk of studentSkills) {
-    if (createdSkills[sk]) {
-      await prisma.userSkill.create({
-        data: {
-          userId: demoStudent.id,
-          skillId: createdSkills[sk],
-          proficiencyLevel: sk === 'Java' ? 'INTERMEDIATE' : 'BEGINNER',
-          isVerified: true,
+  // 5. Seed 12 Indian Mentors
+  const mentorsData = [
+    {
+      name: 'Priya Sharma',
+      email: 'priya.sharma@example.com',
+      title: 'Senior Backend Engineer',
+      company: 'NovaTech Solutions',
+      city: 'Bangalore',
+      state: 'Karnataka',
+      expertise: 'Java, Spring Boot, PostgreSQL, Microservices, System Design',
+      hourlyRate: 65,
+      yearsExperience: 8,
+      rating: 4.95,
+      studentsCount: 142,
+      sessionCount: 280,
+      bio: 'Senior backend architect with 8+ years designing fault-tolerant microservices, high-concurrency message queues, and enterprise SQL databases in FinTech.',
+      linkedin: 'https://linkedin.com/in/priya-sharma-backend',
+      avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+      availability: 'Weekdays 7 PM - 10 PM IST, Weekends Flexible',
+    },
+    {
+      name: 'Arjun Nair',
+      email: 'arjun.nair@example.com',
+      title: 'Principal Cloud Architect',
+      company: 'CloudVista Systems',
+      city: 'Hyderabad',
+      state: 'Telangana',
+      expertise: 'AWS, Docker, Kubernetes, Terraform, CI/CD Pipelines',
+      hourlyRate: 85,
+      yearsExperience: 11,
+      rating: 4.98,
+      studentsCount: 195,
+      sessionCount: 360,
+      bio: 'Certified AWS Solutions Architect with over a decade of experience designing scalable multi-region cloud infrastructures, Kubernetes orchestration, and automated DevOps pipelines.',
+      linkedin: 'https://linkedin.com/in/arjun-nair-cloud',
+      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+      availability: 'Weekdays 6 PM - 9 PM IST, Saturday Mornings',
+    },
+    {
+      name: 'Sneha Iyer',
+      email: 'sneha.iyer@example.com',
+      title: 'Lead Data Scientist & AI Engineer',
+      company: 'Synthetix AI',
+      city: 'Bangalore',
+      state: 'Karnataka',
+      expertise: 'Python, Machine Learning, Deep Learning, PyTorch, LangChain & RAG',
+      hourlyRate: 75,
+      yearsExperience: 7,
+      rating: 4.92,
+      studentsCount: 128,
+      sessionCount: 220,
+      bio: 'Specializing in modern Large Language Model pipelines, vector database architectures, Retrieval-Augmented Generation, and PyTorch deep neural networks.',
+      linkedin: 'https://linkedin.com/in/sneha-iyer-ai',
+      avatarUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80',
+      availability: 'Tuesday, Thursday & Saturday Evenings',
+    },
+    {
+      name: 'Vikram Patel',
+      email: 'vikram.patel@example.com',
+      title: 'Senior Full Stack Architect',
+      company: 'PixelForge Labs',
+      city: 'Chennai',
+      state: 'Tamil Nadu',
+      expertise: 'React, Next.js, TypeScript, Node.js, Tailwind CSS',
+      hourlyRate: 60,
+      yearsExperience: 8,
+      rating: 4.90,
+      studentsCount: 110,
+      sessionCount: 190,
+      bio: 'Full-stack engineer passionate about React Server Components, high-performance web applications, and resilient Node.js backends.',
+      linkedin: 'https://linkedin.com/in/vikram-patel-fullstack',
+      avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+      availability: 'Weekdays 7 PM - 10 PM IST',
+    },
+    {
+      name: 'Ananya Deshmukh',
+      email: 'ananya.deshmukh@example.com',
+      title: 'Staff Frontend Engineer & Design Systems Lead',
+      company: 'NextWave Digital',
+      city: 'Mumbai',
+      state: 'Maharashtra',
+      expertise: 'React, TypeScript, UI/UX Design (Figma), Next.js, Tailwind CSS',
+      hourlyRate: 55,
+      yearsExperience: 6,
+      rating: 4.88,
+      studentsCount: 95,
+      sessionCount: 165,
+      bio: 'Focused on creating accessible, scalable UI/UX token systems, motion animations, and enterprise frontend codebases with Next.js and Figma.',
+      linkedin: 'https://linkedin.com/in/ananya-deshmukh-frontend',
+      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      availability: 'Monday to Friday 6 PM - 9 PM IST',
+    },
+    {
+      name: 'Karthik Raja',
+      email: 'karthik.raja@example.com',
+      title: 'Principal Database & Storage Architect',
+      company: 'DataSphere Analytics',
+      city: 'Chennai',
+      state: 'Tamil Nadu',
+      expertise: 'PostgreSQL, Redis, MongoDB, System Design, Database & Architecture',
+      hourlyRate: 80,
+      yearsExperience: 10,
+      rating: 4.96,
+      studentsCount: 160,
+      sessionCount: 310,
+      bio: 'Database performance specialist with deep expertise in B-tree indexing, query plan optimization, sharding, and high-throughput Redis caching.',
+      linkedin: 'https://linkedin.com/in/karthik-raja-db',
+      avatarUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80',
+      availability: 'Weekends 10 AM - 6 PM IST',
+    },
+    {
+      name: 'Rohan Gupta',
+      email: 'rohan.gupta@example.com',
+      title: 'Lead Site Reliability Engineer & DevOps Coach',
+      company: 'HyperScale Networks',
+      city: 'Pune',
+      state: 'Maharashtra',
+      expertise: 'Kubernetes, Docker, CI/CD Pipelines, Google Cloud Platform, AWS',
+      hourlyRate: 70,
+      yearsExperience: 9,
+      rating: 4.91,
+      studentsCount: 120,
+      sessionCount: 210,
+      bio: 'SRE leader experienced in zero-downtime deployments, observability metrics, Kubernetes cluster management, and incident response automation.',
+      linkedin: 'https://linkedin.com/in/rohan-gupta-sre',
+      avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80',
+      availability: 'Weekdays 8 PM - 10 PM IST',
+    },
+    {
+      name: 'Pooja Verma',
+      email: 'pooja.verma@example.com',
+      title: 'Senior Mobile Solutions Architect',
+      company: 'UrbanByte Systems',
+      city: 'Bangalore',
+      state: 'Karnataka',
+      expertise: 'Flutter, React Native, Mobile Development, TypeScript, GraphQL',
+      hourlyRate: 60,
+      yearsExperience: 7,
+      rating: 4.89,
+      studentsCount: 105,
+      sessionCount: 180,
+      bio: 'Built and published over 15+ cross-platform mobile apps on Google Play and Apple App Store using Flutter and React Native.',
+      linkedin: 'https://linkedin.com/in/pooja-verma-mobile',
+      avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
+      availability: 'Wednesday & Friday Evenings, Saturday Afternoons',
+    },
+    {
+      name: 'Aditya Roy',
+      email: 'aditya.roy@example.com',
+      title: 'Distributed Systems & Go Backend Engineer',
+      company: 'QuantumLeap Innovations',
+      city: 'Kolkata',
+      state: 'West Bengal',
+      expertise: 'Go (Golang), Kafka, Microservices, PostgreSQL, System Design',
+      hourlyRate: 75,
+      yearsExperience: 8,
+      rating: 4.93,
+      studentsCount: 130,
+      sessionCount: 240,
+      bio: 'Architecting low-latency Go microservices and event-driven data streaming pipelines with Apache Kafka and PostgreSQL.',
+      linkedin: 'https://linkedin.com/in/aditya-roy-golang',
+      avatarUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80',
+      availability: 'Weekdays 7 PM - 10 PM IST',
+    },
+    {
+      name: 'Neha Kulkarni',
+      email: 'neha.kulkarni@example.com',
+      title: 'Senior AI Application Engineer',
+      company: 'ZenPulse Technologies',
+      city: 'Pune',
+      state: 'Maharashtra',
+      expertise: 'LLM Engineering, LangChain & RAG, Python, FastAPI, TypeScript',
+      hourlyRate: 70,
+      yearsExperience: 6,
+      rating: 4.94,
+      studentsCount: 115,
+      sessionCount: 205,
+      bio: 'Hands-on practitioner designing enterprise generative AI copilots, custom RAG indexing pipelines, and high-speed async FastAPI backends.',
+      linkedin: 'https://linkedin.com/in/neha-kulkarni-ai',
+      avatarUrl: 'https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?w=150&auto=format&fit=crop&q=80',
+      availability: 'Monday, Wednesday & Saturday Evenings',
+    },
+    {
+      name: 'Suresh Menon',
+      email: 'suresh.menon@example.com',
+      title: 'Cybersecurity & Cloud Defense Architect',
+      company: 'NovaTech Solutions',
+      city: 'Kochi',
+      state: 'Kerala',
+      expertise: 'Cybersecurity, Spring Security, System Design, Docker, AWS',
+      hourlyRate: 80,
+      yearsExperience: 10,
+      rating: 4.92,
+      studentsCount: 140,
+      sessionCount: 260,
+      bio: 'Security consultant helping startups and enterprises audit OWASP Top 10 vulnerabilities, configure OAuth2/OIDC, and implement zero-trust architectures.',
+      linkedin: 'https://linkedin.com/in/suresh-menon-security',
+      avatarUrl: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80',
+      availability: 'Weekdays 6 PM - 9 PM IST',
+    },
+    {
+      name: 'Divya Krishnan',
+      email: 'divya.krishnan@example.com',
+      title: 'Machine Learning & NLP Research Engineer',
+      company: 'Synthetix AI',
+      city: 'Chennai',
+      state: 'Tamil Nadu',
+      expertise: 'Machine Learning, Deep Learning, Python, PyTorch, LangChain & RAG',
+      hourlyRate: 75,
+      yearsExperience: 7,
+      rating: 4.95,
+      studentsCount: 125,
+      sessionCount: 230,
+      bio: 'NLP and ML engineer specializing in text embedding spaces, semantic search algorithms, transformer fine-tuning, and model quantization.',
+      linkedin: 'https://linkedin.com/in/divya-krishnan-nlp',
+      avatarUrl: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=150&auto=format&fit=crop&q=80',
+      availability: 'Weekdays 7 PM - 10 PM IST, Weekends Flexible',
+    },
+  ];
+
+  const mentorUserIds: Record<string, string> = {};
+  for (const m of mentorsData) {
+    const user = await prisma.user.create({
+      data: {
+        email: m.email,
+        passwordHash: demoPasswordHash,
+        name: m.name,
+        role: 'MENTOR',
+        headline: `${m.title} @ ${m.company} (${m.yearsExperience}+ Yrs Exp)`,
+        location: `${m.city}, ${m.state}, India`,
+        country: 'India',
+        state: m.state,
+        city: m.city,
+        bio: m.bio,
+        avatarUrl: m.avatarUrl,
+        isVerified: true,
+        profile: {
+          create: {
+            title: m.title,
+            yearsOfExperience: m.yearsExperience,
+            hourlyRate: m.hourlyRate,
+            aiScore: 96,
+            githubUrl: `https://github.com/${m.name.toLowerCase().replace(/\s+/g, '')}`,
+            linkedinUrl: m.linkedin,
+          },
         },
-      });
-    }
-  }
-
-  const professionalSkills = ['TypeScript', 'React', 'Next.js', 'Tailwind CSS', 'Node.js', 'PostgreSQL', 'LLM Engineering', 'Docker'];
-  for (const sk of professionalSkills) {
-    if (createdSkills[sk]) {
-      await prisma.userSkill.create({
-        data: {
-          userId: demoProfessional.id,
-          skillId: createdSkills[sk],
-          proficiencyLevel: 'EXPERT',
-          isVerified: true,
-          endorsementsCount: 14,
+        mentorProfile: {
+          create: {
+            hourlyRate: m.hourlyRate,
+            bio: m.bio,
+            expertise: m.expertise,
+            yearsExperience: m.yearsExperience,
+            company: m.company,
+            title: m.title,
+            rating: m.rating,
+            studentsCount: m.studentsCount,
+            sessionCount: m.sessionCount,
+            isAvailable: true,
+            availability: m.availability,
+          },
         },
-      });
-    }
-  }
+      },
+    });
+    mentorUserIds[m.name] = user.id;
 
-  const mentorSkills = ['Java', 'Spring Boot', 'System Design', 'PostgreSQL', 'Kubernetes', 'Docker', 'AWS', 'CI/CD Pipelines'];
-  for (const sk of mentorSkills) {
-    if (createdSkills[sk]) {
-      await prisma.userSkill.create({
-        data: {
-          userId: demoMentor.id,
-          skillId: createdSkills[sk],
-          proficiencyLevel: 'EXPERT',
-          isVerified: true,
-          endorsementsCount: 28,
-        },
-      });
-    }
+    // Ingest mentor profile into pgvector
+    await insertChunk(
+      `Mentor Profile: ${m.name}\nTitle: ${m.title} at ${m.company}\nLocation: ${m.city}, ${m.state}, India\nExpertise: ${m.expertise}\nHourly Rate: $${m.hourlyRate}/hr\nRating: ${m.rating} ⭐\nExperience: ${m.yearsExperience} years\nBio: ${m.bio}\nAvailability: ${m.availability}`,
+      `Mentor: ${m.name}`,
+      'mentor',
+      { mentorId: user.id, name: m.name, expertise: m.expertise, hourlyRate: m.hourlyRate }
+    );
   }
+  console.log(`✅ Seeded ${mentorsData.length} Indian mentors with pgvector chunk embeddings.`);
 
+  // 6. Seed 20 Real Technical Courses
   const coursesData = [
     {
-      instructorId: demoMentor.id,
+      mentorName: 'Priya Sharma',
       title: 'Spring Boot 3 & Enterprise Microservices Architecture',
       slug: 'spring-boot-3-microservices',
       description: 'Master production-ready backend architecture using Java 21, Spring Boot 3, Spring Security, Docker, and Kafka.',
@@ -345,35 +638,11 @@ async function main() {
       durationHours: 24,
       thumbnail: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600&auto=format&fit=crop&q=80',
       skillsCovered: 'Java, Spring Boot, System Design, PostgreSQL, Docker',
-      rating: 4.9,
-      reviewsCount: 84,
-      modules: [
-        {
-          title: 'Module 1: Spring Boot 3 Architecture & REST APIs',
-          lessons: [
-            { title: 'Modern Spring Boot Architecture & Dependency Injection', durationMinutes: 20 },
-            { title: 'Designing Clean RESTful Controller Endpoints & Validation', durationMinutes: 25 },
-            { title: 'Data Persistence with Spring Data JPA & PostgreSQL', durationMinutes: 30 },
-          ],
-        },
-        {
-          title: 'Module 2: Security, JWT & Authentication',
-          lessons: [
-            { title: 'Spring Security 6 with Stateless JWT Filter Chain', durationMinutes: 35 },
-            { title: 'Role-Based Access Control & Method Level Security', durationMinutes: 25 },
-          ],
-        },
-        {
-          title: 'Module 3: Containerization & Cloud Deployment',
-          lessons: [
-            { title: 'Multi-stage Docker Builds for Java Applications', durationMinutes: 20 },
-            { title: 'Deploying Microservices to Kubernetes Cluster', durationMinutes: 40 },
-          ],
-        },
-      ],
+      rating: 4.95,
+      reviewsCount: 142,
     },
     {
-      instructorId: demoProfessional.id,
+      mentorName: 'Vikram Patel',
       title: 'Next.js 15 & Generative AI Applications Masterclass',
       slug: 'nextjs-15-generative-ai',
       description: 'Build full-stack AI SaaS applications with Next.js App Router, Server Actions, Tailwind CSS, and LangChain.',
@@ -383,41 +652,25 @@ async function main() {
       durationHours: 18,
       thumbnail: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
       skillsCovered: 'Next.js, React, TypeScript, LLM Engineering, Tailwind CSS',
-      rating: 4.95,
-      reviewsCount: 112,
-      modules: [
-        {
-          title: 'Module 1: Next.js 15 Foundations',
-          lessons: [
-            { title: 'Server Components vs Client Components Deep Dive', durationMinutes: 25 },
-            { title: 'Server Actions, Form Mutations & Zod Validation', durationMinutes: 30 },
-          ],
-        },
-        {
-          title: 'Module 2: AI & LLM Integration',
-          lessons: [
-            { title: 'Streaming LLM Responses with Vercel AI SDK', durationMinutes: 30 },
-            { title: 'Building Retrieval-Augmented Generation (RAG) Workflows', durationMinutes: 45 },
-          ],
-        },
-      ],
+      rating: 4.96,
+      reviewsCount: 168,
     },
     {
-      instructorId: demoMentor.id,
-      title: 'Complete PostgreSQL & Relational Database Optimization',
+      mentorName: 'Karthik Raja',
+      title: 'PostgreSQL & Relational Database Query Optimization',
       slug: 'postgresql-database-optimization',
-      description: 'From schema normalization to indexing strategies, query execution plans, and high-concurrency scaling.',
+      description: 'From schema normalization to B-tree indexing strategies, query execution plans, and high-concurrency scaling.',
       category: 'Database & Architecture',
       level: 'INTERMEDIATE',
       price: 39.99,
       durationHours: 12,
       thumbnail: 'https://images.unsplash.com/photo-1544383835-bda2bc66a55d?w=600&auto=format&fit=crop&q=80',
-      skillsCovered: 'PostgreSQL, Redis, System Design',
-      rating: 4.88,
-      reviewsCount: 65,
+      skillsCovered: 'PostgreSQL, Redis, System Design, Database & Architecture',
+      rating: 4.92,
+      reviewsCount: 94,
     },
     {
-      instructorId: demoProfessional.id,
+      mentorName: 'Vikram Patel',
       title: 'Full Stack TypeScript: From Zero to Production',
       slug: 'fullstack-typescript-zero-to-production',
       description: 'End-to-end type safety from database schemas to client components with Next.js, Prisma, and Zod.',
@@ -426,26 +679,26 @@ async function main() {
       price: 29.99,
       durationHours: 16,
       thumbnail: 'https://images.unsplash.com/photo-1516116211227-bbc1552a4e92?w=600&auto=format&fit=crop&q=80',
-      skillsCovered: 'TypeScript, React, Node.js, Prisma',
-      rating: 4.85,
-      reviewsCount: 42,
+      skillsCovered: 'TypeScript, React, Node.js, Next.js',
+      rating: 4.88,
+      reviewsCount: 76,
     },
     {
-      instructorId: demoMentor.id,
-      title: 'System Design for Senior & Principal Engineers',
-      slug: 'system-design-senior-principal',
-      description: 'Ace FAANG-level system design interviews: Caching, Sharding, Eventual Consistency, CAP Theorem, and Microservices.',
+      mentorName: 'Priya Sharma',
+      title: 'System Design & Distributed Systems for Senior Engineers',
+      slug: 'system-design-distributed-systems',
+      description: 'Ace technical system design interviews: Caching, Sharding, Eventual Consistency, CAP Theorem, and Microservices.',
       category: 'Database & Architecture',
       level: 'ADVANCED',
       price: 79.99,
       durationHours: 20,
       thumbnail: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&auto=format&fit=crop&q=80',
-      skillsCovered: 'System Design, Kubernetes, Kafka, AWS',
-      rating: 4.97,
-      reviewsCount: 156,
+      skillsCovered: 'System Design, Kubernetes, AWS, PostgreSQL',
+      rating: 4.98,
+      reviewsCount: 210,
     },
     {
-      instructorId: demoProfessional.id,
+      mentorName: 'Sneha Iyer',
       title: 'Python for Machine Learning & Deep Learning with PyTorch',
       slug: 'python-machine-learning-pytorch',
       description: 'Hands-on practical machine learning: vectorized data wrangling with NumPy/Pandas, Scikit-Learn pipelines, and PyTorch deep neural networks.',
@@ -455,25 +708,25 @@ async function main() {
       durationHours: 22,
       thumbnail: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&auto=format&fit=crop&q=80',
       skillsCovered: 'Python, Machine Learning, Deep Learning, PyTorch',
-      rating: 4.93,
-      reviewsCount: 98,
+      rating: 4.94,
+      reviewsCount: 135,
     },
     {
-      instructorId: demoProfessional.id,
-      title: 'Production Generative AI: LangChain, Vector DBs & RAG Workflows',
+      mentorName: 'Divya Krishnan',
+      title: 'Production Generative AI: LangChain, pgvector & RAG Pipelines',
       slug: 'generative-ai-rag-langchain',
-      description: 'Architect resilient enterprise RAG systems with vector embeddings, semantic search, Pinecone/pgvector, and autonomous agent loops.',
+      description: 'Architect resilient enterprise RAG systems with vector embeddings, semantic search, PostgreSQL pgvector, and autonomous agent chains.',
       category: 'AI / Machine Learning',
       level: 'ADVANCED',
       price: 69.99,
       durationHours: 19,
       thumbnail: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=600&auto=format&fit=crop&q=80',
-      skillsCovered: 'LangChain & RAG, LLM Engineering, Python, Vector DBs',
-      rating: 4.96,
-      reviewsCount: 134,
+      skillsCovered: 'LangChain & RAG, LLM Engineering, Python, PostgreSQL',
+      rating: 4.97,
+      reviewsCount: 180,
     },
     {
-      instructorId: demoMentor.id,
+      mentorName: 'Arjun Nair',
       title: 'Docker, Kubernetes & AWS Cloud DevOps Pipeline Mastery',
       slug: 'docker-kubernetes-aws-devops',
       description: 'Deploy resilient containerized workloads with Docker multi-stage builds, Kubernetes Helm charts, AWS EKS, and automated GitHub Actions.',
@@ -483,11 +736,11 @@ async function main() {
       durationHours: 26,
       thumbnail: 'https://images.unsplash.com/photo-1667372393119-3d4c48d07fc9?w=600&auto=format&fit=crop&q=80',
       skillsCovered: 'Docker, Kubernetes, AWS, CI/CD Pipelines',
-      rating: 4.91,
-      reviewsCount: 89,
+      rating: 4.93,
+      reviewsCount: 122,
     },
     {
-      instructorId: demoProfessional.id,
+      mentorName: 'Ananya Deshmukh',
       title: 'Modern React 19 & Next.js App Router Architecture',
       slug: 'modern-react-19-nextjs-architecture',
       description: 'Master React Server Components, Server Actions, suspense boundaries, custom hooks, and Tailwind CSS design systems.',
@@ -497,11 +750,11 @@ async function main() {
       durationHours: 15,
       thumbnail: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=600&auto=format&fit=crop&q=80',
       skillsCovered: 'React, Next.js, TypeScript, Tailwind CSS',
-      rating: 4.92,
-      reviewsCount: 110,
+      rating: 4.91,
+      reviewsCount: 155,
     },
     {
-      instructorId: demoMentor.id,
+      mentorName: 'Priya Sharma',
       title: 'Enterprise Java 21 & High-Performance Concurrency',
       slug: 'enterprise-java-21-concurrency',
       description: 'Deep dive into Java 21 Virtual Threads, Project Loom, memory models, garbage collection tuning, and lock-free data structures.',
@@ -511,25 +764,25 @@ async function main() {
       durationHours: 18,
       thumbnail: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&auto=format&fit=crop&q=80',
       skillsCovered: 'Java, Spring Boot, System Design, PostgreSQL',
-      rating: 4.89,
-      reviewsCount: 52,
+      rating: 4.90,
+      reviewsCount: 88,
     },
     {
-      instructorId: demoMentor.id,
+      mentorName: 'Neha Kulkarni',
       title: 'FastAPI & Python Microservices: High-Throughput Async APIs',
       slug: 'fastapi-python-async-microservices',
-      description: 'Build asynchronous microservices with FastAPI, Pydantic v2, SQLAlchemy 2.0, Redis caching, and Docker.',
+      description: 'Build asynchronous microservices with FastAPI, Pydantic v2, SQLAlchemy 2.0, Redis caching, and Docker containerization.',
       category: 'Backend',
       level: 'INTERMEDIATE',
       price: 39.99,
       durationHours: 14,
       thumbnail: 'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=600&auto=format&fit=crop&q=80',
       skillsCovered: 'Python, FastAPI, Redis, Docker, PostgreSQL',
-      rating: 4.87,
-      reviewsCount: 46,
+      rating: 4.89,
+      reviewsCount: 72,
     },
     {
-      instructorId: demoProfessional.id,
+      mentorName: 'Pooja Verma',
       title: 'Mobile App Development with Flutter & Dart: Zero to App Store',
       slug: 'flutter-dart-mobile-development',
       description: 'Build cross-platform iOS and Android mobile apps from a single codebase with Flutter, Dart, Riverpod state management, and Firebase.',
@@ -538,13 +791,13 @@ async function main() {
       price: 49.99,
       durationHours: 21,
       thumbnail: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=600&auto=format&fit=crop&q=80',
-      skillsCovered: 'Flutter, Mobile Development, Firebase, REST APIs',
-      rating: 4.9,
-      reviewsCount: 78,
+      skillsCovered: 'Flutter, Mobile Development, Firebase',
+      rating: 4.92,
+      reviewsCount: 110,
     },
     {
-      instructorId: demoProfessional.id,
-      title: 'Cross-Platform Mobile Apps with React Native & Expo',
+      mentorName: 'Pooja Verma',
+      title: 'Cross-Platform Mobile Apps with React Native & Expo Router',
       slug: 'react-native-expo-mastery',
       description: 'Develop performant native mobile applications using React Native, TypeScript, Expo Router, and native device hardware APIs.',
       category: 'Mobile Development',
@@ -553,11 +806,11 @@ async function main() {
       durationHours: 17,
       thumbnail: 'https://images.unsplash.com/photo-1551650975-87deedd944c3?w=600&auto=format&fit=crop&q=80',
       skillsCovered: 'React Native, TypeScript, Mobile Development, React',
-      rating: 4.86,
-      reviewsCount: 64,
+      rating: 4.88,
+      reviewsCount: 94,
     },
     {
-      instructorId: demoMentor.id,
+      mentorName: 'Suresh Menon',
       title: 'Cybersecurity, OAuth2 & Zero-Trust API Defense',
       slug: 'cybersecurity-oauth2-api-defense',
       description: 'Protect modern web applications against OWASP Top 10 vulnerabilities, implement OAuth2/OIDC, and audit JWT tokens.',
@@ -566,12 +819,12 @@ async function main() {
       price: 54.99,
       durationHours: 16,
       thumbnail: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=600&auto=format&fit=crop&q=80',
-      skillsCovered: 'Spring Security, Backend, System Design, Cybersecurity',
-      rating: 4.94,
-      reviewsCount: 73,
+      skillsCovered: 'Cybersecurity, Spring Security, System Design',
+      rating: 4.95,
+      reviewsCount: 98,
     },
     {
-      instructorId: demoProfessional.id,
+      mentorName: 'Ananya Deshmukh',
       title: 'Advanced UI/UX Design System with Figma & Tailwind CSS',
       slug: 'ui-ux-design-system-figma-tailwind',
       description: 'Design comprehensive UI/UX token design systems in Figma, structure design handoffs, and implement in Tailwind CSS.',
@@ -581,11 +834,11 @@ async function main() {
       durationHours: 13,
       thumbnail: 'https://images.unsplash.com/photo-1581291518655-9523c932edcf?w=600&auto=format&fit=crop&q=80',
       skillsCovered: 'UI/UX Design (Figma), Tailwind CSS, React',
-      rating: 4.95,
-      reviewsCount: 88,
+      rating: 4.96,
+      reviewsCount: 130,
     },
     {
-      instructorId: demoMentor.id,
+      mentorName: 'Aditya Roy',
       title: 'Golang Microservices & Distributed Event Systems with Kafka',
       slug: 'golang-microservices-kafka',
       description: 'Build ultra-fast backend microservices in Go (Golang), implement gRPC communication, and process high-volume Kafka streaming pipelines.',
@@ -594,16 +847,73 @@ async function main() {
       price: 64.99,
       durationHours: 20,
       thumbnail: 'https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=600&auto=format&fit=crop&q=80',
-      skillsCovered: 'Go (Golang), Backend, System Design, Docker, Kubernetes',
-      rating: 4.93,
-      reviewsCount: 67,
+      skillsCovered: 'Go (Golang), System Design, Docker, PostgreSQL',
+      rating: 4.94,
+      reviewsCount: 104,
+    },
+    {
+      mentorName: 'Karthik Raja',
+      title: 'Redis Caching Strategies & Low-Latency In-Memory Storage',
+      slug: 'redis-caching-strategies',
+      description: 'Master Redis data structures, distributed locking with Redlock, pub/sub messaging, and caching strategies for high-load systems.',
+      category: 'Database & Architecture',
+      level: 'INTERMEDIATE',
+      price: 39.99,
+      durationHours: 10,
+      thumbnail: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=600&auto=format&fit=crop&q=80',
+      skillsCovered: 'Redis, System Design, PostgreSQL',
+      rating: 4.91,
+      reviewsCount: 68,
+    },
+    {
+      mentorName: 'Rohan Gupta',
+      title: 'Cloud Native CI/CD Pipelines with GitHub Actions & Terraform',
+      slug: 'cicd-github-actions-terraform',
+      description: 'Automate build, test, and zero-downtime deployment pipelines for microservices using Infrastructure as Code (IaC).',
+      category: 'DevOps & Cloud',
+      level: 'INTERMEDIATE',
+      price: 49.99,
+      durationHours: 15,
+      thumbnail: 'https://images.unsplash.com/photo-1618401471353-b98afee0b2eb?w=600&auto=format&fit=crop&q=80',
+      skillsCovered: 'CI/CD Pipelines, Docker, Kubernetes, AWS',
+      rating: 4.90,
+      reviewsCount: 82,
+    },
+    {
+      mentorName: 'Vikram Patel',
+      title: 'GraphQL API Architecture with Apollo Server & TypeScript',
+      slug: 'graphql-api-architecture-apollo',
+      description: 'Design type-safe, flexible, and performant GraphQL schemas, query resolvers, DataLoader batching, and subscriptions.',
+      category: 'Backend',
+      level: 'INTERMEDIATE',
+      price: 44.99,
+      durationHours: 14,
+      thumbnail: 'https://images.unsplash.com/photo-1555066931-bf19f8fd1085?w=600&auto=format&fit=crop&q=80',
+      skillsCovered: 'GraphQL, TypeScript, Node.js, PostgreSQL',
+      rating: 4.87,
+      reviewsCount: 64,
+    },
+    {
+      mentorName: 'Priya Sharma',
+      title: 'Practical Data Structures, Algorithms & Technical Interview Prep',
+      slug: 'dsa-technical-interview-prep',
+      description: 'Ace coding interviews with systematic pattern recognition in dynamic programming, graph traversal, and tree problems.',
+      category: 'Backend',
+      level: 'BEGINNER',
+      price: 39.99,
+      durationHours: 25,
+      thumbnail: 'https://images.unsplash.com/photo-1509228468518-180dd4864904?w=600&auto=format&fit=crop&q=80',
+      skillsCovered: 'Java, Python, System Design',
+      rating: 4.97,
+      reviewsCount: 240,
     },
   ];
 
   for (const c of coursesData) {
+    const instructorId = mentorUserIds[c.mentorName] || demoProfessional.id;
     const course = await prisma.course.create({
       data: {
-        instructorId: c.instructorId,
+        instructorId,
         title: c.title,
         slug: c.slug,
         description: c.description,
@@ -619,68 +929,69 @@ async function main() {
       },
     });
 
-    if (c.modules) {
-      for (let i = 0; i < c.modules.length; i++) {
-        const m = c.modules[i];
-        const module = await prisma.courseModule.create({
-          data: {
-            courseId: course.id,
-            title: m.title,
-            orderIndex: i + 1,
-          },
-        });
-
-        for (let j = 0; j < m.lessons.length; j++) {
-          const l = m.lessons[j];
-          await prisma.lesson.create({
-            data: {
-              moduleId: module.id,
-              title: l.title,
-              durationMinutes: l.durationMinutes,
-              orderIndex: j + 1,
-              content: `Comprehensive interactive lesson content for "${l.title}". Covers practical coding examples, production best practices, and hands-on exercises.`,
-              videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-            },
-          });
-        }
-      }
-    }
-  }
-  console.log(`✅ Seeded ${coursesData.length} courses with full modules & lessons.`);
-
-  const firstCourse = await prisma.course.findFirst({ where: { slug: 'spring-boot-3-microservices' } });
-  if (firstCourse) {
-    await prisma.enrollment.create({
-      data: {
-        studentId: demoStudent.id,
-        courseId: firstCourse.id,
-        progressPercent: 45,
-        isCompleted: false,
-      },
+    // Create 3 standard modules with lessons
+    const module1 = await prisma.courseModule.create({
+      data: { courseId: course.id, title: 'Module 1: Architecture Foundations & Setup', orderIndex: 1 },
     });
-  }
+    await prisma.lesson.createMany({
+      data: [
+        { moduleId: module1.id, title: '1.1 System Overview & Architecture Design', durationMinutes: 25, orderIndex: 1, content: `Introduction to ${c.title}. Covers architecture patterns, best practices, and project structure.` },
+        { moduleId: module1.id, title: '1.2 Hands-On Setup & Core Implementation', durationMinutes: 30, orderIndex: 2, content: `Step-by-step coding lab and baseline implementation for ${c.title}.` },
+      ],
+    });
 
+    const module2 = await prisma.courseModule.create({
+      data: { courseId: course.id, title: 'Module 2: Advanced Integration & Testing', orderIndex: 2 },
+    });
+    await prisma.lesson.createMany({
+      data: [
+        { moduleId: module2.id, title: '2.1 Data Flow, API Contracts & Validation', durationMinutes: 35, orderIndex: 1, content: `Deep dive into data structures, validation schemas, and persistence strategies.` },
+        { moduleId: module2.id, title: '2.2 Unit & Integration Testing Strategy', durationMinutes: 25, orderIndex: 2, content: `Comprehensive test suite design with automated regression tests.` },
+      ],
+    });
+
+    const module3 = await prisma.courseModule.create({
+      data: { courseId: course.id, title: 'Module 3: Production Deployment & Capstone', orderIndex: 3 },
+    });
+    await prisma.lesson.createMany({
+      data: [
+        { moduleId: module3.id, title: '3.1 Containerization & CI/CD Pipelines', durationMinutes: 30, orderIndex: 1, content: `Production packaging with Docker and automated delivery pipelines.` },
+        { moduleId: module3.id, title: '3.2 End-to-End Capstone Project Review', durationMinutes: 45, orderIndex: 2, content: `Final architectural walkthrough, performance optimization, and certificate checklist.` },
+      ],
+    });
+
+    // Ingest course into pgvector
+    await insertChunk(
+      `Course: ${c.title}\nCategory: ${c.category}\nLevel: ${c.level}\nInstructor: ${c.mentorName}\nPrice: $${c.price}\nDuration: ${c.durationHours} hours\nRating: ${c.rating} ⭐ (${c.reviewsCount} reviews)\nSkills Covered: ${c.skillsCovered}\nDescription: ${c.description}`,
+      `Course: ${c.title}`,
+      'course',
+      { courseId: course.id, title: c.title, category: c.category, level: c.level, skills: c.skillsCovered }
+    );
+  }
+  console.log(`✅ Seeded ${coursesData.length} technical courses with pgvector chunk embeddings.`);
+
+  // 7. Seed 25 Industry Job Postings
   const jobsData = [
     {
-      companyId: demoCompany.id,
+      companyName: 'NovaTech Solutions',
       title: 'Senior Java & Spring Boot Backend Architect',
-      description: 'We are seeking an experienced Backend Architect to design high-throughput microservices, optimize PostgreSQL data queries, and lead our enterprise cloud migration.',
+      description: 'Lead the design of high-throughput financial microservices, optimize PostgreSQL data queries, and guide cloud migration strategies.',
       country: 'India',
-      state: 'Tamil Nadu',
-      city: 'Chennai',
+      state: 'Karnataka',
+      city: 'Bangalore',
       locationType: 'HYBRID',
       jobType: 'FULL_TIME',
       minSalary: 28000,
       maxSalary: 42000,
       currency: 'USD',
       experienceLevel: 'SENIOR',
-      isLocal: true,
+      isLocal: false,
       skills: ['Java', 'Spring Boot', 'PostgreSQL', 'Docker', 'System Design'],
     },
     {
-      companyId: demoCompany.id,
-      title: 'Next.js & AI Web Application Engineer',
-      description: 'Build responsive client dashboards, integrate streaming LLM endpoints, and create polished user experiences with Next.js 15, Tailwind CSS, and TypeScript.',
+      companyName: 'PixelForge Labs',
+      title: 'Next.js 15 & AI Web Application Engineer',
+      description: 'Build responsive web client dashboards, integrate streaming LLM endpoints, and create polished user experiences with Next.js and TypeScript.',
       country: 'India',
       state: 'Tamil Nadu',
       city: 'Chennai',
@@ -694,28 +1005,28 @@ async function main() {
       skills: ['Next.js', 'React', 'TypeScript', 'Tailwind CSS', 'LLM Engineering'],
     },
     {
-      companyId: demoCompany.id,
-      title: 'Local Freelance: PostgreSQL Database Query Tuning',
-      description: 'Short-term consulting gig to audit index health, optimize slow query execution plans, and configure connection pooling for a local Chennai e-commerce platform.',
+      companyName: 'DataSphere Analytics',
+      title: 'PostgreSQL Database Performance Consultant',
+      description: 'Short-term consulting gig to audit index health, optimize slow query execution plans, and configure connection pooling for an e-commerce platform.',
       country: 'India',
       state: 'Tamil Nadu',
       city: 'Chennai',
       locationType: 'ONSITE',
       jobType: 'CONTRACT',
-      minSalary: 1200,
-      maxSalary: 2500,
+      minSalary: 2000,
+      maxSalary: 4000,
       currency: 'USD',
       experienceLevel: 'SENIOR',
       isLocal: true,
       skills: ['PostgreSQL', 'Redis', 'System Design'],
     },
     {
-      companyId: demoCompany.id,
+      companyName: 'NextWave Digital',
       title: 'Junior Full Stack Developer (Internship to Hire)',
-      description: 'Great entry-level opportunity for ambitious students and recent graduates skilled in React, Node.js, and SQL. Mentorship from senior architects provided.',
+      description: 'Great entry-level opportunity for ambitious graduates skilled in React, Node.js, and SQL. Direct mentorship from senior architects.',
       country: 'India',
-      state: 'Tamil Nadu',
-      city: 'Chennai',
+      state: 'Karnataka',
+      city: 'Bangalore',
       locationType: 'HYBRID',
       jobType: 'INTERNSHIP',
       minSalary: 800,
@@ -726,25 +1037,348 @@ async function main() {
       skills: ['React', 'TypeScript', 'Node.js', 'PostgreSQL'],
     },
     {
-      companyId: demoCompany.id,
-      title: 'Cloud DevOps & CI/CD Engineer',
+      companyName: 'CloudVista Systems',
+      title: 'Cloud DevOps & AWS Infrastructure Engineer',
       description: 'Setup automated deployment pipelines using GitHub Actions, containerize microservices with Docker, and manage Kubernetes clusters on AWS.',
-      country: 'United States',
+      country: 'India',
+      state: 'Telangana',
+      city: 'Hyderabad',
       locationType: 'REMOTE',
       jobType: 'CONTRACT',
       minSalary: 5000,
-      maxSalary: 8000,
+      maxSalary: 8500,
       currency: 'USD',
       experienceLevel: 'MID',
       isLocal: false,
       skills: ['Docker', 'Kubernetes', 'AWS', 'CI/CD Pipelines'],
     },
+    {
+      companyName: 'Synthetix AI',
+      title: 'Generative AI & RAG Pipeline Engineer',
+      description: 'Design and deploy production vector search systems, implement chunking pipelines, and fine-tune prompt templates with LangChain and pgvector.',
+      country: 'India',
+      state: 'Karnataka',
+      city: 'Bangalore',
+      locationType: 'HYBRID',
+      jobType: 'FULL_TIME',
+      minSalary: 32000,
+      maxSalary: 48000,
+      currency: 'USD',
+      experienceLevel: 'SENIOR',
+      isLocal: false,
+      skills: ['LangChain & RAG', 'Python', 'LLM Engineering', 'PostgreSQL', 'FastAPI'],
+    },
+    {
+      companyName: 'QuantumLeap Innovations',
+      title: 'Golang Distributed Microservices Developer',
+      description: 'Build ultra low-latency microservices, write gRPC handlers, and process real-time streaming data with Apache Kafka and PostgreSQL.',
+      country: 'India',
+      state: 'Tamil Nadu',
+      city: 'Chennai',
+      locationType: 'REMOTE',
+      jobType: 'FULL_TIME',
+      minSalary: 26000,
+      maxSalary: 40000,
+      currency: 'USD',
+      experienceLevel: 'MID',
+      isLocal: false,
+      skills: ['Go (Golang)', 'PostgreSQL', 'System Design', 'Docker'],
+    },
+    {
+      companyName: 'UrbanByte Systems',
+      title: 'Senior Flutter Mobile App Developer',
+      description: 'Architect cross-platform mobile apps for iOS and Android with Flutter, Riverpod, clean architecture, and Firebase push notifications.',
+      country: 'India',
+      state: 'Tamil Nadu',
+      city: 'Chennai',
+      locationType: 'HYBRID',
+      jobType: 'FULL_TIME',
+      minSalary: 22000,
+      maxSalary: 34000,
+      currency: 'USD',
+      experienceLevel: 'SENIOR',
+      isLocal: true,
+      skills: ['Flutter', 'Mobile Development', 'TypeScript', 'GraphQL'],
+    },
+    {
+      companyName: 'HyperScale Networks',
+      title: 'Kubernetes Cluster & Site Reliability Engineer',
+      description: 'Maintain 99.99% uptime across production Kubernetes clusters, configure Prometheus/Grafana alerts, and automate zero-downtime rollouts.',
+      country: 'India',
+      state: 'Maharashtra',
+      city: 'Pune',
+      locationType: 'REMOTE',
+      jobType: 'FULL_TIME',
+      minSalary: 30000,
+      maxSalary: 45000,
+      currency: 'USD',
+      experienceLevel: 'SENIOR',
+      isLocal: false,
+      skills: ['Kubernetes', 'Docker', 'CI/CD Pipelines', 'AWS'],
+    },
+    {
+      companyName: 'ZenPulse Technologies',
+      title: 'FastAPI & Async Python Backend Specialist',
+      description: 'Develop high-throughput RESTful endpoints and medical telemetry processing engines using Python, FastAPI, and Redis caching.',
+      country: 'India',
+      state: 'Telangana',
+      city: 'Hyderabad',
+      locationType: 'HYBRID',
+      jobType: 'CONTRACT',
+      minSalary: 4000,
+      maxSalary: 7000,
+      currency: 'USD',
+      experienceLevel: 'MID',
+      isLocal: false,
+      skills: ['Python', 'FastAPI', 'Redis', 'PostgreSQL', 'Docker'],
+    },
+    {
+      companyName: 'PixelForge Labs',
+      title: 'Lead UI/UX Design System Specialist',
+      description: 'Create cohesive Figma token libraries, design accessible React component primitives, and lead design reviews for SaaS products.',
+      country: 'India',
+      state: 'Tamil Nadu',
+      city: 'Chennai',
+      locationType: 'REMOTE',
+      jobType: 'FULL_TIME',
+      minSalary: 24000,
+      maxSalary: 36000,
+      currency: 'USD',
+      experienceLevel: 'LEAD',
+      isLocal: false,
+      skills: ['UI/UX Design (Figma)', 'Tailwind CSS', 'React', 'TypeScript'],
+    },
+    {
+      companyName: 'NovaTech Solutions',
+      title: 'Cybersecurity & OAuth2 Integration Consultant',
+      description: 'Audit REST APIs for OWASP vulnerabilities, implement Spring Security OAuth2 token introspection, and harden container environments.',
+      country: 'India',
+      state: 'Karnataka',
+      city: 'Bangalore',
+      locationType: 'CONTRACT',
+      jobType: 'CONTRACT',
+      minSalary: 3500,
+      maxSalary: 6500,
+      currency: 'USD',
+      experienceLevel: 'SENIOR',
+      isLocal: false,
+      skills: ['Cybersecurity', 'Spring Boot', 'Docker', 'System Design'],
+    },
+    {
+      companyName: 'DataSphere Analytics',
+      title: 'Data Engineer (Python & PostgreSQL ETL Pipelines)',
+      description: 'Build automated data extraction and transformation pipelines, optimize partitioned SQL tables, and generate business intelligence metrics.',
+      country: 'India',
+      state: 'Maharashtra',
+      city: 'Pune',
+      locationType: 'HYBRID',
+      jobType: 'FULL_TIME',
+      minSalary: 20000,
+      maxSalary: 32000,
+      currency: 'USD',
+      experienceLevel: 'MID',
+      isLocal: false,
+      skills: ['Python', 'PostgreSQL', 'Redis', 'System Design'],
+    },
+    {
+      companyName: 'NextWave Digital',
+      title: 'Frontend React & TypeScript Developer',
+      description: 'Deliver responsive, performant user interfaces with React 19, Next.js App Router, Tailwind CSS, and TanStack React Query.',
+      country: 'India',
+      state: 'Karnataka',
+      city: 'Bangalore',
+      locationType: 'REMOTE',
+      jobType: 'FULL_TIME',
+      minSalary: 18000,
+      maxSalary: 28000,
+      currency: 'USD',
+      experienceLevel: 'MID',
+      isLocal: false,
+      skills: ['React', 'TypeScript', 'Next.js', 'Tailwind CSS'],
+    },
+    {
+      companyName: 'Synthetix AI',
+      title: 'Machine Learning Research Engineer (PyTorch & NLP)',
+      description: 'Train and fine-tune transformer models, implement tokenization routines, and evaluate model latency on GPU clusters.',
+      country: 'India',
+      state: 'Karnataka',
+      city: 'Bangalore',
+      locationType: 'FULL_TIME',
+      jobType: 'FULL_TIME',
+      minSalary: 35000,
+      maxSalary: 52000,
+      currency: 'USD',
+      experienceLevel: 'SENIOR',
+      isLocal: false,
+      skills: ['Machine Learning', 'Deep Learning', 'PyTorch', 'Python'],
+    },
+    {
+      companyName: 'UrbanByte Systems',
+      title: 'React Native Cross-Platform Mobile Engineer',
+      description: 'Develop performant iOS and Android mobile features with React Native, Expo Router, TypeScript, and offline SQLite caching.',
+      country: 'India',
+      state: 'Tamil Nadu',
+      city: 'Chennai',
+      locationType: 'HYBRID',
+      jobType: 'CONTRACT',
+      minSalary: 3000,
+      maxSalary: 5500,
+      currency: 'USD',
+      experienceLevel: 'MID',
+      isLocal: true,
+      skills: ['React Native', 'TypeScript', 'React', 'Mobile Development'],
+    },
+    {
+      companyName: 'CloudVista Systems',
+      title: 'Terraform & Cloud Automation Engineer',
+      description: 'Write reusable Terraform modules to provision AWS VPCs, EKS clusters, and RDS PostgreSQL instances with automated testing.',
+      country: 'India',
+      state: 'Telangana',
+      city: 'Hyderabad',
+      locationType: 'REMOTE',
+      jobType: 'FREELANCE',
+      minSalary: 2500,
+      maxSalary: 5000,
+      currency: 'USD',
+      experienceLevel: 'MID',
+      isLocal: false,
+      skills: ['AWS', 'CI/CD Pipelines', 'Docker', 'Kubernetes'],
+    },
+    {
+      companyName: 'QuantumLeap Innovations',
+      title: 'Event Streaming & Apache Kafka Engineer',
+      description: 'Design distributed event streams, write partition rebalancing logic, and guarantee exactly-once processing semantics.',
+      country: 'India',
+      state: 'Tamil Nadu',
+      city: 'Chennai',
+      locationType: 'HYBRID',
+      jobType: 'FULL_TIME',
+      minSalary: 28000,
+      maxSalary: 42000,
+      currency: 'USD',
+      experienceLevel: 'SENIOR',
+      isLocal: true,
+      skills: ['Go (Golang)', 'System Design', 'PostgreSQL', 'Docker'],
+    },
+    {
+      companyName: 'HyperScale Networks',
+      title: 'Network Systems & Low-Latency C++ / Go Engineer',
+      description: 'Optimize high-throughput network packet processing, write custom memory allocators, and profile lock contention.',
+      country: 'India',
+      state: 'Maharashtra',
+      city: 'Mumbai',
+      locationType: 'HYBRID',
+      jobType: 'FULL_TIME',
+      minSalary: 34000,
+      maxSalary: 50000,
+      currency: 'USD',
+      experienceLevel: 'LEAD',
+      isLocal: false,
+      skills: ['Go (Golang)', 'System Design', 'Docker'],
+    },
+    {
+      companyName: 'ZenPulse Technologies',
+      title: 'Full Stack HealthTech Web Developer',
+      description: 'Build intuitive patient management dashboards using Next.js App Router, Tailwind CSS, PostgreSQL, and secure REST APIs.',
+      country: 'India',
+      state: 'Telangana',
+      city: 'Hyderabad',
+      locationType: 'REMOTE',
+      jobType: 'FULL_TIME',
+      minSalary: 22000,
+      maxSalary: 35000,
+      currency: 'USD',
+      experienceLevel: 'MID',
+      isLocal: false,
+      skills: ['Next.js', 'React', 'TypeScript', 'PostgreSQL', 'FastAPI'],
+    },
+    {
+      companyName: 'NovaTech Solutions',
+      title: 'Microservices Architect & Tech Lead',
+      description: 'Drive architectural roadmaps for distributed core banking services, mentor engineering pods, and establish code quality standards.',
+      country: 'India',
+      state: 'Karnataka',
+      city: 'Bangalore',
+      locationType: 'HYBRID',
+      jobType: 'FULL_TIME',
+      minSalary: 40000,
+      maxSalary: 60000,
+      currency: 'USD',
+      experienceLevel: 'LEAD',
+      isLocal: false,
+      skills: ['Java', 'Spring Boot', 'System Design', 'Kubernetes', 'PostgreSQL'],
+    },
+    {
+      companyName: 'PixelForge Labs',
+      title: 'Frontend Performance & Core Web Vitals Specialist',
+      description: 'Audit client websites for bundle size, image optimizations, and server-side rendering performance using Next.js 15.',
+      country: 'India',
+      state: 'Tamil Nadu',
+      city: 'Chennai',
+      locationType: 'FREELANCE',
+      jobType: 'FREELANCE',
+      minSalary: 2000,
+      maxSalary: 4500,
+      currency: 'USD',
+      experienceLevel: 'SENIOR',
+      isLocal: false,
+      skills: ['Next.js', 'React', 'TypeScript', 'Tailwind CSS'],
+    },
+    {
+      companyName: 'DataSphere Analytics',
+      title: 'Redis Cache Layer Optimization Engineer',
+      description: 'Configure high-availability Redis Sentinel clusters, audit key eviction policies, and reduce PostgreSQL read pressure.',
+      country: 'India',
+      state: 'Maharashtra',
+      city: 'Pune',
+      locationType: 'CONTRACT',
+      jobType: 'CONTRACT',
+      minSalary: 2200,
+      maxSalary: 4200,
+      currency: 'USD',
+      experienceLevel: 'MID',
+      isLocal: false,
+      skills: ['Redis', 'PostgreSQL', 'System Design'],
+    },
+    {
+      companyName: 'NextWave Digital',
+      title: 'GraphQL API Integration Engineer',
+      description: 'Integrate Apollo GraphQL server with existing REST microservices, implement caching resolvers, and write schema contracts.',
+      country: 'India',
+      state: 'Karnataka',
+      city: 'Bangalore',
+      locationType: 'REMOTE',
+      jobType: 'CONTRACT',
+      minSalary: 3200,
+      maxSalary: 5800,
+      currency: 'USD',
+      experienceLevel: 'MID',
+      isLocal: false,
+      skills: ['GraphQL', 'TypeScript', 'Node.js', 'React'],
+    },
+    {
+      companyName: 'UrbanByte Systems',
+      title: 'Mobile App QA & Automated UI Testing Specialist',
+      description: 'Write automated end-to-end test suites for Flutter and React Native mobile apps using Appium, Maestro, and CI workflows.',
+      country: 'India',
+      state: 'Tamil Nadu',
+      city: 'Chennai',
+      locationType: 'HYBRID',
+      jobType: 'FULL_TIME',
+      minSalary: 16000,
+      maxSalary: 25000,
+      currency: 'USD',
+      experienceLevel: 'ENTRY',
+      isLocal: true,
+      skills: ['Flutter', 'React Native', 'CI/CD Pipelines', 'Mobile Development'],
+    },
   ];
 
   for (const j of jobsData) {
+    const companyId = companyUserIds[j.companyName] || Object.values(companyUserIds)[0];
     const job = await prisma.job.create({
       data: {
-        companyId: j.companyId,
+        companyId,
         title: j.title,
         description: j.description,
         country: j.country,
@@ -772,79 +1406,41 @@ async function main() {
         });
       }
     }
+
+    // Ingest job posting into pgvector
+    await insertChunk(
+      `Job Opening: ${j.title}\nCompany: ${j.companyName}\nLocation: ${j.city}, ${j.state}, ${j.country} (${j.locationType})\nType: ${j.jobType}\nSalary: $${j.minSalary} - $${j.maxSalary} ${j.currency}\nExperience: ${j.experienceLevel}\nRequired Skills: ${j.skills.join(', ')}\nDescription: ${j.description}`,
+      `Job: ${j.title} at ${j.companyName}`,
+      'job',
+      { jobId: job.id, title: j.title, company: j.companyName, location: j.city, skills: j.skills }
+    );
   }
-  console.log(`✅ Seeded ${jobsData.length} realistic jobs with skills.`);
+  console.log(`✅ Seeded ${jobsData.length} industry job postings with pgvector chunk embeddings.`);
 
-  const postsData = [
-    {
-      authorId: demoProfessional.id,
-      postType: 'PROJECT',
-      content: '🚀 Excited to share that I just completed a full-scale AI platform contract in record time using Next.js 15, Prisma, and Tailwind CSS! Clean server actions and hybrid scoring algorithm delivered 95%+ client satisfaction. #FullStack #Nextjs #AI #Professional',
-      mediaUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop&q=80',
-      likesCount: 38,
-      commentsCount: 6,
-    },
-    {
-      authorId: demoMentor.id,
-      postType: 'ACHIEVEMENT',
-      content: '🎉 Proud to announce that over 150+ learners in our Distributed Backend Architecture mentorship program have successfully transitioned into Senior & Lead engineering roles this quarter. Keep building, keep learning! #Mentorship #CareerGrowth #Java #SystemDesign',
-      likesCount: 64,
-      commentsCount: 12,
-    },
-    {
-      authorId: demoStudent.id,
-      postType: 'LEARNING_MILESTONE',
-      content: '📚 Just finished Module 1 of "Spring Boot 3 & Enterprise Microservices"! Built my first secure stateless REST API with JPA persistence. Huge shoutout to my mentor @DrMarcusVance for the architectural code review. Onward to JWT security! 🚀',
-      likesCount: 19,
-      commentsCount: 4,
-    },
-    {
-      authorId: demoCompany.id,
-      postType: 'HIRING',
-      content: '🌟 WE ARE HIRING in Chennai & Remote! Looking for 3 Senior Backend Architects (Java / Spring Boot / PostgreSQL) and 2 Full Stack Next.js Specialists. Check out our open positions on the Jobs tab or submit an AI-matched proposal! #Hiring #TechJobs #ChennaiJobs',
-      likesCount: 45,
-      commentsCount: 9,
-    },
-    {
-      authorId: demoProfessional.id,
-      postType: 'CERTIFICATE',
-      content: '🏆 Verified Certification achieved: "Advanced LLM Orchestration & Prompt Engineering". Excited to leverage vector databases and RAG workflows for enterprise client contracts.',
-      likesCount: 27,
-      commentsCount: 3,
-    },
-  ];
+  // 8. Ingest Platform Ecosystem Overview into pgvector
+  await insertChunk(
+    `GrowEarn Platform Overview & Capabilities:
+GrowEarn is a production-grade talent ecosystem, mentorship marketplace, and career development platform connecting 4 key user roles:
+1. Learner: Discovers market-aligned courses, requests structured 4-phase AI career roadmaps, tracks verified skills, and books 1-on-1 mentorship sessions.
+2. Mentor: Senior industry architects providing 1-on-1 coaching, code reviews, system design interview prep, and authoring courses with lesson materials.
+3. Professional: Freelance and full-time job marketplace with 1-Click AI Proposal Generator, smart contract escrow, and project bidding.
+4. Employer / Company: Posts verified jobs, sources matched candidates via vector search, reviews proposals, and hires verified talent.
+Community Feed: Cross-role knowledge sharing with verified role badges on every post.`,
+    'GrowEarn Platform Overview',
+    'knowledge_base',
+    { type: 'platform_documentation' }
+  );
 
-  for (const p of postsData) {
-    const post = await prisma.post.create({
-      data: {
-        authorId: p.authorId,
-        content: p.content,
-        postType: p.postType,
-        mediaUrl: p.mediaUrl,
-        likesCount: p.likesCount,
-        commentsCount: p.commentsCount,
-      },
-    });
-
-    await prisma.comment.create({
-      data: {
-        postId: post.id,
-        authorId: demoStudent.id,
-        content: 'Inspiring journey! Thank you for sharing your architecture insights.',
-      },
-    });
-  }
-  console.log(`✅ Seeded ${postsData.length} professional social feed posts with comments.`);
-
+  // 9. Initial Career Roadmap & AI Profile for Demo Student Alex Chen
   await prisma.aIProfile.create({
     data: {
       userId: demoStudent.id,
       careerGoal: 'Backend Software Engineer',
       currentLevel: 'Intermediate',
-      skillSummary: 'Solid foundation in Java and SQL; currently developing Spring Boot and REST API mastery.',
-      strengthsJson: JSON.stringify(['Java', 'SQL / PostgreSQL', 'TypeScript']),
-      gapAnalysisJson: JSON.stringify(['Spring Security', 'System Design', 'Docker & Containerization', 'Microservices']),
-      suggestedRolesJson: JSON.stringify(['Backend Developer', 'Java Software Engineer', 'API Architect']),
+      skillSummary: 'Solid foundation in Java, TypeScript, and SQL; advancing in Spring Boot microservices and system design.',
+      strengthsJson: JSON.stringify(['Java', 'PostgreSQL', 'TypeScript']),
+      gapAnalysisJson: JSON.stringify(['Spring Security', 'System Design', 'Docker', 'Kubernetes']),
+      suggestedRolesJson: JSON.stringify(['Backend Developer', 'Java Microservices Engineer', 'API Architect']),
     },
   });
 
@@ -853,16 +1449,16 @@ async function main() {
       userId: demoStudent.id,
       targetRole: 'Backend Developer',
       currentLevel: 'Intermediate',
-      summary: 'Structured 5-stage roadmap from core Java competencies to job-ready backend engineering.',
+      summary: 'Structured 5-stage milestone roadmap from core Java fundamentals to production backend engineering.',
     },
   });
 
   const roadmapNodes = [
-    { title: 'Core Java & Data Structures Mastery', description: 'Advanced multithreading, collections, and streams.', milestoneType: 'SKILL', isCompleted: true },
-    { title: 'Spring Boot 3 & REST API Development', description: 'Build enterprise endpoints with Spring Data JPA.', milestoneType: 'COURSE', isCompleted: false },
-    { title: 'PostgreSQL Query Tuning & Database Architecture', description: 'Indexes, transactions, and schema normalization.', milestoneType: 'SKILL', isCompleted: false },
-    { title: 'System Design & 1-on-1 Architecture Mentorship', description: 'Mock interview and code review with Dr. Marcus Vance.', milestoneType: 'MENTOR', isCompleted: false },
-    { title: 'Apply to Curated Junior/Mid Backend Job Postings', description: 'Submit high-match applications with AI proposals.', milestoneType: 'JOB', isCompleted: false },
+    { title: 'Core Java 21 & Concurrency Fundamentals', description: 'Master multithreading, virtual threads, collections, and stream pipelines.', milestoneType: 'SKILL', isCompleted: true },
+    { title: 'Spring Boot 3 & REST API Development', description: 'Build enterprise controller endpoints with Spring Data JPA and validation.', milestoneType: 'COURSE', isCompleted: false },
+    { title: 'PostgreSQL Query Optimization & Indexing', description: 'B-tree index tuning, transaction isolation levels, and execution plans.', milestoneType: 'SKILL', isCompleted: false },
+    { title: 'System Design 1-on-1 Architecture Review', description: 'Mock interview and code review with mentor Priya Sharma.', milestoneType: 'MENTOR', isCompleted: false },
+    { title: 'Apply to Curated Junior/Mid Backend Jobs', description: 'Submit verified proposals for open positions at NovaTech Solutions.', milestoneType: 'JOB', isCompleted: false },
   ];
 
   for (let i = 0; i < roadmapNodes.length; i++) {
@@ -877,16 +1473,17 @@ async function main() {
       },
     });
   }
-  console.log(`✅ Seeded AI Profile and structured Career Roadmap for Alex Chen.`);
 
-  const mentorProfile = await prisma.mentorProfile.findUnique({ where: { userId: demoMentor.id } });
-  if (mentorProfile) {
+  // 10. Mentorship Booking for Demo Student with Priya Sharma
+  const priyaUser = await prisma.user.findUnique({ where: { email: 'priya.sharma@example.com' } });
+  const priyaMentor = await prisma.mentorProfile.findFirst({ where: { userId: priyaUser?.id } });
+  if (priyaMentor && priyaUser) {
     const req = await prisma.mentorshipRequest.create({
       data: {
         studentId: demoStudent.id,
-        mentorId: mentorProfile.id,
+        mentorId: priyaMentor.id,
         topic: 'Spring Security 6 Architecture & JWT Review',
-        message: 'Hi Dr. Marcus, I am building my capstone project and would love your guidance on securing distributed microservices endpoints.',
+        message: 'Hi Priya, I am building my capstone project and would love your guidance on securing distributed microservices endpoints.',
         status: 'ACCEPTED',
       },
     });
@@ -895,66 +1492,20 @@ async function main() {
       data: {
         requestId: req.id,
         studentId: demoStudent.id,
-        mentorId: mentorProfile.id,
+        mentorId: priyaMentor.id,
         scheduledAt: new Date(Date.now() + 86400000 * 2),
         durationMinutes: 60,
-        price: 85,
+        price: 65,
         status: 'SCHEDULED',
       },
     });
   }
 
-  await prisma.review.create({
-    data: {
-      authorId: demoStudent.id,
-      targetUserId: demoMentor.id,
-      rating: 5,
-      comment: 'Dr. Marcus explained distributed transaction boundaries with immense clarity. Completely transformed how I structure my backend services!',
-      reviewType: 'MENTOR',
-    },
-  });
-
-  await prisma.review.create({
-    data: {
-      authorId: demoCompany.id,
-      targetUserId: demoProfessional.id,
-      rating: 5,
-      comment: 'Elena delivered our full-stack Next.js web application 3 days ahead of schedule. Exceptional code quality and proactive communication.',
-      reviewType: 'PROFESSIONAL',
-    },
-  });
-
-  await prisma.notification.createMany({
-    data: [
-      {
-        userId: demoStudent.id,
-        title: 'Mentorship Session Confirmed',
-        message: 'Dr. Marcus Vance accepted your mentorship request for "Spring Security Architecture".',
-        link: '/messages',
-        notificationType: 'MENTORSHIP_REQUEST',
-      },
-      {
-        userId: demoStudent.id,
-        title: 'AI Recommendation: New Course Match',
-        message: 'New course "Spring Boot 3 & Microservices" matches 94% of your Backend Developer career goals.',
-        link: '/courses',
-        notificationType: 'AI_RECOMMENDATION',
-      },
-      {
-        userId: demoProfessional.id,
-        title: 'High-Match Job Alert',
-        message: 'Nexus Dynamics posted "Next.js & AI Web Application Engineer" (95% Skill Match).',
-        link: '/jobs',
-        notificationType: 'JOB_APPLICATION',
-      },
-    ],
-  });
-
   console.log('✨ Seed complete! Demo accounts ready:');
-  console.log('   👨‍🎓 Learner:      student@example.com (Password: Demo1234!)');
-  console.log('   👨‍🏫 Mentor:       mentor@example.com  (Password: Demo1234!)');
+  console.log('   👨‍🎓 Learner:      student@example.com      (Password: Demo1234!)');
   console.log('   💼 Professional: professional@example.com (Password: Demo1234!)');
-  console.log('   🏢 Employer:     company@example.com (Password: Demo1234!)');
+  console.log('   👨‍🏫 Mentor:       priya.sharma@example.com (Password: Demo1234!)');
+  console.log('   🏢 Employer:     careers@novatech-solutions.io (Password: Demo1234!)');
 }
 
 main()

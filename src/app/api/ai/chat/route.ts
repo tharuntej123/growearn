@@ -1,9 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { apiSuccess, apiError } from '@/lib/utils';
 import { getUserAIContext } from '@/services/user-context.service';
 import { AIAssistantService } from '@/lib/ai/ai-assistant.service';
 
+/**
+ * POST /api/ai/chat
+ * Production RAG Chat Endpoint powered by LangChain and PostgreSQL pgvector.
+ */
 export async function POST(req: NextRequest) {
   try {
     const authUser = await getCurrentUser(req);
@@ -22,9 +26,12 @@ export async function POST(req: NextRequest) {
     const result = await AIAssistantService.answer(message, userContext);
 
     return apiSuccess({
-      response: result.directAnswer,
-      recommendedActions: result.recommendedActions,
+      response: result.answer,
       intent: result.intent,
+      retrievedDocuments: result.retrievedDocuments,
+      similarity: result.similarity,
+      sources: result.sources,
+      recommendedActions: result.recommendedActions,
     });
   } catch (error: any) {
     console.error('AI chat error:', error);

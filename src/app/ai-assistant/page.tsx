@@ -28,6 +28,8 @@ interface ChatMessage {
   text: string;
   actions?: string[];
   intent?: string;
+  similarity?: number;
+  sources?: string[];
 }
 
 function parseInline(text: string): React.ReactNode {
@@ -189,6 +191,8 @@ export default function AIAssistantPage() {
           text: json.data.response,
           actions: json.data.recommendedActions || [],
           intent: json.data.intent,
+          similarity: json.data.similarity,
+          sources: json.data.sources || [],
         };
         setMessages((prev) => [...prev, aiMsg]);
       } else {
@@ -301,6 +305,27 @@ export default function AIAssistantPage() {
                       <div className="whitespace-pre-line leading-relaxed font-medium">{m.text}</div>
                     ) : (
                       <FormattedMessageContent content={m.text} />
+                    )}
+
+                    {m.sources && m.sources.length > 0 && (
+                      <div className="mt-3 pt-2.5 border-t border-slate-200/80 space-y-1.5 text-[11px]">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="font-semibold text-emerald-700">📚 Grounded in:</span>
+                          {m.sources.map((src, sIdx) => (
+                            <span
+                              key={sIdx}
+                              className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700 font-medium shadow-xs"
+                            >
+                              {src}
+                            </span>
+                          ))}
+                        </div>
+                        {typeof m.similarity === 'number' && m.similarity > 0 && (
+                          <div className="text-[10px] text-slate-500 font-medium">
+                            🎯 pgvector Cosine Similarity: <span className="font-semibold text-emerald-700">{m.similarity}</span>
+                          </div>
+                        )}
+                      </div>
                     )}
 
                     {m.actions && m.actions.length > 0 && (

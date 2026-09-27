@@ -33,16 +33,16 @@ export default function MessagesPage() {
   const [conversations] = useState<ConversationItem[]>([
     {
       id: 'c-1',
-      name: 'Dr. Marcus Vance',
+      name: 'Priya Sharma',
       role: 'MENTOR',
-      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+      avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150',
       lastMessage: 'Looking forward to our Spring Security architecture session tomorrow at 7 PM IST.',
       time: '10:45 AM',
       unread: 1,
     },
     {
       id: 'c-2',
-      name: 'Nexus Dynamics Hiring Team',
+      name: 'NovaTech Solutions Hiring Team',
       role: 'EMPLOYER',
       avatarUrl: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=150',
       lastMessage: 'We reviewed your AI-generated proposal for the Next.js role and would like to schedule an interview.',

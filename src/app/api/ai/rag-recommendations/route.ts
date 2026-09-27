@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { apiSuccess, apiError } from '@/lib/utils';
 import { getUserAIContext } from '@/services/user-context.service';
-import { RAGDatabaseEngine } from '@/lib/ai/rag/rag-database';
+import { SkillRAGService } from '@/lib/ai/skill-rag.service';
 import { prisma } from '@/lib/prisma';
 
 export async function POST(req: NextRequest) {
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       userContext = await getUserAIContext(authUser.id);
     }
 
-    const ragResult = await RAGDatabaseEngine.querySkillRAG(cleanSkill, userContext);
+    const ragResult = await SkillRAGService.querySkillRAG(cleanSkill, userContext);
 
     if (authUser) {
       try {

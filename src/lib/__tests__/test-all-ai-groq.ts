@@ -3,7 +3,7 @@ dotenv.config();
 
 import { GrokLLMClient } from '../ai/grok-client';
 import { AIService } from '../ai/ai-service';
-import { LangChainRAGService } from '../ai/rag/langchain-agent';
+import { ProductionRAGChain } from '../ai/rag-chain';
 
 async function runGroqSuite() {
   console.log('====================================================');
@@ -29,11 +29,11 @@ async function runGroqSuite() {
   console.log(`[Groq Direct Output] (Model: ${directChat?.model}):\n${directChat?.text}\n`);
 
   console.log('\n3. Testing Technical Question Grounding ("what is python")...');
-  const techQuestion = await LangChainRAGService.executeRAG('what is python', null);
-  console.log(`[RAG Answer - Python] (isLLM: ${techQuestion.isLLMPowered}, Provider: ${techQuestion.provider}, Model: ${techQuestion.model}):\n${techQuestion.answer.slice(0, 300)}...\n`);
+  const techQuestion = await ProductionRAGChain.execute('what is python', null);
+  console.log(`[RAG Answer - Python] (Similarity: ${techQuestion.similarity}):\n${techQuestion.answer.slice(0, 300)}...\n`);
 
   console.log('\n4. Testing Mentor Grounding ("are these guys available in the application growearn")...');
-  const mentorQuestion = await LangChainRAGService.executeRAG('are these guys available in the application growearn', null);
+  const mentorQuestion = await ProductionRAGChain.execute('are these guys available in the application growearn', null);
   console.log(`[RAG Answer - Mentors]:\n${mentorQuestion.answer.slice(0, 400)}...\n`);
 
   console.log('\n5. Testing AIService.analyzeSkills with Groq...');

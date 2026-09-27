@@ -180,7 +180,7 @@ export default function LandingPage() {
             <p className="text-xs text-slate-500 mt-1">Recommended for Backend Engineer goal</p>
             <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
               <span className="text-emerald-700 font-semibold">4.9 ★ (84 reviews)</span>
-              <span className="text-slate-500">By Dr. Marcus Vance</span>
+              <span className="text-slate-500">By Priya Sharma</span>
             </div>
           </div>
 
@@ -192,7 +192,7 @@ export default function LandingPage() {
               <Badge variant="purple">Local Match</Badge>
             </div>
             <h4 className="font-bold text-slate-900 text-base">Next.js & AI Web Engineer</h4>
-            <p className="text-xs text-slate-500 mt-1">Nexus Dynamics • Chennai / Remote</p>
+            <p className="text-xs text-slate-500 mt-1">NovaTech Solutions • Bangalore / Remote</p>
             <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
               <span className="text-slate-800 font-semibold">$4,500 - $7,500</span>
               <span className="text-emerald-700 font-medium">95% Match Score</span>
@@ -206,10 +206,10 @@ export default function LandingPage() {
               </div>
               <Badge variant="success">Verified Mentor</Badge>
             </div>
-            <h4 className="font-bold text-slate-900 text-base">Dr. Marcus Vance</h4>
-            <p className="text-xs text-slate-500 mt-1">Principal Distributed Systems Architect</p>
+            <h4 className="font-bold text-slate-900 text-base">Priya Sharma</h4>
+            <p className="text-xs text-slate-500 mt-1">Senior Backend Engineer @ NovaTech Solutions</p>
             <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span className="text-slate-700">$85/hr • 142 Students</span>
+              <span className="text-slate-700">$65/hr • 142 Students</span>
               <span className="text-amber-600 font-semibold">4.95 ★</span>
             </div>
           </div>
@@ -221,10 +221,10 @@ export default function LandingPage() {
               </div>
               <Badge variant="warning">AI Candidate Ranking</Badge>
             </div>
-            <h4 className="font-bold text-slate-900 text-base">Elena Rostova</h4>
-            <p className="text-xs text-slate-500 mt-1">Senior Full Stack & AI Specialist</p>
+            <h4 className="font-bold text-slate-900 text-base">Pooja Verma</h4>
+            <p className="text-xs text-slate-500 mt-1">Senior Mobile & Full Stack Specialist</p>
             <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span className="text-slate-600">TypeScript, Next.js, LLMs</span>
+              <span className="text-slate-600">Flutter, React Native, TypeScript</span>
               <span className="text-emerald-700 font-semibold">98% Fit</span>
             </div>
           </div>
@@ -363,6 +363,81 @@ export default function LandingPage() {
             <p className="text-sm text-slate-600 mt-2 leading-relaxed">
               Build lasting professional trust. Reviews and 5-star ratings are strictly guarded by verified completed transactions (courses, mentorship bookings, and project contracts).
             </p>
+          </Card>
+        </div>
+      </section>
+
+      {/* 🌟 Verified Platform Testimonials */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-slate-200">
+        <div className="text-center max-w-3xl mx-auto mb-12">
+          <Badge variant="default" className="mb-3">Verified Stories</Badge>
+          <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
+            Trusted by Learners, Mentors & Engineering Teams
+          </h2>
+          <p className="mt-2 text-sm text-slate-600">
+            Real outcomes across learning roadmaps, 1-on-1 mentorship, and contract engineering.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="p-6 bg-white border border-slate-200 rounded-2xl shadow-xs flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="flex items-center gap-1 text-amber-500 text-sm">
+                {'★'.repeat(5)}
+              </div>
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed italic">
+                &ldquo;The 4-phase AI career roadmap and Spring Boot 3 course gave me the exact distributed backend foundations I needed to build my first enterprise microservices.&rdquo;
+              </p>
+            </div>
+            <div className="mt-5 pt-4 border-t border-slate-100 flex items-center gap-3">
+              <div className="h-9 w-9 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center">
+                AC
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-slate-900">Alex Chen</h4>
+                <p className="text-[11px] text-slate-500">Learner • Backend Developer Path</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6 bg-white border border-slate-200 rounded-2xl shadow-xs flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="flex items-center gap-1 text-amber-500 text-sm">
+                {'★'.repeat(5)}
+              </div>
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed italic">
+                &ldquo;Mentoring developers on GrowEarn is seamless. The platform connects learners with real architectural questions, and the verified session reviews build genuine professional credibility.&rdquo;
+              </p>
+            </div>
+            <div className="mt-5 pt-4 border-t border-slate-100 flex items-center gap-3">
+              <div className="h-9 w-9 rounded-full bg-teal-100 text-teal-800 font-bold text-xs flex items-center justify-center">
+                PS
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-slate-900">Priya Sharma</h4>
+                <p className="text-[11px] text-slate-500">Senior Backend Engineer • NovaTech Solutions</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6 bg-white border border-slate-200 rounded-2xl shadow-xs flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="flex items-center gap-1 text-amber-500 text-sm">
+                {'★'.repeat(5)}
+              </div>
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed italic">
+                &ldquo;The explainable AI job matching and verified skill badges allowed our team to source verified full-stack talent and execute contract deliverables 2x faster.&rdquo;
+              </p>
+            </div>
+            <div className="mt-5 pt-4 border-t border-slate-100 flex items-center gap-3">
+              <div className="h-9 w-9 rounded-full bg-slate-100 text-slate-800 font-bold text-xs flex items-center justify-center">
+                AN
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-slate-900">Arjun Nair</h4>
+                <p className="text-[11px] text-slate-500">Principal Cloud Architect • CloudVista Systems</p>
+              </div>
+            </div>
           </Card>
         </div>
       </section>
