@@ -96,6 +96,30 @@ export class JobRepository implements IJobProvider {
             skill: true,
           },
         },
+        applications: {
+          include: {
+            applicant: {
+              include: {
+                profile: true,
+                skills: { include: { skill: true } },
+                experiences: { orderBy: { startDate: 'desc' }, take: 2 },
+              },
+            },
+          },
+          orderBy: { appliedAt: 'desc' },
+        },
+        proposals: {
+          include: {
+            professional: {
+              include: {
+                profile: true,
+                skills: { include: { skill: true } },
+                experiences: { orderBy: { startDate: 'desc' }, take: 2 },
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
         _count: {
           select: {
             applications: true,
@@ -261,9 +285,32 @@ export class JobRepository implements IJobProvider {
     });
   }
 
+  static async getApplicationById(applicationId: string) {
+    return prisma.application.findUnique({
+      where: { id: applicationId },
+      include: {
+        job: true,
+        applicant: {
+          include: {
+            profile: true,
+            skills: { include: { skill: true } },
+            experiences: true,
+          },
+        },
+      },
+    });
+  }
+
   static async updateApplicationStatus(applicationId: string, status: string) {
     return prisma.application.update({
       where: { id: applicationId },
+      data: { status },
+    });
+  }
+
+  static async updateProposalStatus(proposalId: string, status: string) {
+    return prisma.proposal.update({
+      where: { id: proposalId },
       data: { status },
     });
   }

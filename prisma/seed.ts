@@ -131,6 +131,24 @@ async function main() {
   }
   console.log(`✅ Seeded ${skillsData.length} technical skills.`);
 
+  // Helper to assign user skills
+  async function assignSkillsToUser(userId: string, skillNames: string[]) {
+    for (const sName of skillNames) {
+      if (createdSkills[sName]) {
+        await prisma.userSkill.upsert({
+          where: { userId_skillId: { userId, skillId: createdSkills[sName] } },
+          update: {},
+          create: {
+            userId,
+            skillId: createdSkills[sName],
+            proficiencyLevel: 'ADVANCED',
+            isVerified: true,
+          },
+        });
+      }
+    }
+  }
+
   // 2. Demo Learner Account (Alex Chen)
   const demoStudent = await prisma.user.create({
     data: {
@@ -161,6 +179,7 @@ async function main() {
       },
     },
   });
+  await assignSkillsToUser(demoStudent.id, ['Java', 'Spring Boot', 'PostgreSQL', 'TypeScript', 'React']);
 
   // 3. Demo Professional Freelancer (Pooja Verma)
   const demoProfessional = await prisma.user.create({
@@ -194,6 +213,126 @@ async function main() {
       },
     },
   });
+  await assignSkillsToUser(demoProfessional.id, ['React', 'Next.js', 'TypeScript', 'Flutter', 'React Native', 'Java', 'Spring Boot', 'PostgreSQL']);
+
+  // Additional Indian Freelancers / Professionals
+  const additionalProfessionals = [
+    {
+      name: 'Ananya Iyer',
+      email: 'ananya.iyer@example.com',
+      headline: 'Senior Java & Spring Boot Cloud Architect',
+      location: 'Chennai, Tamil Nadu, India',
+      city: 'Chennai',
+      state: 'Tamil Nadu',
+      bio: '8+ years designing fault-tolerant Java 21 microservices, PostgreSQL query tuning, and distributed Docker clusters.',
+      hourlyRate: 70,
+      yearsExp: 8,
+      aiScore: 96,
+      avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+      skills: ['Java', 'Spring Boot', 'PostgreSQL', 'Docker', 'System Design', 'Kubernetes'],
+    },
+    {
+      name: 'Rahul Mehta',
+      email: 'rahul.mehta@example.com',
+      headline: 'Full Stack Engineer (React 19, Node.js, Next.js)',
+      location: 'Bangalore, Karnataka, India',
+      city: 'Bangalore',
+      state: 'Karnataka',
+      bio: 'Full-stack developer building scalable web products, TypeScript APIs, and automated CI/CD pipelines on AWS.',
+      hourlyRate: 55,
+      yearsExp: 6,
+      aiScore: 92,
+      avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+      skills: ['React', 'Next.js', 'TypeScript', 'Node.js', 'PostgreSQL', 'Docker', 'AWS'],
+    },
+    {
+      name: 'Siddharth Nair',
+      email: 'siddharth.nair@example.com',
+      headline: 'DevOps & Site Reliability Specialist (AWS, K8s)',
+      location: 'Hyderabad, Telangana, India',
+      city: 'Hyderabad',
+      state: 'Telangana',
+      bio: 'DevOps consultant specializing in Kubernetes orchestration, Docker containerization, and automated Terraform deployments.',
+      hourlyRate: 65,
+      yearsExp: 7,
+      aiScore: 94,
+      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+      skills: ['Docker', 'Kubernetes', 'AWS', 'CI/CD Pipelines', 'Python', 'PostgreSQL'],
+    },
+    {
+      name: 'Meera Joshi',
+      email: 'meera.joshi@example.com',
+      headline: 'Generative AI & Python LLM Pipeline Engineer',
+      location: 'Pune, Maharashtra, India',
+      city: 'Pune',
+      state: 'Maharashtra',
+      bio: 'Hands-on AI engineer building production RAG pipelines, LangChain agents, pgvector search, and FastAPI backends.',
+      hourlyRate: 60,
+      yearsExp: 5,
+      aiScore: 93,
+      avatarUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80',
+      skills: ['Python', 'LangChain & RAG', 'LLM Engineering', 'PostgreSQL', 'FastAPI', 'Machine Learning'],
+    },
+    {
+      name: 'Kavita Reddy',
+      email: 'kavita.reddy@example.com',
+      headline: 'Cross-Platform Mobile Engineer (Flutter & React Native)',
+      location: 'Chennai, Tamil Nadu, India',
+      city: 'Chennai',
+      state: 'Tamil Nadu',
+      bio: 'Mobile application developer with 12+ published apps on App Store and Google Play using Flutter and React Native.',
+      hourlyRate: 50,
+      yearsExp: 4,
+      aiScore: 89,
+      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      skills: ['Flutter', 'React Native', 'TypeScript', 'GraphQL', 'UI/UX Design (Figma)'],
+    },
+  ];
+
+  const seededProfessionalMap: Record<string, string> = {
+    'Pooja Verma': demoProfessional.id,
+  };
+
+  for (const prof of additionalProfessionals) {
+    const profUser = await prisma.user.create({
+      data: {
+        email: prof.email,
+        passwordHash: demoPasswordHash,
+        name: prof.name,
+        role: 'PROFESSIONAL',
+        headline: prof.headline,
+        location: prof.location,
+        country: 'India',
+        state: prof.state,
+        city: prof.city,
+        bio: prof.bio,
+        avatarUrl: prof.avatarUrl,
+        isVerified: true,
+        profile: {
+          create: {
+            title: prof.headline,
+            hourlyRate: prof.hourlyRate,
+            yearsOfExperience: prof.yearsExp,
+            aiScore: prof.aiScore,
+            careerGoal: prof.headline,
+            targetRole: prof.headline,
+            experienceLevel: 'Advanced',
+            isOnboarded: true,
+          },
+        },
+      },
+    });
+    seededProfessionalMap[prof.name] = profUser.id;
+    await assignSkillsToUser(profUser.id, prof.skills);
+
+    // Ingest professional into pgvector chunks for semantic RAG search
+    await insertChunk(
+      `Professional Profile: ${prof.name}\nHeadline: ${prof.headline}\nLocation: ${prof.location}\nHourly Rate: $${prof.hourlyRate}/hr\nExperience: ${prof.yearsExp} years\nSkills: ${prof.skills.join(', ')}\nBio: ${prof.bio}`,
+      `Professional: ${prof.name}`,
+      'professional',
+      { userId: profUser.id, name: prof.name, skills: prof.skills, hourlyRate: prof.hourlyRate }
+    );
+  }
 
   // 4. Seed 10 Realistic Companies
   const companiesData = [
@@ -614,6 +753,7 @@ async function main() {
       },
     });
     mentorUserIds[m.name] = user.id;
+    await assignSkillsToUser(user.id, m.expertise.split(',').map((s) => s.trim()));
 
     // Ingest mentor profile into pgvector
     await insertChunk(
@@ -1416,6 +1556,85 @@ async function main() {
     );
   }
   console.log(`✅ Seeded ${jobsData.length} industry job postings with pgvector chunk embeddings.`);
+
+  // 7b. Seed Applications & Proposals for NovaTech Solutions & PixelForge Labs
+  const javaJob = await prisma.job.findFirst({ where: { title: { contains: 'Java & Spring Boot' } } });
+  const aiJob = await prisma.job.findFirst({ where: { title: { contains: 'Next.js 15 & AI' } } });
+  const pgJob = await prisma.job.findFirst({ where: { title: { contains: 'PostgreSQL Database Performance' } } });
+
+  if (javaJob) {
+    if (seededProfessionalMap['Ananya Iyer']) {
+      await prisma.application.create({
+        data: {
+          jobId: javaJob.id,
+          applicantId: seededProfessionalMap['Ananya Iyer'],
+          status: 'REVIEWING',
+          matchScore: 96,
+          matchExplanation: '96% Match — Full coverage of Java 21, Spring Boot, PostgreSQL, Docker, and System Design with 8+ years experience.',
+          coverLetter: 'I have 8+ years architecting enterprise Java and Spring Boot microservices with PostgreSQL optimization and Docker containerization. Excited to contribute to NovaTech.',
+          resumeUrl: 'https://ananya-iyer.dev/resume.pdf',
+        },
+      });
+    }
+
+    if (seededProfessionalMap['Pooja Verma']) {
+      await prisma.application.create({
+        data: {
+          jobId: javaJob.id,
+          applicantId: seededProfessionalMap['Pooja Verma'],
+          status: 'SHORTLISTED',
+          matchScore: 92,
+          matchExplanation: '92% Match — Strong backend integration skills with Java, Spring Boot, and PostgreSQL with extensive API architecture background.',
+          coverLetter: 'Experienced full stack and mobile consultant with strong Java/Spring backend API design skills. Available for hybrid or contract engagement.',
+          resumeUrl: 'https://pooja-verma.dev/resume.pdf',
+        },
+      });
+    }
+
+    await prisma.application.create({
+      data: {
+        jobId: javaJob.id,
+        applicantId: demoStudent.id,
+        status: 'INTERVIEW',
+        matchScore: 84,
+        matchExplanation: '84% Match — Demonstrates core Java fundamentals, SQL, and eager to grow into production Spring Boot systems under senior guidance.',
+        coverLetter: 'Computer Science graduate with deep enthusiasm for Java backend systems and database indexing. Seeking to contribute and learn in a fast-paced environment.',
+        resumeUrl: 'https://github.com/alexchen',
+      },
+    });
+  }
+
+  if (aiJob && seededProfessionalMap['Rahul Mehta']) {
+    await prisma.application.create({
+      data: {
+        jobId: aiJob.id,
+        applicantId: seededProfessionalMap['Rahul Mehta'],
+        status: 'REVIEWING',
+        matchScore: 94,
+        matchExplanation: '94% Match — High domain alignment in Next.js 15, TypeScript, React 19, and Tailwind CSS design systems.',
+        coverLetter: 'Full-stack developer with hands-on experience building production React/Next.js SaaS applications and AI streaming interfaces.',
+        resumeUrl: 'https://rahul-mehta.dev/resume.pdf',
+      },
+    });
+  }
+
+  if (pgJob && seededProfessionalMap['Siddharth Nair']) {
+    await prisma.proposal.create({
+      data: {
+        jobId: pgJob.id,
+        professionalId: seededProfessionalMap['Siddharth Nair'],
+        status: 'PENDING',
+        coverLetter: 'I specialize in PostgreSQL database query performance auditing, connection pooling, and Dockerized database deployments.',
+        proposedRate: 65,
+        estimatedDays: 14,
+        milestonesJson: JSON.stringify([
+          { title: 'Schema & Index Audit', days: 4, amount: 1000 },
+          { title: 'Slow Query Optimization & Connection Tuning', days: 10, amount: 2000 },
+        ]),
+      },
+    });
+  }
+  console.log(`✅ Seeded realistic candidate applications & proposals.`);
 
   // 8. Ingest Platform Ecosystem Overview into pgvector
   await insertChunk(
