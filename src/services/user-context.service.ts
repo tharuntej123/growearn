@@ -40,6 +40,8 @@ export interface UserAIContext {
   completedCourses: { id: string; title: string; category: string }[];
   enrolledCourses: { id: string; title: string; progressPercent: number; isCompleted: boolean }[];
   applications: { id: string; jobTitle: string; status: string; appliedAt: Date }[];
+  certifications: { id: string; title: string; issuer: string; issueDate: Date }[];
+  projects: { id: string; title: string; description: string; skillsUsed: string | null }[];
   careerRoadmap: {
     id: string;
     targetRole: string;
@@ -69,6 +71,12 @@ export async function getUserAIContext(userId: string): Promise<UserAIContext | 
       },
       educations: {
         orderBy: { startDate: 'desc' },
+      },
+      certifications: {
+        orderBy: { issueDate: 'desc' },
+      },
+      projects: {
+        orderBy: { createdAt: 'desc' },
       },
       enrollments: {
         include: { course: true },
@@ -224,6 +232,18 @@ export async function getUserAIContext(userId: string): Promise<UserAIContext | 
       jobTitle: a.job.title,
       status: a.status,
       appliedAt: a.appliedAt,
+    })),
+    certifications: user.certifications.map((c) => ({
+      id: c.id,
+      title: c.title,
+      issuer: c.issuer,
+      issueDate: c.issueDate,
+    })),
+    projects: user.projects.map((p) => ({
+      id: p.id,
+      title: p.title,
+      description: p.description,
+      skillsUsed: p.skillsUsed,
     })),
     careerRoadmap: roadmapData,
   };

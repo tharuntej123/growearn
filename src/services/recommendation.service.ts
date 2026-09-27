@@ -144,20 +144,47 @@ export class RecommendationService {
         locScore = 100;
       }
 
-      let typeScore = 70;
-      if (preferredJobType === 'ANY' || preferredJobType === job.locationType || preferredJobType === job.jobType) {
-        typeScore = 100;
-      }
+      // Certification & Project Match
+      let certScore = 50;
+      const matchedCerts: string[] = [];
+      const userCerts = userContext.certifications || [];
+      const userProjects = userContext.projects || [];
+      const combinedJobText = `${job.title} ${job.description} ${requiredSkills.join(' ')}`.toLowerCase();
 
-      const totalScore = Math.round(
-        skillScore * 0.4 + roleScore * 0.25 + expScore * 0.15 + locScore * 0.1 + typeScore * 0.1
+      userCerts.forEach((cert) => {
+        const certTitleLower = cert.title.toLowerCase();
+        if (requiredSkills.some((s) => certTitleLower.includes(s.toLowerCase())) || combinedJobText.includes(certTitleLower.split(' ')[0])) {
+          certScore = 100;
+          matchedCerts.push(cert.title);
+        }
+      });
+
+      userProjects.forEach((proj) => {
+        const projSkills = (proj.skillsUsed || '').toLowerCase();
+        if (requiredSkills.some((s) => projSkills.includes(s.toLowerCase()))) {
+          certScore = Math.max(certScore, 90);
+        }
+      });
+
+      const typeScore = job.jobType === 'CONTRACT' || job.jobType === 'FULL_TIME' ? 95 : 80;
+
+      const totalScore = Math.min(
+        100,
+        Math.round(
+          skillScore * 0.35 +
+            roleScore * 0.2 +
+            expScore * 0.15 +
+            certScore * 0.15 +
+            locScore * 0.08 +
+            typeScore * 0.07
+        )
       );
 
       let whyMatches = '';
       if (matched.length > 0) {
-        whyMatches = `Strong match with your ${matched.slice(0, 2).join(', ')} skills${missing.length > 0 ? ` (Missing: ${missing[0]})` : ''}.`;
+        whyMatches = `Strong match: ${matched.join(', ')}${matchedCerts.length > 0 ? ` • Verified Cert: ${matchedCerts[0]}` : ''}${missing.length > 0 ? ` (Missing: ${missing[0]})` : ''}.`;
       } else {
-        whyMatches = `Aligned with your ${userContext.profile?.targetRole || 'engineering'} trajectory.`;
+        whyMatches = `Aligned with your ${userContext.profile?.targetRole || 'engineering'} profile.`;
       }
 
       return {

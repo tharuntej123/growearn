@@ -14,6 +14,7 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { generateEmbedding } from '../src/lib/ai/embeddings';
+import { PRODUCTION_ROADMAPS_CATALOG } from '../src/lib/ai/roadmaps-catalog';
 
 const prisma = new PrismaClient();
 
@@ -325,6 +326,103 @@ async function main() {
     seededProfessionalMap[prof.name] = profUser.id;
     await assignSkillsToUser(profUser.id, prof.skills);
 
+    // Seed Projects and Certifications for Freelancers
+    if (prof.name === 'Ananya Iyer') {
+      await prisma.project.createMany({
+        data: [
+          {
+            userId: profUser.id,
+            title: 'Enterprise Core Banking Microservices Architecture',
+            description: 'Fault-tolerant distributed microservices built with Java 21, Spring Boot 3, and PostgreSQL processing 25,000 tx/sec.',
+            skillsUsed: 'Java, Spring Boot, PostgreSQL, Docker, System Design',
+            projectUrl: 'https://github.com/ananyaiyer/core-banking',
+          },
+          {
+            userId: profUser.id,
+            title: 'High-Throughput Distributed Payment Gateway',
+            description: 'Event-driven payment processing engine with Apache Kafka and Redis distributed locks.',
+            skillsUsed: 'Java, Spring Boot, Kafka, Redis, PostgreSQL',
+            projectUrl: 'https://github.com/ananyaiyer/payment-gateway',
+          },
+        ],
+      });
+      await prisma.certification.createMany({
+        data: [
+          {
+            userId: profUser.id,
+            title: 'Oracle Certified Professional: Java SE 17/21 Developer',
+            issuer: 'Oracle Corporation',
+            issueDate: new Date('2023-08-15'),
+            credentialUrl: 'https://oracle.com/certs/ananya-iyer',
+          },
+          {
+            userId: profUser.id,
+            title: 'Spring Certified Enterprise Integration Specialist',
+            issuer: 'VMware Spring Academy',
+            issueDate: new Date('2024-02-10'),
+            credentialUrl: 'https://spring.io/certs/ananya-iyer',
+          },
+        ],
+      });
+    } else if (prof.name === 'Rahul Mehta') {
+      await prisma.project.create({
+        data: {
+          userId: profUser.id,
+          title: 'Real-Time Collaborative Code Editor & Workspace',
+          description: 'Full stack real-time developer workspace with Next.js 15, WebSockets, and PostgreSQL.',
+          skillsUsed: 'React, Next.js, TypeScript, Node.js, PostgreSQL, Docker',
+          projectUrl: 'https://github.com/rahulmehta/collab-code',
+        },
+      });
+      await prisma.certification.create({
+        data: {
+          userId: profUser.id,
+          title: 'AWS Certified Solutions Architect – Associate',
+          issuer: 'Amazon Web Services',
+          issueDate: new Date('2024-01-20'),
+          credentialUrl: 'https://aws.amazon.com/verification',
+        },
+      });
+    } else if (prof.name === 'Siddharth Nair') {
+      await prisma.project.create({
+        data: {
+          userId: profUser.id,
+          title: 'Multi-Cloud Kubernetes Deployment Automation Pipeline',
+          description: 'Automated Terraform and GitHub Actions pipeline provisioning AWS EKS clusters with zero downtime.',
+          skillsUsed: 'Docker, Kubernetes, AWS, CI/CD Pipelines, Terraform',
+          projectUrl: 'https://github.com/siddharthnair/k8s-automation',
+        },
+      });
+      await prisma.certification.create({
+        data: {
+          userId: profUser.id,
+          title: 'Certified Kubernetes Administrator (CKA)',
+          issuer: 'Cloud Native Computing Foundation (CNCF)',
+          issueDate: new Date('2024-03-01'),
+          credentialUrl: 'https://cncf.io/verify/cka',
+        },
+      });
+    } else if (prof.name === 'Meera Joshi') {
+      await prisma.project.create({
+        data: {
+          userId: profUser.id,
+          title: 'Enterprise Document Intelligence & RAG Chatbot',
+          description: 'Production vector search pipeline using LangChain, PostgreSQL pgvector, and async FastAPI.',
+          skillsUsed: 'Python, LangChain & RAG, LLM Engineering, PostgreSQL, FastAPI',
+          projectUrl: 'https://github.com/meerajoshi/doc-rag',
+        },
+      });
+      await prisma.certification.create({
+        data: {
+          userId: profUser.id,
+          title: 'DeepLearning.AI LangChain & Generative AI Specialist',
+          issuer: 'DeepLearning.AI',
+          issueDate: new Date('2024-04-15'),
+          credentialUrl: 'https://deeplearning.ai/verify',
+        },
+      });
+    }
+
     // Ingest professional into pgvector chunks for semantic RAG search
     await insertChunk(
       `Professional Profile: ${prof.name}\nHeadline: ${prof.headline}\nLocation: ${prof.location}\nHourly Rate: $${prof.hourlyRate}/hr\nExperience: ${prof.yearsExp} years\nSkills: ${prof.skills.join(', ')}\nBio: ${prof.bio}`,
@@ -333,6 +431,44 @@ async function main() {
       { userId: profUser.id, name: prof.name, skills: prof.skills, hourlyRate: prof.hourlyRate }
     );
   }
+
+  // Seed Projects & Certifications for Demo Professional Pooja Verma
+  await prisma.project.createMany({
+    data: [
+      {
+        userId: demoProfessional.id,
+        title: 'Cross-Platform FinTech Mobile Banking SuperApp',
+        description: 'Native performance mobile app built with Flutter and React Native with 500k+ active downloads.',
+        skillsUsed: 'Flutter, React Native, TypeScript, Firebase, GraphQL',
+        projectUrl: 'https://pooja-verma.dev/projects/fintech',
+      },
+      {
+        userId: demoProfessional.id,
+        title: 'Full Stack SaaS Analytics & Dashboard Platform',
+        description: 'Modern Next.js 15 App Router web application with PostgreSQL persistence and real-time charts.',
+        skillsUsed: 'Next.js, React, TypeScript, PostgreSQL, Tailwind CSS',
+        projectUrl: 'https://pooja-verma.dev/projects/saas-analytics',
+      },
+    ],
+  });
+  await prisma.certification.createMany({
+    data: [
+      {
+        userId: demoProfessional.id,
+        title: 'Meta Certified React Native & Mobile Specialist',
+        issuer: 'Meta',
+        issueDate: new Date('2023-11-10'),
+        credentialUrl: 'https://meta.com/certs/pooja-verma',
+      },
+      {
+        userId: demoProfessional.id,
+        title: 'AWS Certified Cloud Practitioner',
+        issuer: 'Amazon Web Services',
+        issueDate: new Date('2023-05-22'),
+        credentialUrl: 'https://aws.amazon.com/verify',
+      },
+    ],
+  });
 
   // 4. Seed 10 Realistic Companies
   const companiesData = [
@@ -1636,7 +1772,22 @@ async function main() {
   }
   console.log(`✅ Seeded realistic candidate applications & proposals.`);
 
-  // 8. Ingest Platform Ecosystem Overview into pgvector
+  // 8. Ingest 10 Production Roadmaps into pgvector
+  for (const r of PRODUCTION_ROADMAPS_CATALOG) {
+    const phasesSummary = r.phases
+      .map((p) => `Phase ${p.phaseNumber}: ${p.title} (${p.durationWeeks} wks) - ${p.objective} [Skills: ${p.skills.join(', ')}]`)
+      .join('\n');
+
+    await insertChunk(
+      `Career Roadmap: ${r.title}\nRole: ${r.targetRole}\nCategory: ${r.category}\nLevel: ${r.level}\nDuration: ${r.estimatedDurationWeeks} weeks\nSummary: ${r.summary}\nKey Skills: ${r.primarySkills.join(', ')}\n\nCurriculum Phases:\n${phasesSummary}\n\nFinal Milestone: ${r.finalMilestone}`,
+      `Roadmap: ${r.title}`,
+      'roadmap',
+      { roadmapId: r.id, slug: r.slug, title: r.title, category: r.category, skills: r.primarySkills }
+    );
+  }
+  console.log(`✅ Seeded ${PRODUCTION_ROADMAPS_CATALOG.length} production career roadmaps with pgvector chunk embeddings.`);
+
+  // 8b. Ingest Platform Ecosystem Overview into pgvector
   await insertChunk(
     `GrowEarn Platform Overview & Capabilities:
 GrowEarn is a production-grade talent ecosystem, mentorship marketplace, and career development platform connecting 4 key user roles:
