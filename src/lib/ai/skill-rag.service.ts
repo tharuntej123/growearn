@@ -13,7 +13,6 @@ import { prisma } from '@/lib/prisma';
 import { PgVectorRetriever } from './retriever';
 import { generateEmbedding } from './embeddings';
 import { UserAIContext } from '@/services/user-context.service';
-import { GrokLLMClient } from './grok-client';
 
 export interface RAGCourseResult {
   id: string;
@@ -196,7 +195,7 @@ export class SkillRAGService {
 
     // 3. Synthesize Grounded 4-Phase Roadmap
     const currentLevel = userContext?.profile?.experienceLevel || 'Intermediate';
-    let roadmapPhases: RAGRoadmapPhase[] = [
+    const roadmapPhases: RAGRoadmapPhase[] = [
       {
         phaseNumber: 1,
         title: `Phase 1: ${q} Foundations & Architecture`,
