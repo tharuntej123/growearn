@@ -171,113 +171,160 @@ export class SkillRAGService {
     const selectedRoadmap = this.matchBestRoadmap(q, currentLevel);
 
     // 3. Compute semantic relevance & skill overlap for Courses
-    const scoredCourses: RAGCourseResult[] = courses
-      .map((c) => {
-        const skills = c.skillsCovered ? c.skillsCovered.split(',').map((s) => s.trim()) : [];
-        const titleLower = c.title.toLowerCase();
-        const qLower = q.toLowerCase();
-        const descLower = c.description.toLowerCase();
+    const scoredCourses: RAGCourseResult[] = courses.map((c) => {
+      const skills = c.skillsCovered ? c.skillsCovered.split(',').map((s) => s.trim()) : [];
+      const titleLower = c.title.toLowerCase();
+      const qLower = q.toLowerCase();
+      const descLower = c.description.toLowerCase();
 
-        let overlapCount = 0;
-        skills.forEach((s) => {
-          if (qLower.includes(s.toLowerCase()) || s.toLowerCase().includes(qLower)) {
-            overlapCount++;
-          }
-        });
+      let overlapCount = 0;
+      skills.forEach((s) => {
+        if (qLower.includes(s.toLowerCase()) || s.toLowerCase().includes(qLower)) {
+          overlapCount++;
+        }
+      });
 
-        const isTitleMatch = titleLower.includes(qLower) || qLower.includes(titleLower);
-        const isDescMatch = descLower.includes(qLower);
+      const isTitleMatch = titleLower.includes(qLower) || qLower.includes(titleLower);
+      const isDescMatch = descLower.includes(qLower);
 
-        let matchScore = 75;
-        if (isTitleMatch) matchScore = 95 + Math.min(4, Math.floor(c.rating));
-        else if (overlapCount > 0) matchScore = 88 + overlapCount * 3;
-        else if (isDescMatch) matchScore = 82;
+      let matchScore = 30;
+      let isRelevant = false;
 
-        matchScore = Math.min(99, Math.max(70, matchScore));
+      if (isTitleMatch && overlapCount > 0) {
+        matchScore = 96 + Math.min(3, Math.floor(c.rating));
+        isRelevant = true;
+      } else if (isTitleMatch) {
+        matchScore = 94 + Math.min(4, Math.floor(c.rating));
+        isRelevant = true;
+      } else if (overlapCount > 0) {
+        matchScore = 88 + overlapCount * 2;
+        isRelevant = true;
+      } else if (isDescMatch) {
+        matchScore = 82;
+        isRelevant = true;
+      }
 
-        return {
-          id: c.id,
-          title: c.title,
-          slug: c.slug,
-          description: c.description,
-          category: c.category,
-          level: c.level,
-          price: c.price,
-          durationHours: c.durationHours,
-          thumbnail: c.thumbnail,
-          skillsCovered: skills,
-          rating: c.rating,
-          reviewsCount: c.reviewsCount,
-          instructor: {
-            id: c.instructor.id,
-            name: c.instructor.name,
-            avatarUrl: c.instructor.avatarUrl,
-            headline: c.instructor.headline,
-          },
-          matchScore,
-          matchReason: `Matches "${q}" via semantic grounding & verified curriculum (${skills.slice(0, 3).join(', ')})`,
-        };
-      })
-      .sort((a, b) => b.matchScore - a.matchScore || b.rating - a.rating)
-      .slice(0, 5);
+      matchScore = Math.min(99, Math.max(30, matchScore));
+
+      const levelOrder: Record<string, number> = {
+        BEGINNER: 1,
+        INTERMEDIATE: 2,
+        ADVANCED: 3,
+      };
+
+      const currentLevelNormalized = (c.level || 'INTERMEDIATE').toUpperCase();
+      const levelRank = levelOrder[currentLevelNormalized] || 2;
+
+      return {
+        id: c.id,
+        title: c.title,
+        slug: c.slug,
+        description: c.description,
+        category: c.category,
+        level: c.level,
+        price: c.price,
+        durationHours: c.durationHours,
+        thumbnail: c.thumbnail,
+        skillsCovered: skills,
+        rating: c.rating,
+        reviewsCount: c.reviewsCount,
+        instructor: {
+          id: c.instructor.id,
+          name: c.instructor.name,
+          avatarUrl: c.instructor.avatarUrl,
+          headline: c.instructor.headline,
+        },
+        matchScore,
+        levelRank,
+        isRelevant,
+        matchReason: `[${c.level}] Progressive curriculum covering ${skills.slice(0, 3).join(', ')}`,
+      };
+    });
+
+    // Separate relevant courses from general courses
+    const relevantCourses = scoredCourses.filter((c: any) => c.isRelevant);
+    const otherCourses = scoredCourses.filter((c: any) => !c.isRelevant);
+
+    // Sort relevant courses by progressive learning levels (Beginner -> Intermediate -> Advanced), then match score
+    relevantCourses.sort(
+      (a: any, b: any) => a.levelRank - b.levelRank || b.matchScore - a.matchScore || b.rating - a.rating
+    );
+    otherCourses.sort((a, b) => b.rating - a.rating);
+
+    const finalTopCourses = [...relevantCourses, ...otherCourses].slice(0, 5);
 
     // 4. Compute semantic relevance & expertise overlap for Mentors
-    const scoredMentors: RAGMentorResult[] = mentors
-      .map((m) => {
-        const expertiseList = m.expertise ? m.expertise.split(',').map((s) => s.trim()) : [];
-        const qLower = q.toLowerCase();
-        const bioLower = m.bio.toLowerCase();
-        const titleLower = (m.title || '').toLowerCase();
+    const scoredMentors: RAGMentorResult[] = mentors.map((m) => {
+      const expertiseList = m.expertise ? m.expertise.split(',').map((s) => s.trim()) : [];
+      const qLower = q.toLowerCase();
+      const bioLower = m.bio.toLowerCase();
+      const titleLower = (m.title || '').toLowerCase();
 
-        let overlapCount = 0;
-        expertiseList.forEach((s) => {
-          if (qLower.includes(s.toLowerCase()) || s.toLowerCase().includes(qLower)) {
-            overlapCount++;
-          }
-        });
+      let overlapCount = 0;
+      expertiseList.forEach((s) => {
+        if (qLower.includes(s.toLowerCase()) || s.toLowerCase().includes(qLower)) {
+          overlapCount++;
+        }
+      });
 
-        const isTitleMatch = titleLower.includes(qLower);
-        const isBioMatch = bioLower.includes(qLower);
+      const isTitleMatch = titleLower.includes(qLower);
+      const isBioMatch = bioLower.includes(qLower);
 
-        let matchScore = 75;
-        if (isTitleMatch && overlapCount > 0) matchScore = 96 + Math.min(3, Math.floor(m.rating));
-        else if (overlapCount > 0) matchScore = 90 + overlapCount * 2;
-        else if (isBioMatch) matchScore = 82;
+      let matchScore = 40;
+      let isRelevant = false;
 
-        matchScore = Math.min(99, Math.max(70, matchScore));
+      if (isTitleMatch && overlapCount > 0) {
+        matchScore = 96 + Math.min(3, Math.floor(m.rating));
+        isRelevant = true;
+      } else if (overlapCount > 0) {
+        matchScore = 90 + overlapCount * 2;
+        isRelevant = true;
+      } else if (isTitleMatch || isBioMatch) {
+        matchScore = 84;
+        isRelevant = true;
+      }
 
-        return {
-          id: m.id,
-          userId: m.user.id,
-          name: m.user.name,
-          avatarUrl: m.user.avatarUrl,
-          headline: m.user.headline || m.title,
-          location: m.user.location,
-          bio: m.bio,
-          expertise: expertiseList,
-          hourlyRate: m.hourlyRate,
-          rating: m.rating,
-          studentsCount: m.studentsCount,
-          sessionCount: m.sessionCount,
-          yearsExperience: m.yearsExperience,
-          matchScore,
-          matchReason: `Expert in ${expertiseList.slice(0, 3).join(', ')} with ${m.yearsExperience}+ yrs experience and ${m.rating}⭐ rating.`,
-        };
-      })
-      .sort((a, b) => b.matchScore - a.matchScore || b.rating - a.rating)
-      .slice(0, 5);
+      matchScore = Math.min(99, Math.max(40, matchScore));
+
+      return {
+        id: m.id,
+        userId: m.user.id,
+        name: m.user.name,
+        avatarUrl: m.user.avatarUrl,
+        headline: m.user.headline || m.title,
+        location: m.user.location,
+        bio: m.bio,
+        expertise: expertiseList,
+        hourlyRate: m.hourlyRate,
+        rating: m.rating,
+        studentsCount: m.studentsCount,
+        sessionCount: m.sessionCount,
+        yearsExperience: m.yearsExperience,
+        matchScore,
+        isRelevant,
+        matchReason: `Expert in ${expertiseList.slice(0, 3).join(', ')} with ${m.yearsExperience}+ yrs experience (${m.rating}⭐)`,
+      };
+    });
+
+    const relevantMentors = scoredMentors.filter((m: any) => m.isRelevant);
+    const otherMentors = scoredMentors.filter((m: any) => !m.isRelevant);
+
+    relevantMentors.sort((a, b) => b.matchScore - a.matchScore || b.rating - a.rating);
+    otherMentors.sort((a, b) => b.rating - a.rating);
+
+    const finalTopMentors = [...relevantMentors, ...otherMentors].slice(0, 5);
 
     return {
       skill: q,
       roadmap: selectedRoadmap,
-      topCourses: scoredCourses,
-      topMentors: scoredMentors,
+      topCourses: finalTopCourses,
+      topMentors: finalTopMentors,
       ragMetrics: {
         totalIndexedCourses: courses.length,
         totalIndexedMentors: mentors.length,
         totalIndexedRoadmaps: PRODUCTION_ROADMAPS_CATALOG.length,
-        retrievedCoursesCount: scoredCourses.length,
-        retrievedMentorsCount: scoredMentors.length,
+        retrievedCoursesCount: finalTopCourses.length,
+        retrievedMentorsCount: finalTopMentors.length,
         searchConfidence: '98% Grounded Vector Match',
       },
     };
