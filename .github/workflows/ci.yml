@@ -11,21 +11,6 @@ jobs:
     name: Typecheck, Lint, Test & Production Build
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: pgvector/pgvector:pg16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgrespassword
-          POSTGRES_DB: groearn_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d groearn_test"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-
     env:
       DATABASE_URL: "postgresql://postgres:postgrespassword@127.0.0.1:5432/groearn_test?sslmode=disable"
       DIRECT_URL: "postgresql://postgres:postgrespassword@127.0.0.1:5432/groearn_test?sslmode=disable"
@@ -46,31 +31,45 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: 1. Clean Dependency Installation
+      - name: 1. Start PostgreSQL with pgvector
+        run: |
+          docker run -d \
+            --name postgres \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_PASSWORD=postgrespassword \
+            -e POSTGRES_DB=groearn_test \
+            -p 5432:5432 \
+            pgvector/pgvector:pg16
+
+          echo "Waiting for PostgreSQL service to be ready..."
+          until docker exec postgres pg_isready -U postgres -d groearn_test; do
+            echo "Waiting..."
+            sleep 1
+          done
+          echo "PostgreSQL is ready and healthy!"
+
+      - name: 2. Install Dependencies
         run: npm ci
 
-      - name: 2. Generate Prisma Client
+      - name: 3. Generate Prisma Client
         run: npx prisma generate
 
-      - name: 3. Synchronize Database Schema
-        run: |
-          npx prisma db push --skip-generate
+      - name: 4. Push Database Schema to Test Database
+        run: npx prisma db push --skip-generate
 
-      - name: 4. Seed Database for Testing
+      - name: 5. Seed Test Database
         run: npx tsx prisma/seed.ts
         env:
           ALLOW_PRODUCTION_SEED: "true"
-          NODE_ENV: "test"
 
-      - name: 5. Run Strict TypeScript Typecheck
+      - name: 6. Run Strict TypeScript Typecheck
         run: npm run typecheck
 
-      - name: 6. Run ESLint Rules Check
+      - name: 7. Run ESLint Rules Check
         run: npm run lint
 
-      - name: 7. Run Master End-to-End Test Suite
+      - name: 8. Run Master Test Suite
         run: npm test
 
-      - name: 8. Build Next.js Production Bundle
+      - name: 9. Build Next.js Production Bundle
         run: npm run build
-
