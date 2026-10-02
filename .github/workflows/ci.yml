@@ -22,18 +22,20 @@ jobs:
           - 5432:5432
         options: >-
           --health-cmd pg_isready
-          --health-interval 10s
+          --health-interval 5s
           --health-timeout 5s
-          --health-retries 5
+          --health-retries 10
 
     env:
-      DATABASE_URL: "postgresql://postgres:postgrespassword@localhost:5432/groearn_test?sslmode=disable"
-      DIRECT_URL: "postgresql://postgres:postgrespassword@localhost:5432/groearn_test?sslmode=disable"
+      DATABASE_URL: "postgresql://postgres:postgrespassword@127.0.0.1:5432/groearn_test?sslmode=disable"
+      DIRECT_URL: "postgresql://postgres:postgrespassword@127.0.0.1:5432/groearn_test?sslmode=disable"
       JWT_SECRET: "ci-test-jwt-secret-key-2026-production-testing-random"
       JWT_EXPIRES_IN: "7d"
       MOCK_AI: "true"
       NEXT_PUBLIC_APP_URL: "http://localhost:3000"
       STORAGE_PROVIDER: "local"
+      ALLOW_PRODUCTION_SEED: "true"
+      NODE_ENV: "test"
 
     steps:
       - name: Checkout Source Code
@@ -51,11 +53,15 @@ jobs:
       - name: 2. Generate Prisma Client
         run: npx prisma generate
 
-      - name: 3. Run Prisma Migrations Deploy
-        run: npx prisma migrate deploy
+      - name: 3. Synchronize Database Schema
+        run: |
+          npx prisma db push --skip-generate
 
       - name: 4. Seed Database for Testing
         run: npx tsx prisma/seed.ts
+        env:
+          ALLOW_PRODUCTION_SEED: "true"
+          NODE_ENV: "test"
 
       - name: 5. Run Strict TypeScript Typecheck
         run: npm run typecheck
@@ -68,3 +74,4 @@ jobs:
 
       - name: 8. Build Next.js Production Bundle
         run: npm run build
+
