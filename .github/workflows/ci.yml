@@ -11,6 +11,21 @@ jobs:
     name: Typecheck, Lint, Test & Production Build
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgrespassword
+          POSTGRES_DB: groearn_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     env:
       DATABASE_URL: "postgresql://postgres:postgrespassword@127.0.0.1:5432/groearn_test?sslmode=disable"
       DIRECT_URL: "postgresql://postgres:postgrespassword@127.0.0.1:5432/groearn_test?sslmode=disable"
@@ -31,45 +46,39 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: 1. Start PostgreSQL with pgvector
+      - name: Wait for PostgreSQL Service
         run: |
-          docker run -d \
-            --name postgres \
-            -e POSTGRES_USER=postgres \
-            -e POSTGRES_PASSWORD=postgrespassword \
-            -e POSTGRES_DB=groearn_test \
-            -p 5432:5432 \
-            pgvector/pgvector:pg16
-
-          echo "Waiting for PostgreSQL service to be ready..."
-          until docker exec postgres pg_isready -U postgres -d groearn_test; do
-            echo "Waiting..."
+          for i in {1..30}; do
+            if pg_isready -h 127.0.0.1 -p 5432 -U postgres -d groearn_test; then
+              echo "PostgreSQL pgvector is ready!"
+              break
+            fi
+            echo "Waiting for PostgreSQL ($i/30)..."
             sleep 1
           done
-          echo "PostgreSQL is ready and healthy!"
 
-      - name: 2. Install Dependencies
+      - name: 1. Clean Dependency Installation
         run: npm ci
 
-      - name: 3. Generate Prisma Client
+      - name: 2. Generate Prisma Client
         run: npx prisma generate
 
-      - name: 4. Push Database Schema to Test Database
+      - name: 3. Synchronize Database Schema
         run: npx prisma db push --skip-generate
 
-      - name: 5. Seed Test Database
+      - name: 4. Seed Database for Testing
         run: npx tsx prisma/seed.ts
         env:
           ALLOW_PRODUCTION_SEED: "true"
 
-      - name: 6. Run Strict TypeScript Typecheck
+      - name: 5. Run Strict TypeScript Typecheck
         run: npm run typecheck
 
-      - name: 7. Run ESLint Rules Check
+      - name: 6. Run ESLint Rules Check
         run: npm run lint
 
-      - name: 8. Run Master Test Suite
+      - name: 7. Run Master End-to-End Test Suite
         run: npm test
 
-      - name: 9. Build Next.js Production Bundle
+      - name: 8. Build Next.js Production Bundle
         run: npm run build
