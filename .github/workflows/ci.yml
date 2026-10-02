@@ -21,7 +21,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U postgres -d groearn_test"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -35,7 +35,6 @@ jobs:
       NEXT_PUBLIC_APP_URL: "http://localhost:3000"
       STORAGE_PROVIDER: "local"
       ALLOW_PRODUCTION_SEED: "true"
-      NODE_ENV: "test"
 
     steps:
       - name: Checkout Source Code
