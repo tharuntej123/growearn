@@ -28,25 +28,38 @@ async function insertChunk(
   sourceType: string,
   metadata: Record<string, any> = {}
 ) {
-  const embedding = await generateEmbedding(content);
-  const vectorStr = formatVectorForPg(embedding);
-  const metadataStr = JSON.stringify(metadata);
+  if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.trim().length === 0) {
+    return;
+  }
+  try {
+    const embedding = await generateEmbedding(content);
+    const vectorStr = formatVectorForPg(embedding);
+    const metadataStr = JSON.stringify(metadata);
 
-  await prisma.$executeRawUnsafe(
-    `
-    INSERT INTO document_chunks (id, content, source, source_type, metadata, embedding, created_at)
-    VALUES (gen_random_uuid()::text, $1, $2, $3, $4::jsonb, $5::vector, NOW())
-    `,
-    content,
-    source,
-    sourceType,
-    metadataStr,
-    vectorStr
-  );
+    await prisma.$executeRawUnsafe(
+      `
+      INSERT INTO document_chunks (id, content, source, source_type, metadata, embedding, created_at)
+      VALUES (gen_random_uuid()::text, $1, $2, $3, $4::jsonb, $5::vector, NOW())
+      `,
+      content,
+      source,
+      sourceType,
+      metadataStr,
+      vectorStr
+    );
+  } catch (err: any) {
+    console.warn(`Vector chunk insert skipped for ${source}:`, err.message);
+  }
 }
 
 async function main() {
-  console.log('🌱 Starting GrowEarn Production Database Seed...');
+  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_PRODUCTION_SEED !== 'true') {
+    console.error('⛔ FATAL: Database seed execution blocked in PRODUCTION environment.');
+    console.error('To override for initial provisioning, set ALLOW_PRODUCTION_SEED=true explicitly.');
+    process.exit(1);
+  }
+
+  console.log('🌱 Starting GrowEarn Database Seed (Development/Staging Provisioning)...');
 
   // Clean existing records
   await prisma.$executeRawUnsafe(`TRUNCATE TABLE document_chunks CASCADE;`).catch(() => {});

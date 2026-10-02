@@ -81,7 +81,7 @@ export default function CoursesPage() {
       const res = await fetch(`/api/courses/${courseId}/enroll`, { method: 'POST' });
       const json = await res.json();
       if (json.success) {
-        toast.success('Successfully enrolled! Payment processed via MockProvider.');
+        toast.success('Successfully enrolled! Course curriculum unlocked.');
         handleOpenCourse(courseId);
       } else {
         toast.error(json.error?.message || 'Enrollment failed');

@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { apiSuccess, apiError } from '@/lib/utils';
 import { getUserAIContext } from '@/services/user-context.service';
 import { AIAssistantService } from '@/lib/ai/ai-assistant.service';
+import { enforceRateLimit } from '@/lib/rate-limiter';
 
 /**
  * POST /api/ai/chat
@@ -11,6 +12,11 @@ import { AIAssistantService } from '@/lib/ai/ai-assistant.service';
 export async function POST(req: NextRequest) {
   try {
     const authUser = await getCurrentUser(req);
+    
+    // Rate limit: 20 requests / minute per user or IP
+    const rateLimitResponse = await enforceRateLimit(req, 'ai:chat', 20, 60, authUser?.id);
+    if (rateLimitResponse) return rateLimitResponse;
+
     const body = await req.json();
     const { message } = body;
 

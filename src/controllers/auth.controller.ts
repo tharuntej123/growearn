@@ -1,11 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { AuthService } from '@/services/auth.service';
 import { registerSchema, loginSchema, roleSelectSchema } from '@/validators/auth.schema';
 import { apiSuccess, apiError } from '@/lib/utils';
-import { AUTH_COOKIE_NAME, getCurrentUserFromRequest } from '@/lib/auth';
+import { AUTH_COOKIE_NAME, getCurrentUserFromRequest, getAuthCookieOptions } from '@/lib/auth';
+import { enforceRateLimit } from '@/lib/rate-limiter';
 
 export class AuthController {
   static async register(req: NextRequest) {
+    // Enforce 5 registrations per 10 minutes per IP
+    const rateLimitResponse = await enforceRateLimit(req, 'auth:register', 5, 600);
+    if (rateLimitResponse) return rateLimitResponse;
+
     try {
       const body = await req.json();
       const validated = registerSchema.safeParse(body);
@@ -18,16 +23,13 @@ export class AuthController {
         );
       }
 
-      const result = await AuthService.register(validated.data);
+      const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined;
+      const ua = req.headers.get('user-agent') || undefined;
+
+      const result = await AuthService.register(validated.data, ip, ua);
       const response = apiSuccess(result, 201);
 
-      response.cookies.set(AUTH_COOKIE_NAME, result.token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7,
-        path: '/',
-      });
+      response.cookies.set(AUTH_COOKIE_NAME, result.token, getAuthCookieOptions());
 
       return response;
     } catch (err: unknown) {
@@ -37,6 +39,10 @@ export class AuthController {
   }
 
   static async login(req: NextRequest) {
+    // Enforce 10 login attempts per 1 minute per IP
+    const rateLimitResponse = await enforceRateLimit(req, 'auth:login', 10, 60);
+    if (rateLimitResponse) return rateLimitResponse;
+
     try {
       const body = await req.json();
       const validated = loginSchema.safeParse(body);
@@ -48,16 +54,13 @@ export class AuthController {
         );
       }
 
-      const result = await AuthService.login(validated.data);
+      const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined;
+      const ua = req.headers.get('user-agent') || undefined;
+
+      const result = await AuthService.login(validated.data, ip, ua);
       const response = apiSuccess(result, 200);
 
-      response.cookies.set(AUTH_COOKIE_NAME, result.token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7,
-        path: '/',
-      });
+      response.cookies.set(AUTH_COOKIE_NAME, result.token, getAuthCookieOptions());
 
       return response;
     } catch (err: unknown) {
@@ -99,16 +102,13 @@ export class AuthController {
         return apiError(validated.error.errors[0]?.message || 'Invalid role', 'VALIDATION_ERROR', 400);
       }
 
-      const result = await AuthService.selectRole(userPayload.userId, validated.data.role);
+      const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined;
+      const ua = req.headers.get('user-agent') || undefined;
+
+      const result = await AuthService.selectRole(userPayload.userId, validated.data.role, ip, ua);
       const response = apiSuccess(result);
 
-      response.cookies.set(AUTH_COOKIE_NAME, result.token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7,
-        path: '/',
-      });
+      response.cookies.set(AUTH_COOKIE_NAME, result.token, getAuthCookieOptions());
 
       return response;
     } catch (err: unknown) {

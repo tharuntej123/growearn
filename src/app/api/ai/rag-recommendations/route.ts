@@ -4,10 +4,16 @@ import { apiSuccess, apiError } from '@/lib/utils';
 import { getUserAIContext } from '@/services/user-context.service';
 import { SkillRAGService } from '@/lib/ai/skill-rag.service';
 import { prisma } from '@/lib/prisma';
+import { enforceRateLimit } from '@/lib/rate-limiter';
 
 export async function POST(req: NextRequest) {
   try {
     const authUser = await getCurrentUser(req);
+
+    // Rate limit: 15 requests / minute per user or IP
+    const rateLimitResponse = await enforceRateLimit(req, 'ai:rag-recommendations', 15, 60, authUser?.id);
+    if (rateLimitResponse) return rateLimitResponse;
+
     const body = await req.json();
     const { skill } = body;
 
@@ -22,7 +28,8 @@ export async function POST(req: NextRequest) {
       userContext = await getUserAIContext(authUser.id);
     }
 
-    const ragResult = await SkillRAGService.querySkillRAG(cleanSkill, userContext);
+    const userLevel = userContext?.profile?.experienceLevel || 'Intermediate';
+    const ragResult = await SkillRAGService.querySkillRAG(cleanSkill, userLevel);
 
     if (authUser) {
       try {
@@ -46,24 +53,13 @@ export async function POST(req: NextRequest) {
             finalMilestone: ragResult.roadmap.finalMilestone,
           },
         });
-
-        await prisma.aIRecommendation.create({
-          data: {
-            userId: authUser.id,
-            recType: 'SKILL',
-            title: `RAG Learning Path: ${cleanSkill}`,
-            explanation: `Retrieved top 5 verified courses and top 5 mentors specializing in ${cleanSkill} via RAG Vector Database.`,
-            matchPercentage: 96,
-          },
-        });
       } catch (dbErr) {
-        console.warn('Roadmap persistence non-fatal warning:', dbErr);
+        // Non-fatal logging
       }
     }
 
     return apiSuccess(ragResult);
   } catch (error: any) {
-    console.error('RAG recommendations error:', error);
     return apiError(
       error.message || 'Failed to process RAG skill recommendations',
       'INTERNAL_ERROR',

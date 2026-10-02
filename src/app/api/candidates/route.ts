@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
     });
 
     // If job or target skills are specified, compute authentic RAG vector similarity & Hybrid matching
-    let scoredCandidates = candidates.map((candidate) => {
+    const scoredCandidates = candidates.map((candidate) => {
       const candidateSkills = candidate.skills.map((s) => s.skill.name);
       const yearsExp = candidate.profile?.yearsOfExperience || 0;
 

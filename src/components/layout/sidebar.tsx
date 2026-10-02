@@ -15,6 +15,10 @@ import {
   GraduationCap,
   Building2,
   TrendingUp,
+  ShieldCheck,
+  PlusCircle,
+  FolderCheck,
+  FileCheck,
 } from 'lucide-react';
 import { ROLE_INFO } from '@/lib/constants';
 
@@ -23,21 +27,33 @@ export function DashboardSidebar() {
   const { user } = useAuth();
 
   const rawRole = (user?.role || 'LEARNER').toUpperCase();
-  const isStudent = rawRole === 'STUDENT' || rawRole === 'LEARNER';
+  const isLearner = rawRole === 'STUDENT' || rawRole === 'LEARNER';
   const isMentor = rawRole === 'MENTOR';
-  const isFreelancer = rawRole === 'FREELANCER' || rawRole === 'PROFESSIONAL';
-  const isCompany = rawRole === 'COMPANY' || rawRole === 'EMPLOYER';
+  const isProfessional = rawRole === 'FREELANCER' || rawRole === 'PROFESSIONAL';
+  const isEmployer = rawRole === 'COMPANY' || rawRole === 'EMPLOYER';
+  const isAdmin = rawRole === 'ADMIN';
 
   const roleConfig = ROLE_INFO[rawRole] || ROLE_INFO.LEARNER;
 
   const getNavItems = () => {
-    if (isStudent) {
+    if (isAdmin) {
       return [
-        { label: 'Student Dashboard', href: '/student/dashboard', icon: GraduationCap, highlight: true },
+        { label: 'Admin Dashboard', href: '/admin/dashboard', icon: ShieldCheck, highlight: true },
+        { label: 'User Management', href: '/admin/users', icon: Users },
+        { label: 'Course Moderation', href: '/admin/courses', icon: BookOpen },
+        { label: 'Job Moderation', href: '/admin/jobs', icon: Briefcase },
+        { label: 'Audit Logs', href: '/admin/audit', icon: FileCheck },
+        { label: 'Messages', href: '/messages', icon: MessageSquare },
+      ];
+    }
+
+    if (isLearner) {
+      return [
+        { label: 'Learner Dashboard', href: '/learner/dashboard', icon: GraduationCap, highlight: true },
         { label: 'AI Career Assistant', href: '/ai-assistant', icon: Sparkles, badge: 'AI' },
         { label: 'Courses & Learning', href: '/courses', icon: BookOpen },
         { label: 'Find Mentors', href: '/mentors', icon: Users },
-        { label: 'Feed & Social', href: '/feed', icon: Compass },
+        { label: 'Feed & Community', href: '/feed', icon: Compass },
         { label: 'Messages', href: '/messages', icon: MessageSquare },
         { label: 'My Profile & Skills', href: '/profile', icon: User },
       ];
@@ -46,6 +62,8 @@ export function DashboardSidebar() {
     if (isMentor) {
       return [
         { label: 'Mentor Studio', href: '/mentor/dashboard', icon: Sparkles, highlight: true },
+        { label: 'Course Management', href: '/mentor/courses', icon: BookOpen },
+        { label: 'Mentorship Requests', href: '/mentor/requests', icon: Users },
         { label: 'AI Assistant', href: '/ai-assistant', icon: Sparkles, badge: 'AI' },
         { label: 'Feed & Community', href: '/feed', icon: Compass },
         { label: 'Messages', href: '/messages', icon: MessageSquare },
@@ -53,10 +71,11 @@ export function DashboardSidebar() {
       ];
     }
 
-    if (isFreelancer) {
+    if (isProfessional) {
       return [
-        { label: 'Freelancer Workspace', href: '/professional/dashboard', icon: Briefcase, highlight: true },
+        { label: 'Professional Workspace', href: '/professional/dashboard', icon: Briefcase, highlight: true },
         { label: 'Explore Jobs & Contracts', href: '/jobs', icon: Briefcase },
+        { label: 'My Applications', href: '/professional/applications', icon: FolderCheck },
         { label: 'AI Proposal Assistant', href: '/ai-assistant', icon: Sparkles, badge: 'AI' },
         { label: 'Feed & Network', href: '/feed', icon: Compass },
         { label: 'Messages', href: '/messages', icon: MessageSquare },
@@ -64,9 +83,11 @@ export function DashboardSidebar() {
       ];
     }
 
-    if (isCompany) {
+    if (isEmployer) {
       return [
-        { label: 'Company ATS Dashboard', href: '/company/dashboard', icon: Building2, highlight: true },
+        { label: 'Employer Dashboard', href: '/employer/dashboard', icon: Building2, highlight: true },
+        { label: 'Post a Job', href: '/employer/jobs/new', icon: PlusCircle },
+        { label: 'Manage Jobs & Applicants', href: '/employer/jobs', icon: Briefcase },
         { label: 'AI Hiring Assistant', href: '/ai-assistant', icon: Sparkles, badge: 'AI' },
         { label: 'Feed & Network', href: '/feed', icon: Compass },
         { label: 'Messages', href: '/messages', icon: MessageSquare },
@@ -74,7 +95,6 @@ export function DashboardSidebar() {
       ];
     }
 
-    // Default / fallback
     return [
       { label: 'Dashboard', href: roleConfig.defaultDashboard, icon: Compass, highlight: true },
       { label: 'Feed', href: '/feed', icon: Compass },
@@ -98,7 +118,7 @@ export function DashboardSidebar() {
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
               <span className="text-[11px] font-semibold text-emerald-700 uppercase tracking-wider">
-                {rawRole === 'EMPLOYER' ? 'COMPANY' : rawRole}
+                {rawRole === 'STUDENT' ? 'LEARNER' : rawRole === 'FREELANCER' ? 'PROFESSIONAL' : rawRole === 'COMPANY' ? 'EMPLOYER' : rawRole}
               </span>
             </div>
           </div>
@@ -107,7 +127,7 @@ export function DashboardSidebar() {
 
       <div className="space-y-1">
         <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider px-3 mb-2">
-          {rawRole} Workspace
+          {rawRole === 'STUDENT' ? 'LEARNER' : rawRole === 'FREELANCER' ? 'PROFESSIONAL' : rawRole === 'COMPANY' ? 'EMPLOYER' : rawRole} Navigation
         </p>
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -140,10 +160,10 @@ export function DashboardSidebar() {
       <div className="mt-8 p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/50">
         <div className="flex items-center gap-2 text-xs font-bold text-emerald-800 mb-1">
           <TrendingUp className="h-4 w-4 text-emerald-600" />
-          <span>Active Role: {rawRole}</span>
+          <span>Role: {rawRole === 'STUDENT' ? 'LEARNER' : rawRole === 'COMPANY' ? 'EMPLOYER' : rawRole}</span>
         </div>
         <p className="text-[11px] text-slate-600 leading-relaxed">
-          Features and tools are personalized strictly for your {rawRole.toLowerCase()} workflow.
+          Platform views and permissions are strictly enforced for your active role.
         </p>
       </div>
     </aside>

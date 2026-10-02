@@ -56,7 +56,7 @@ export default function LandingPage() {
         { title: 'Portfolio Capstone', desc: 'Build verifiable production projects and earn automated completion certificates.' },
         { title: 'First Contract / Role', desc: 'Get matched directly to entry-level roles and local internship opportunities.' },
       ],
-      dashboard: '/student/dashboard',
+      dashboard: '/learner/dashboard',
     },
     professional: {
       title: 'Verified Professional Journey',
@@ -95,7 +95,7 @@ export default function LandingPage() {
         { title: 'Unified Pipeline', desc: 'Manage applicants from Applied → Shortlisted → Interview → Hired.' },
         { title: 'Direct Messaging', desc: 'Communicate with candidates and polish interview messages using AI.' },
       ],
-      dashboard: '/company/dashboard',
+      dashboard: '/employer/dashboard',
     },
   };
 

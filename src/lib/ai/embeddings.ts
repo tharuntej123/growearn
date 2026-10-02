@@ -1,13 +1,10 @@
 /**
  * @file embeddings.ts
- * @description Production-grade vector embedding generation service using LangChain.
+ * @description Real vector embedding generation service using LangChain OpenAIEmbeddings.
  * 
- * Architecture:
- * - Primary: Official LangChain OpenAIEmbeddings / Groq-compatible embedding interface
- * - Resilient Fallback: High-performance deterministic semantic vector generator (1536 dimensions)
- * 
- * Input: Raw text string or array of text strings
- * Output: Float array(s) of 1536 normalized embedding vectors for PostgreSQL pgvector storage and cosine search
+ * Strict Production Rule:
+ * - NO hash-based pseudo/fake deterministic embeddings.
+ * - If embedding provider is unavailable or not configured, cleanly returns an explicit error/null.
  */
 
 import { OpenAIEmbeddings } from '@langchain/openai';
@@ -17,7 +14,7 @@ export const EMBEDDING_DIMENSION = 1536;
 let cachedEmbeddingsInstance: OpenAIEmbeddings | null = null;
 
 function getOpenAIEmbeddings(): OpenAIEmbeddings | null {
-  const apiKey = process.env.OPENAI_API_KEY || (process.env.GROQ_API_KEY?.startsWith('gsk_') ? undefined : process.env.GROQ_API_KEY);
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey || apiKey.trim() === '') {
     return null;
   }
@@ -33,103 +30,55 @@ function getOpenAIEmbeddings(): OpenAIEmbeddings | null {
   return cachedEmbeddingsInstance;
 }
 
-/**
- * Generates a normalized 1536-dimensional semantic projection vector.
- * Used for deterministic testing, offline scenarios, or when OpenAI API keys are not supplied.
- * Ensures the vector store and pgvector cosine distance operations work identically in all environments.
- */
-export function generateDeterministicSemanticEmbedding(text: string): number[] {
-  const vector = new Array<number>(EMBEDDING_DIMENSION).fill(0);
-  if (!text || text.trim().length === 0) {
-    return vector;
-  }
-
-  const normalized = text.toLowerCase().trim();
-  const words = normalized.split(/\s+/);
-  
-  // Character n-grams and token hash projection
-  for (let i = 0; i < normalized.length; i++) {
-    const charCode = normalized.charCodeAt(i);
-    const pos = (charCode * 37 + i * 17) % EMBEDDING_DIMENSION;
-    vector[pos] += Math.sin(charCode + i) * 0.5;
-  }
-
-  for (let w = 0; w < words.length; w++) {
-    const word = words[w];
-    let hash = 0;
-    for (let j = 0; j < word.length; j++) {
-      hash = (hash << 5) - hash + word.charCodeAt(j);
-      hash |= 0;
-    }
-    const bucket = Math.abs(hash) % EMBEDDING_DIMENSION;
-    const sign = hash % 2 === 0 ? 1 : -1;
-    vector[bucket] += sign * (1 + Math.log(1 + word.length));
-    
-    // Distribute across harmonic dimensions
-    const harmonic1 = (bucket * 7) % EMBEDDING_DIMENSION;
-    const harmonic2 = (bucket * 13) % EMBEDDING_DIMENSION;
-    vector[harmonic1] += 0.3 * sign;
-    vector[harmonic2] += 0.2 * sign;
-  }
-
-  // L2 Normalization for Cosine Similarity
-  let norm = 0;
-  for (let i = 0; i < EMBEDDING_DIMENSION; i++) {
-    norm += vector[i] * vector[i];
-  }
-  norm = Math.sqrt(norm);
-
-  if (norm > 0) {
-    for (let i = 0; i < EMBEDDING_DIMENSION; i++) {
-      vector[i] = vector[i] / norm;
-    }
-  }
-
-  return vector;
+export function isEmbeddingConfigured(): boolean {
+  return Boolean(process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim().length > 0);
 }
 
 /**
- * Generate an embedding vector for a single text chunk.
- * 
- * @param text - Plain text input string
- * @returns Promise<number[]> 1536-dimensional float vector
+ * Generate a real vector embedding for a single query or text chunk.
+ * Throws a controlled error if embeddings provider is not configured or fails.
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
-  const embeddingsService = getOpenAIEmbeddings();
-  if (embeddingsService) {
-    try {
-      const result = await embeddingsService.embedQuery(text);
-      if (result && result.length === EMBEDDING_DIMENSION) {
-        return result;
-      }
-    } catch (error) {
-      console.warn('[Embeddings] External API unavailable, using semantic projection vector:', error);
-    }
+  if (!text || text.trim().length === 0) {
+    throw new Error('Embedding input text cannot be empty');
   }
 
-  return generateDeterministicSemanticEmbedding(text);
+  const embeddingsService = getOpenAIEmbeddings();
+  if (!embeddingsService) {
+    throw new Error('Embeddings provider (OPENAI_API_KEY) is not configured in the environment.');
+  }
+
+  try {
+    const result = await embeddingsService.embedQuery(text);
+    if (!result || result.length !== EMBEDDING_DIMENSION) {
+      throw new Error(`Embedding generation returned invalid vector dimensions (${result?.length} vs expected ${EMBEDDING_DIMENSION})`);
+    }
+    return result;
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Unknown embedding error';
+    throw new Error(`Vector embedding generation failed: ${msg}`);
+  }
 }
 
 /**
- * Generate embedding vectors for a batch of text chunks.
- * 
- * @param texts - Array of plain text chunk strings
- * @returns Promise<number[][]> Array of 1536-dimensional float vectors
+ * Generate real vector embeddings for a batch of text chunks.
  */
 export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
   if (!texts || texts.length === 0) return [];
 
   const embeddingsService = getOpenAIEmbeddings();
-  if (embeddingsService) {
-    try {
-      const results = await embeddingsService.embedDocuments(texts);
-      if (results && results.length === texts.length) {
-        return results;
-      }
-    } catch (error) {
-      console.warn('[Embeddings] External batch API unavailable, falling back to batch projection:', error);
-    }
+  if (!embeddingsService) {
+    throw new Error('Embeddings provider (OPENAI_API_KEY) is not configured in the environment.');
   }
 
-  return texts.map((t) => generateDeterministicSemanticEmbedding(t));
+  try {
+    const results = await embeddingsService.embedDocuments(texts);
+    if (!results || results.length !== texts.length) {
+      throw new Error('Batch embedding generation returned mismatched results count');
+    }
+    return results;
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Unknown batch embedding error';
+    throw new Error(`Batch vector embedding generation failed: ${msg}`);
+  }
 }

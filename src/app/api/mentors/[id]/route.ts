@@ -1,16 +1,9 @@
 import { NextRequest } from 'next/server';
-import { MentorRepository } from '@/repositories/mentor.repository';
-import { apiSuccess, apiError } from '@/lib/utils';
+import { MentorController } from '@/controllers/mentor.controller';
 
 export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
-  const mentor = await MentorRepository.getMentorById(id);
-  if (!mentor) {
-    return apiError('Mentor profile not found', 'NOT_FOUND', 404);
-  }
-
-  return apiSuccess({ mentor });
+  return MentorController.getMentorDetail(req, context);
 }

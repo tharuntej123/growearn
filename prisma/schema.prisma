@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
@@ -9,12 +6,10 @@ generator client {
 datasource db {
   provider   = "postgresql"
   url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
   extensions = [pgvector(map: "vector")]
 }
 
-// -------------------------------------------------------------
-// USER & AUTHENTICATION
-// -------------------------------------------------------------
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
@@ -32,7 +27,6 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  // Relationships
   profile               Profile?
   mentorProfile         MentorProfile?
   skills                UserSkill[]
@@ -45,41 +39,38 @@ model User {
   comments              Comment[]
   likes                 Like[]
   
-  // Connections & Follows
   sentConnections       Connection[]          @relation("SentConnections")
   receivedConnections   Connection[]          @relation("ReceivedConnections")
   followers             Follow[]              @relation("FollowingUser")
   following             Follow[]              @relation("FollowerUser")
 
-  // Courses & Learning
   instructedCourses     Course[]              @relation("CourseInstructor")
   enrollments           Enrollment[]
   issuedCertificates    Certificate[]
 
-  // Mentorship
   mentorshipRequests    MentorshipRequest[]   @relation("StudentMentorshipRequests")
   studentBookings       MentorshipBooking[]   @relation("StudentBookings")
 
-  // Freelancing & Jobs
   jobPostings           Job[]                 @relation("CompanyJobPostings")
   applications          Application[]         @relation("ApplicantApplications")
   proposals             Proposal[]            @relation("ProfessionalProposals")
 
-  // Messaging & Notifications
   conversations         ConversationParticipant[]
   sentMessages          Message[]             @relation("SentMessages")
   notifications         Notification[]
 
-  // Reviews & Payments
   writtenReviews        Review[]              @relation("ReviewAuthor")
   receivedReviews       Review[]              @relation("TargetUserReviews")
   payments              Payment[]
 
-  // AI Career & Recommendations
   aiProfile             AIProfile?
   careerRoadmap         CareerRoadmap?
   aiRecommendations     AIRecommendation[]
   aiInteractions        AIInteraction[]
+  auditLogs             AuditLog[]
+
+  @@index([role])
+  @@index([email])
 }
 
 model Profile {
@@ -90,10 +81,15 @@ model Profile {
   title              String?
   githubUrl          String?
   linkedinUrl        String?
-  portfolioUrl       String?
-  resumeUrl          String?
-  resumeText         String?
-  yearsOfExperience  Int       @default(0)
+  portfolioUrl          String?
+  resumeUrl             String?
+  resumeName            String?
+  resumeSize            String?
+  resumeText            String?
+  resumeKey             String?
+  resumeMimeType        String?
+  resumeStorageProvider String?   @default("local")
+  yearsOfExperience     Int       @default(0)
   availability       String    @default("FULL_TIME") // FULL_TIME, PART_TIME, CONTRACT, NOT_AVAILABLE
   aiScore            Int       @default(75) // 0 - 100
   careerGoal         String?
@@ -109,20 +105,25 @@ model Profile {
   companySize        String?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
+
+  @@index([userId])
 }
 
-// -------------------------------------------------------------
-// SKILLS & PORTFOLIO
-// -------------------------------------------------------------
 model Skill {
   id          String      @id @default(cuid())
   name        String      @unique
   category    String      @default("General") // Frontend, Backend, AI/ML, DevOps, Design, Mobile, Cloud
+  description String?
   icon        String?
+  roadmapId   String?
+  roadmap     CareerRoadmap? @relation(fields: [roadmapId], references: [id], onDelete: SetNull)
   createdAt   DateTime    @default(now())
 
   userSkills  UserSkill[]
   jobSkills   JobSkill[]
+
+  @@index([category])
+  @@index([name])
 }
 
 model UserSkill {
@@ -137,6 +138,8 @@ model UserSkill {
   createdAt         DateTime  @default(now())
 
   @@unique([userId, skillId])
+  @@index([skillId])
+  @@index([userId])
 }
 
 model Experience {
@@ -151,6 +154,8 @@ model Experience {
   isCurrent   Boolean   @default(false)
   description String?
   createdAt   DateTime  @default(now())
+
+  @@index([userId])
 }
 
 model Education {
@@ -164,6 +169,8 @@ model Education {
   endDate      DateTime?
   grade        String?
   createdAt    DateTime  @default(now())
+
+  @@index([userId])
 }
 
 model Certification {
@@ -177,6 +184,8 @@ model Certification {
   credentialId   String?
   credentialUrl  String?
   createdAt      DateTime  @default(now())
+
+  @@index([userId])
 }
 
 model Project {
@@ -190,6 +199,8 @@ model Project {
   imageUrl    String?
   skillsUsed  String?   // comma-separated or JSON string
   createdAt   DateTime  @default(now())
+
+  @@index([userId])
 }
 
 model Achievement {
@@ -201,11 +212,10 @@ model Achievement {
   badgeType   String    @default("BADGE") // BADGE, CERTIFICATE, MILESTONE, CONTEST
   icon        String?
   unlockedAt  DateTime  @default(now())
+
+  @@index([userId])
 }
 
-// -------------------------------------------------------------
-// PROFESSIONAL FEED & SOCIAL NETWORKING
-// -------------------------------------------------------------
 model Post {
   id            String    @id @default(cuid())
   authorId      String
@@ -220,6 +230,9 @@ model Post {
 
   comments      Comment[]
   likes         Like[]
+
+  @@index([authorId])
+  @@index([createdAt])
 }
 
 model Comment {
@@ -230,6 +243,9 @@ model Comment {
   author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
   content   String
   createdAt DateTime  @default(now())
+
+  @@index([postId])
+  @@index([authorId])
 }
 
 model Like {
@@ -241,6 +257,8 @@ model Like {
   createdAt DateTime  @default(now())
 
   @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
 }
 
 model Connection {
@@ -253,6 +271,8 @@ model Connection {
   createdAt   DateTime  @default(now())
 
   @@unique([requesterId, receiverId])
+  @@index([requesterId])
+  @@index([receiverId])
 }
 
 model Follow {
@@ -264,11 +284,10 @@ model Follow {
   createdAt   DateTime  @default(now())
 
   @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
 }
 
-// -------------------------------------------------------------
-// COURSES & LEARNING SYSTEM
-// -------------------------------------------------------------
 model Course {
   id            String         @id @default(cuid())
   instructorId  String
@@ -292,6 +311,12 @@ model Course {
   enrollments   Enrollment[]
   certificates  Certificate[]
   reviews       Review[]
+
+  @@index([instructorId])
+  @@index([isPublished])
+  @@index([category])
+  @@index([level])
+  @@index([rating])
 }
 
 model CourseModule {
@@ -303,6 +328,9 @@ model CourseModule {
   orderIndex  Int       @default(0)
 
   lessons     Lesson[]
+
+  @@index([courseId])
+  @@index([orderIndex])
 }
 
 model Lesson {
@@ -317,6 +345,9 @@ model Lesson {
   resourcesJson   String?
 
   progress        LessonProgress[]
+
+  @@index([moduleId])
+  @@index([orderIndex])
 }
 
 model Enrollment {
@@ -333,6 +364,8 @@ model Enrollment {
   lessonProgress  LessonProgress[]
 
   @@unique([studentId, courseId])
+  @@index([studentId])
+  @@index([courseId])
 }
 
 model LessonProgress {
@@ -345,6 +378,8 @@ model LessonProgress {
   completedAt  DateTime?
 
   @@unique([enrollmentId, lessonId])
+  @@index([enrollmentId])
+  @@index([lessonId])
 }
 
 model Certificate {
@@ -357,11 +392,10 @@ model Certificate {
   issuedAt          DateTime  @default(now())
 
   @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
 }
 
-// -------------------------------------------------------------
-// MENTORSHIP MARKETPLACE
-// -------------------------------------------------------------
 model MentorProfile {
   id              String              @id @default(cuid())
   userId          String              @unique
@@ -382,6 +416,10 @@ model MentorProfile {
 
   requests        MentorshipRequest[] @relation("MentorRequests")
   bookings        MentorshipBooking[] @relation("MentorBookings")
+
+  @@index([userId])
+  @@index([isAvailable])
+  @@index([rating])
 }
 
 model MentorshipRequest {
@@ -398,6 +436,10 @@ model MentorshipRequest {
   updatedAt     DateTime            @updatedAt
 
   booking       MentorshipBooking?
+
+  @@index([studentId])
+  @@index([mentorId])
+  @@index([status])
 }
 
 model MentorshipBooking {
@@ -415,11 +457,12 @@ model MentorshipBooking {
   meetingUrl      String?           @default("https://meet.jit.si/growearn-mentorship-session")
   feedback        String?
   createdAt       DateTime          @default(now())
+
+  @@index([studentId])
+  @@index([mentorId])
+  @@index([status])
 }
 
-// -------------------------------------------------------------
-// JOBS & FREELANCING PLATFORM
-// -------------------------------------------------------------
 model Job {
   id              String        @id @default(cuid())
   companyId       String
@@ -444,6 +487,12 @@ model Job {
   skills          JobSkill[]
   applications    Application[]
   proposals       Proposal[]
+
+  @@index([companyId])
+  @@index([status])
+  @@index([jobType])
+  @@index([locationType])
+  @@index([experienceLevel])
 }
 
 model JobSkill {
@@ -455,6 +504,8 @@ model JobSkill {
   isRequired Boolean  @default(true)
 
   @@unique([jobId, skillId])
+  @@index([skillId])
+  @@index([jobId])
 }
 
 model Application {
@@ -472,6 +523,9 @@ model Application {
   updatedAt        DateTime  @updatedAt
 
   @@unique([jobId, applicantId])
+  @@index([jobId])
+  @@index([applicantId])
+  @@index([status])
 }
 
 model Proposal {
@@ -488,11 +542,11 @@ model Proposal {
   createdAt      DateTime  @default(now())
 
   @@unique([jobId, professionalId])
+  @@index([jobId])
+  @@index([professionalId])
+  @@index([status])
 }
 
-// -------------------------------------------------------------
-// UNIFIED MESSAGING SYSTEM
-// -------------------------------------------------------------
 model Conversation {
   id           String                    @id @default(cuid())
   title        String?
@@ -502,6 +556,8 @@ model Conversation {
 
   participants ConversationParticipant[]
   messages     Message[]
+
+  @@index([createdAt])
 }
 
 model ConversationParticipant {
@@ -513,6 +569,8 @@ model ConversationParticipant {
   lastReadAt     DateTime     @default(now())
 
   @@unique([conversationId, userId])
+  @@index([userId])
+  @@index([conversationId])
 }
 
 model Message {
@@ -525,11 +583,12 @@ model Message {
   mediaUrl       String?
   isRead         Boolean      @default(false)
   createdAt      DateTime     @default(now())
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([createdAt])
 }
 
-// -------------------------------------------------------------
-// REVIEWS, RATINGS & PAYMENTS
-// -------------------------------------------------------------
 model Review {
   id           String    @id @default(cuid())
   authorId     String
@@ -542,6 +601,10 @@ model Review {
   comment      String
   reviewType   String    @default("MENTOR") // MENTOR, PROFESSIONAL, COURSE, EMPLOYER
   createdAt    DateTime  @default(now())
+
+  @@index([targetUserId])
+  @@index([courseId])
+  @@index([authorId])
 }
 
 model Payment {
@@ -556,11 +619,11 @@ model Payment {
   itemType       String    // COURSE, MENTORSHIP, PROFESSIONAL_ESCROW
   itemId         String
   createdAt      DateTime  @default(now())
+
+  @@index([userId])
+  @@index([status])
 }
 
-// -------------------------------------------------------------
-// AI ENGINE & CAREER ROADMAP
-// -------------------------------------------------------------
 model AIProfile {
   id                 String   @id @default(cuid())
   userId             String   @unique
@@ -572,16 +635,22 @@ model AIProfile {
   gapAnalysisJson    String?  // JSON array: ["Docker", "System Design", "Spring Security"]
   suggestedRolesJson String?  // JSON array: ["Backend Developer", "Full Stack Engineer"]
   updatedAt          DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model CareerRoadmap {
   id                     String        @id @default(cuid())
-  userId                 String        @unique
-  user                   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId                 String?       @unique
+  user                   User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slug                   String?       @unique
+  title                  String        @default("Career Roadmap")
+  category               String        @default("General")
   targetRole             String        @default("Full Stack Developer")
   currentLevel           String        @default("Intermediate")
   summary                String?
   estimatedDurationWeeks Int           @default(12)
+  primarySkills          String?       // comma-separated
   currentSkillsJson      String?
   skillGapsJson          String?
   finalMilestone         String?
@@ -590,21 +659,35 @@ model CareerRoadmap {
   updatedAt              DateTime      @updatedAt
 
   items                  RoadmapItem[]
+  skills                 Skill[]
+
+  @@index([category])
+  @@index([targetRole])
+  @@index([slug])
 }
 
 model RoadmapItem {
-  id              String        @id @default(cuid())
-  roadmapId       String
-  roadmap         CareerRoadmap @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
-  orderIndex      Int           @default(0)
-  title           String
-  description     String
-  milestoneType   String        @default("SKILL") // SKILL, COURSE, MENTOR, PROJECT, JOB
-  isCompleted     Boolean       @default(false)
-  relatedSkill    String?
-  relatedCourseId String?
-  relatedMentorId String?
-  relatedJobId    String?
+  id                  String        @id @default(cuid())
+  roadmapId           String
+  roadmap             CareerRoadmap @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  orderIndex          Int           @default(0)
+  phaseNumber         Int           @default(1)
+  title               String
+  description         String
+  milestoneType       String        @default("SKILL") // SKILL, COURSE, MENTOR, PROJECT, JOB
+  difficulty          String        @default("BEGINNER") // BEGINNER, INTERMEDIATE, ADVANCED
+  estimatedHours      Int           @default(10)
+  prerequisites       String?
+  skills              String?       // comma-separated
+  recommendedCourses  String?       // comma-separated or JSON
+  isCompleted         Boolean       @default(false)
+  relatedSkill        String?
+  relatedCourseId     String?
+  relatedMentorId     String?
+  relatedJobId        String?
+
+  @@index([roadmapId])
+  @@index([orderIndex])
 }
 
 model AIRecommendation {
@@ -617,6 +700,8 @@ model AIRecommendation {
   matchPercentage Int      @default(90)
   targetEntityId  String?
   createdAt       DateTime @default(now())
+
+  @@index([userId])
 }
 
 model AIInteraction {
@@ -627,11 +712,10 @@ model AIInteraction {
   prompt          String
   responseJson    String
   createdAt       DateTime @default(now())
+
+  @@index([userId])
 }
 
-// -------------------------------------------------------------
-// NOTIFICATIONS
-// -------------------------------------------------------------
 model Notification {
   id               String   @id @default(cuid())
   userId           String
@@ -642,11 +726,28 @@ model Notification {
   notificationType String   @default("INFO") // MESSAGE, JOB_APPLICATION, MENTORSHIP_REQUEST, COURSE_UPDATE, AI_RECOMMENDATION
   isRead           Boolean  @default(false)
   createdAt        DateTime @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
 }
 
-// -------------------------------------------------------------
-// RAG & VECTOR DATABASE (pgvector)
-// -------------------------------------------------------------
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action     String   // USER_REGISTER, USER_LOGIN, ROLE_CHANGE, COURSE_PUBLISH, JOB_POST, MENTOR_VERIFY, ADMIN_ACTION
+  resource   String?
+  details    Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
 model DocumentChunk {
   id         String   @id @default(cuid())
   content    String   @db.Text
@@ -656,6 +757,15 @@ model DocumentChunk {
   embedding  Unsupported("vector(1536)")?
   createdAt  DateTime @default(now()) @map("created_at")
 
+  @@index([sourceType])
   @@map("document_chunks")
 }
 
+model RateLimit {
+  key       String   @id
+  points    Int      @default(1)
+  expiresAt DateTime @map("expires_at")
+
+  @@index([expiresAt])
+  @@map("rate_limits")
+}

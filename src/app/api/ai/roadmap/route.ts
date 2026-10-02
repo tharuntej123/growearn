@@ -4,10 +4,16 @@ import { apiSuccess, apiError } from '@/lib/utils';
 import { getUserAIContext } from '@/services/user-context.service';
 import { CareerRoadmapService } from '@/lib/ai/roadmap.service';
 import { prisma } from '@/lib/prisma';
+import { enforceRateLimit } from '@/lib/rate-limiter';
 
 export async function POST(req: NextRequest) {
   try {
     const authUser = await getCurrentUser(req);
+
+    // Rate limit: 15 requests / minute per user or IP
+    const rateLimitResponse = await enforceRateLimit(req, 'ai:roadmap', 15, 60, authUser?.id);
+    if (rateLimitResponse) return rateLimitResponse;
+
     let userContext = null;
     if (authUser) {
       userContext = await getUserAIContext(authUser.id);

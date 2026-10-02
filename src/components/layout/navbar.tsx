@@ -19,10 +19,10 @@ import {
   User as UserIcon,
   ChevronDown,
   Layers,
-  GraduationCap,
   Building2,
+  ShieldCheck,
 } from 'lucide-react';
-import { ROLES, ROLE_INFO } from '@/lib/constants';
+import { ROLE_INFO } from '@/lib/constants';
 
 interface NotificationItem {
   id: string;
@@ -61,7 +61,7 @@ export function Navbar() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      router.push(`/jobs?query=${encodeURIComponent(searchQuery.trim())}`);
+      router.push(`/courses?search=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 
@@ -80,7 +80,7 @@ export function Navbar() {
                 Growearn
               </span>
               <span className="text-[10px] -mt-1 font-medium text-slate-500 tracking-wider uppercase">
-                Learn • Work • Grow
+                Career Growth Ecosystem
               </span>
             </div>
           </Link>
@@ -90,7 +90,7 @@ export function Navbar() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search skills, jobs, mentors, courses..."
+                placeholder="Search skills, courses, mentors, jobs..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full h-9 rounded-full bg-slate-50 border border-slate-200 pl-9 pr-4 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
@@ -100,11 +100,12 @@ export function Navbar() {
         </div>
 
         {user && (() => {
-          const rawRole = user.role?.toUpperCase();
-          const isStudent = rawRole === 'STUDENT' || rawRole === 'LEARNER';
+          const rawRole = (user.role || 'LEARNER').toUpperCase();
+          const isLearner = rawRole === 'STUDENT' || rawRole === 'LEARNER';
           const isMentor = rawRole === 'MENTOR';
-          const isFreelancer = rawRole === 'FREELANCER' || rawRole === 'PROFESSIONAL';
-          const isCompany = rawRole === 'COMPANY' || rawRole === 'EMPLOYER';
+          const isProfessional = rawRole === 'FREELANCER' || rawRole === 'PROFESSIONAL';
+          const isEmployer = rawRole === 'COMPANY' || rawRole === 'EMPLOYER';
+          const isAdmin = rawRole === 'ADMIN';
 
           return (
             <nav className="hidden lg:flex items-center gap-1 text-sm font-medium">
@@ -121,8 +122,8 @@ export function Navbar() {
                 </span>
               </Link>
 
-              {/* Jobs ONLY visible to Freelancers/Professionals */}
-              {isFreelancer && (
+              {/* Jobs ONLY visible to Professionals and Employers */}
+              {(isProfessional || isEmployer || isAdmin) && (
                 <Link
                   href="/jobs"
                   className={`px-3 py-1.5 rounded-lg transition-colors ${
@@ -137,8 +138,8 @@ export function Navbar() {
                 </Link>
               )}
 
-              {/* Courses ONLY visible to Students/Learners */}
-              {isStudent && (
+              {/* Courses visible to Learners and Mentors */}
+              {(isLearner || isMentor || isAdmin) && (
                 <Link
                   href="/courses"
                   className={`px-3 py-1.5 rounded-lg transition-colors ${
@@ -153,8 +154,8 @@ export function Navbar() {
                 </Link>
               )}
 
-              {/* Mentors ONLY visible to Students/Learners */}
-              {isStudent && (
+              {/* Mentors visible to Learners */}
+              {(isLearner || isAdmin) && (
                 <Link
                   href="/mentors"
                   className={`px-3 py-1.5 rounded-lg transition-colors ${
@@ -185,18 +186,34 @@ export function Navbar() {
                 </Link>
               )}
 
-              {/* Company ATS link for Companies */}
-              {isCompany && (
+              {/* Employer link for Employers */}
+              {isEmployer && (
                 <Link
-                  href="/company/dashboard"
+                  href="/employer/dashboard"
                   className={`px-3 py-1.5 rounded-lg transition-colors ${
-                    pathname.startsWith('/company')
+                    pathname.startsWith('/employer') || pathname.startsWith('/company')
                       ? 'text-emerald-700 bg-emerald-50 font-semibold'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   }`}
                 >
                   <span className="flex items-center gap-1.5">
                     <Building2 className="h-4 w-4 text-slate-700" /> ATS Candidate Hub
+                  </span>
+                </Link>
+              )}
+
+              {/* Admin Link for Admins */}
+              {isAdmin && (
+                <Link
+                  href="/admin/dashboard"
+                  className={`px-3 py-1.5 rounded-lg transition-colors ${
+                    pathname.startsWith('/admin')
+                      ? 'text-rose-700 bg-rose-50 font-semibold'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5">
+                    <ShieldCheck className="h-4 w-4 text-rose-600" /> Admin Console
                   </span>
                 </Link>
               )}
@@ -210,7 +227,7 @@ export function Navbar() {
                 }`}
               >
                 <span className="flex items-center gap-1.5 text-emerald-600 font-semibold">
-                  <Sparkles className="h-4 w-4 text-emerald-500 animate-pulse" /> AI Assistant
+                  <Sparkles className="h-4 w-4 text-emerald-500" /> AI Assistant
                 </span>
               </Link>
             </nav>
@@ -220,13 +237,13 @@ export function Navbar() {
         <div className="flex items-center gap-3">
           {user ? (
             <>
-              <Link href={ROLE_INFO[user.role]?.defaultDashboard || '/feed'}>
+              <Link href={ROLE_INFO[user.role]?.defaultDashboard || '/learner/dashboard'}>
                 <Badge
                   variant="outline"
-                  className="hidden sm:inline-flex items-center gap-1.5 text-xs py-1 px-3 border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all cursor-pointer font-semibold shadow-sm"
+                  className="hidden sm:inline-flex items-center gap-1.5 text-xs py-1 px-3 border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all cursor-pointer font-semibold shadow-xs"
                 >
                   <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
-                  {user.role === 'EMPLOYER' ? 'Company' : user.role.charAt(0) + user.role.slice(1).toLowerCase()} Dashboard
+                  {user.role === 'STUDENT' ? 'Learner' : user.role === 'FREELANCER' ? 'Professional' : user.role === 'COMPANY' ? 'Employer' : user.role} Dashboard
                 </Badge>
               </Link>
 
@@ -286,9 +303,9 @@ export function Navbar() {
                       <p className="text-sm font-semibold text-slate-900 truncate">{user.name}</p>
                       <p className="text-xs text-slate-500 truncate">{user.email}</p>
                       <div className="mt-1.5 flex items-center gap-1.5">
-                        <span className="text-[10px] text-slate-400 uppercase tracking-wider">Profile:</span>
+                        <span className="text-[10px] text-slate-400 uppercase tracking-wider">Role:</span>
                         <span className="text-xs font-bold text-emerald-600 px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200">
-                          {user.role === 'EMPLOYER' ? 'COMPANY' : user.role}
+                          {user.role}
                         </span>
                       </div>
                     </div>
@@ -303,66 +320,13 @@ export function Navbar() {
                         My Profile
                       </Link>
                       <Link
-                        href={ROLE_INFO[user.role]?.defaultDashboard || '/feed'}
+                        href={ROLE_INFO[user.role]?.defaultDashboard || '/learner/dashboard'}
                         onClick={() => setShowUserMenu(false)}
                         className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition-colors font-medium"
                       >
                         <Layers className="h-4 w-4 text-slate-400" />
                         Dashboard
                       </Link>
-
-                      <div className="pt-1.5 pb-1 border-t border-slate-100 mt-1">
-                        <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                          <Sparkles className="h-3 w-3 text-emerald-600" />
-                          <span>Switch Demo Role</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-1 px-1 mt-1">
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              setShowUserMenu(false);
-                              await logout();
-                              router.push('/login');
-                            }}
-                            className="text-left px-2 py-1 rounded bg-slate-50 hover:bg-emerald-50 text-[11px] font-semibold text-slate-700 hover:text-emerald-700 border border-slate-200 truncate"
-                          >
-                            🎓 Student
-                          </button>
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              setShowUserMenu(false);
-                              await logout();
-                              router.push('/login');
-                            }}
-                            className="text-left px-2 py-1 rounded bg-slate-50 hover:bg-emerald-50 text-[11px] font-semibold text-slate-700 hover:text-emerald-700 border border-slate-200 truncate"
-                          >
-                            🌟 Mentor
-                          </button>
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              setShowUserMenu(false);
-                              await logout();
-                              router.push('/login');
-                            }}
-                            className="text-left px-2 py-1 rounded bg-slate-50 hover:bg-emerald-50 text-[11px] font-semibold text-slate-700 hover:text-emerald-700 border border-slate-200 truncate"
-                          >
-                            💼 Freelancer
-                          </button>
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              setShowUserMenu(false);
-                              await logout();
-                              router.push('/login');
-                            }}
-                            className="text-left px-2 py-1 rounded bg-slate-50 hover:bg-emerald-50 text-[11px] font-semibold text-slate-700 hover:text-emerald-700 border border-slate-200 truncate"
-                          >
-                            🏢 Company
-                          </button>
-                        </div>
-                      </div>
 
                       <div className="pt-1 border-t border-slate-100">
                         <button

@@ -6,13 +6,14 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
     "prisma:seed": "tsx prisma/seed.ts",
     "seed": "tsx prisma/seed.ts",
-    "test": "tsx src/lib/__tests__/e2e-production-data-validation.ts",
+    "test": "tsx src/lib/__tests__/run-all-tests.ts",
     "test:rag": "tsx src/lib/__tests__/production-rag.test.ts"
   },
   "dependencies": {
@@ -42,6 +43,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^2.4.6",
     "@types/canvas-confetti": "^1.9.0",

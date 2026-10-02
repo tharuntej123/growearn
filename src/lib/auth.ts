@@ -3,8 +3,18 @@ import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 import { NextRequest } from 'next/server';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'growearn-super-secret-jwt-key-2026-production-grade';
-const JWT_EXPIRES_IN = '7d';
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('FATAL: JWT_SECRET environment variable is required in production.');
+    }
+    return 'growearn-super-secret-jwt-key-2026-production-grade';
+  }
+  return secret;
+}
+
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 export const AUTH_COOKIE_NAME = 'growearn_auth_token';
 const LEGACY_COOKIE_NAME = 'ufp_auth_token';
 
@@ -25,15 +35,33 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 }
 
 export function signJwtToken(payload: JWTPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: JWT_EXPIRES_IN as jwt.SignOptions['expiresIn'] });
 }
 
 export function verifyJwtToken(token: string): JWTPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as JWTPayload;
+    return jwt.verify(token, getJwtSecret()) as JWTPayload;
   } catch {
     return null;
   }
+}
+
+export function normalizeRole(rawRole?: string): 'LEARNER' | 'PROFESSIONAL' | 'MENTOR' | 'EMPLOYER' | 'ADMIN' {
+  if (!rawRole) return 'LEARNER';
+  const r = rawRole.toUpperCase();
+  if (r === 'STUDENT' || r === 'LEARNER') return 'LEARNER';
+  if (r === 'FREELANCER' || r === 'PROFESSIONAL') return 'PROFESSIONAL';
+  if (r === 'MENTOR') return 'MENTOR';
+  if (r === 'COMPANY' || r === 'EMPLOYER') return 'EMPLOYER';
+  if (r === 'ADMIN') return 'ADMIN';
+  return 'LEARNER';
+}
+
+export function isRoleAllowed(userRole: string | undefined, allowedRoles: string[]): boolean {
+  if (!userRole) return false;
+  const normalizedUserRole = normalizeRole(userRole);
+  if (normalizedUserRole === 'ADMIN') return true; // ADMIN has superuser access
+  return allowedRoles.map((r) => normalizeRole(r)).includes(normalizedUserRole);
 }
 
 export async function getCurrentUserFromCookies(): Promise<JWTPayload | null> {
@@ -75,5 +103,15 @@ export async function getCurrentUser(req?: NextRequest): Promise<(JWTPayload & {
   return {
     ...payload,
     id: payload.userId,
+  };
+}
+
+export function getAuthCookieOptions() {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax' as const,
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+    path: '/',
   };
 }
