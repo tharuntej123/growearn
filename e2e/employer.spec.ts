@@ -9,15 +9,15 @@ test.describe('Employer End-to-End Browser Flow', () => {
     await page.click('button[type="submit"]');
 
     // 2. Verify Employer Dashboard
-    await page.waitForURL('**/employer/dashboard');
-    await expect(page.locator('h1, h2')).toBeVisible();
+    await page.waitForURL('**/employer/dashboard', { timeout: 15000 });
+    await expect(page.locator('h1, h2').first()).toBeVisible({ timeout: 10000 });
 
     // 3. Post a new Job
     await page.goto('/employer/jobs/new');
-    const titleInput = page.locator('input[name="title"], input[placeholder*="title"]');
-    if (await titleInput.isVisible()) {
+    const titleInput = page.locator('input[name="title"], input[placeholder*="title"]').first();
+    if (await titleInput.isVisible({ timeout: 5000 })) {
       await titleInput.fill(`Senior Cloud Engineer ${Date.now()}`);
-      const descInput = page.locator('textarea[name="description"], textarea');
+      const descInput = page.locator('textarea[name="description"], textarea').first();
       if (await descInput.isVisible()) {
         await descInput.fill('Lead cloud infrastructure with Kubernetes and AWS.');
       }

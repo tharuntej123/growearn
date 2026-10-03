@@ -4,12 +4,12 @@ test.describe('Security & Access Control Browser Tests', () => {
   test('Unauthenticated user redirected away from protected routes', async ({ page }) => {
     // Attempt accessing learner dashboard without auth
     await page.goto('/learner/dashboard');
-    await page.waitForURL('**/login**');
+    await page.waitForURL('**/login**', { timeout: 15000 });
     await expect(page).toHaveURL(/login/);
 
     // Attempt accessing admin dashboard without auth
     await page.goto('/admin/dashboard');
-    await page.waitForURL('**/login**');
+    await page.waitForURL('**/login**', { timeout: 15000 });
     await expect(page).toHaveURL(/login/);
   });
 

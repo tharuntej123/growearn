@@ -25,14 +25,14 @@ export const ROLE_INFO: Record<
     title: 'Learner / Student',
     description: 'Learn in-demand skills, follow AI career roadmaps, complete courses, and connect with industry mentors.',
     badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    defaultDashboard: '/student/dashboard',
+    defaultDashboard: '/learner/dashboard',
     icon: 'GraduationCap',
   },
   STUDENT: {
     title: 'Learner / Student',
     description: 'Learn in-demand skills, follow AI career roadmaps, complete courses, and connect with industry mentors.',
     badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    defaultDashboard: '/student/dashboard',
+    defaultDashboard: '/learner/dashboard',
     icon: 'GraduationCap',
   },
   MENTOR: {
@@ -60,14 +60,14 @@ export const ROLE_INFO: Record<
     title: 'Company',
     description: 'Post full-time or contract roles, utilize AI candidate matching, and hire verified top-tier talent.',
     badgeColor: 'bg-slate-100 text-slate-800 border-slate-200',
-    defaultDashboard: '/company/dashboard',
+    defaultDashboard: '/employer/dashboard',
     icon: 'Building2',
   },
   COMPANY: {
     title: 'Company',
     description: 'Post full-time or contract roles, utilize AI candidate matching, and hire verified top-tier talent.',
     badgeColor: 'bg-slate-100 text-slate-800 border-slate-200',
-    defaultDashboard: '/company/dashboard',
+    defaultDashboard: '/employer/dashboard',
     icon: 'Building2',
   },
   ADMIN: {

@@ -24,10 +24,11 @@ export default function LoginPage() {
 
   const getTargetDashboard = (role: string) => {
     const normalized = role?.toUpperCase();
-    if (normalized === 'STUDENT' || normalized === 'LEARNER') return '/student/dashboard';
+    if (normalized === 'STUDENT' || normalized === 'LEARNER') return '/learner/dashboard';
     if (normalized === 'MENTOR') return '/mentor/dashboard';
     if (normalized === 'FREELANCER' || normalized === 'PROFESSIONAL') return '/professional/dashboard';
-    if (normalized === 'COMPANY' || normalized === 'EMPLOYER') return '/company/dashboard';
+    if (normalized === 'COMPANY' || normalized === 'EMPLOYER') return '/employer/dashboard';
+    if (normalized === 'ADMIN') return '/admin/dashboard';
     return ROLE_INFO[normalized]?.defaultDashboard || '/feed';
   };
 
