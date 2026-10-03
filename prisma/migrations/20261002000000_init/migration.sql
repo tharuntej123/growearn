@@ -1,17 +1,11 @@
 -- Enable pgvector extension for real cosine similarity search
 CREATE EXTENSION IF NOT EXISTS vector;
 
--- CreateTable
-CREATE TABLE IF NOT EXISTS "rate_limits" (
-    "key" TEXT NOT NULL,
-    "points" INTEGER NOT NULL DEFAULT 1,
-    "expires_at" TIMESTAMP(3) NOT NULL,
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "public";
 
-    CONSTRAINT "rate_limits_pkey" PRIMARY KEY ("key")
-);
-
--- CreateIndex
-CREATE INDEX IF NOT EXISTS "rate_limits_expires_at_idx" ON "rate_limits"("expires_at");
+-- CreateExtension
+CREATE EXTENSION IF NOT EXISTS "vector";
 
 -- CreateTable
 CREATE TABLE "User" (
@@ -23,7 +17,7 @@ CREATE TABLE "User" (
     "avatarUrl" TEXT,
     "headline" TEXT,
     "location" TEXT,
-    "country" TEXT DEFAULT 'India',
+    "country" TEXT,
     "state" TEXT,
     "city" TEXT,
     "bio" TEXT,
@@ -100,11 +94,11 @@ CREATE TABLE "UserSkill" (
 CREATE TABLE "Experience" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
-    "companyName" TEXT NOT NULL,
-    "jobTitle" TEXT NOT NULL,
+    "company" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
     "location" TEXT,
-    "startDate" TEXT,
-    "endDate" TEXT,
+    "startDate" TIMESTAMP(3) NOT NULL,
+    "endDate" TIMESTAMP(3),
     "isCurrent" BOOLEAN NOT NULL DEFAULT false,
     "description" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -230,17 +224,16 @@ CREATE TABLE "Follow" (
 -- CreateTable
 CREATE TABLE "Course" (
     "id" TEXT NOT NULL,
-    "slug" TEXT NOT NULL,
+    "instructorId" TEXT NOT NULL,
     "title" TEXT NOT NULL,
+    "slug" TEXT NOT NULL,
     "description" TEXT NOT NULL,
     "category" TEXT NOT NULL DEFAULT 'Development',
     "level" TEXT NOT NULL DEFAULT 'BEGINNER',
     "price" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "durationHours" DOUBLE PRECISION NOT NULL DEFAULT 10,
     "thumbnail" TEXT,
-    "isPublished" BOOLEAN NOT NULL DEFAULT false,
-    "isFeatured" BOOLEAN NOT NULL DEFAULT false,
-    "instructorId" TEXT NOT NULL,
+    "isPublished" BOOLEAN NOT NULL DEFAULT true,
     "rating" DOUBLE PRECISION NOT NULL DEFAULT 4.8,
     "reviewsCount" INTEGER NOT NULL DEFAULT 0,
     "skillsCovered" TEXT,
@@ -317,13 +310,14 @@ CREATE TABLE "MentorProfile" (
     "hourlyRate" DOUBLE PRECISION NOT NULL DEFAULT 50,
     "bio" TEXT NOT NULL,
     "expertise" TEXT NOT NULL,
-    "yearsExperience" INTEGER NOT NULL DEFAULT 3,
+    "yearsExperience" INTEGER NOT NULL DEFAULT 5,
+    "company" TEXT,
+    "title" TEXT,
     "rating" DOUBLE PRECISION NOT NULL DEFAULT 4.9,
     "studentsCount" INTEGER NOT NULL DEFAULT 0,
     "sessionCount" INTEGER NOT NULL DEFAULT 0,
     "isAvailable" BOOLEAN NOT NULL DEFAULT true,
-    "availability" TEXT DEFAULT 'Flexible weekdays and weekends',
-    "linkedin" TEXT,
+    "availability" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -353,10 +347,10 @@ CREATE TABLE "MentorshipBooking" (
     "mentorId" TEXT NOT NULL,
     "scheduledAt" TIMESTAMP(3) NOT NULL,
     "durationMinutes" INTEGER NOT NULL DEFAULT 60,
-    "price" DOUBLE PRECISION NOT NULL,
+    "price" DOUBLE PRECISION NOT NULL DEFAULT 50,
     "status" TEXT NOT NULL DEFAULT 'SCHEDULED',
-    "meetingUrl" TEXT,
-    "notes" TEXT,
+    "meetingUrl" TEXT DEFAULT 'https://meet.jit.si/growearn-mentorship-session',
+    "feedback" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "MentorshipBooking_pkey" PRIMARY KEY ("id")
@@ -369,17 +363,17 @@ CREATE TABLE "Job" (
     "title" TEXT NOT NULL,
     "description" TEXT NOT NULL,
     "country" TEXT NOT NULL DEFAULT 'India',
-    "state" TEXT,
-    "city" TEXT,
+    "state" TEXT DEFAULT 'Tamil Nadu',
+    "city" TEXT DEFAULT 'Chennai',
     "locationType" TEXT NOT NULL DEFAULT 'REMOTE',
-    "jobType" TEXT NOT NULL DEFAULT 'FULL_TIME',
-    "minSalary" DOUBLE PRECISION,
-    "maxSalary" DOUBLE PRECISION,
-    "currency" TEXT NOT NULL DEFAULT 'INR',
-    "experienceLevel" TEXT NOT NULL DEFAULT 'ENTRY',
+    "jobType" TEXT NOT NULL DEFAULT 'FREELANCE',
+    "minSalary" DOUBLE PRECISION NOT NULL DEFAULT 1000,
+    "maxSalary" DOUBLE PRECISION NOT NULL DEFAULT 3000,
+    "currency" TEXT NOT NULL DEFAULT 'USD',
+    "experienceLevel" TEXT NOT NULL DEFAULT 'MID',
     "isLocal" BOOLEAN NOT NULL DEFAULT false,
-    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
     "deadline" TIMESTAMP(3),
+    "status" TEXT NOT NULL DEFAULT 'OPEN',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -401,12 +395,12 @@ CREATE TABLE "Application" (
     "id" TEXT NOT NULL,
     "jobId" TEXT NOT NULL,
     "applicantId" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'APPLIED',
     "coverLetter" TEXT,
     "resumeUrl" TEXT,
-    "matchScore" DOUBLE PRECISION,
+    "matchScore" INTEGER NOT NULL DEFAULT 85,
     "matchExplanation" TEXT,
-    "status" TEXT NOT NULL DEFAULT 'APPLIED',
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "appliedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Application_pkey" PRIMARY KEY ("id")
@@ -419,11 +413,10 @@ CREATE TABLE "Proposal" (
     "professionalId" TEXT NOT NULL,
     "coverLetter" TEXT NOT NULL,
     "proposedRate" DOUBLE PRECISION NOT NULL,
-    "estimatedDays" INTEGER NOT NULL,
+    "estimatedDays" INTEGER NOT NULL DEFAULT 7,
     "milestonesJson" TEXT,
-    "status" TEXT NOT NULL DEFAULT 'SUBMITTED',
+    "status" TEXT NOT NULL DEFAULT 'PENDING',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Proposal_pkey" PRIMARY KEY ("id")
 );
@@ -444,8 +437,7 @@ CREATE TABLE "ConversationParticipant" (
     "id" TEXT NOT NULL,
     "conversationId" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
-    "joinedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "lastReadAt" TIMESTAMP(3),
+    "lastReadAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "ConversationParticipant_pkey" PRIMARY KEY ("id")
 );
@@ -469,9 +461,9 @@ CREATE TABLE "Review" (
     "authorId" TEXT NOT NULL,
     "targetUserId" TEXT,
     "courseId" TEXT,
-    "rating" INTEGER NOT NULL,
+    "rating" INTEGER NOT NULL DEFAULT 5,
     "comment" TEXT NOT NULL,
-    "reviewType" TEXT NOT NULL,
+    "reviewType" TEXT NOT NULL DEFAULT 'MENTOR',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Review_pkey" PRIMARY KEY ("id")
@@ -483,10 +475,11 @@ CREATE TABLE "Payment" (
     "userId" TEXT NOT NULL,
     "amount" DOUBLE PRECISION NOT NULL,
     "currency" TEXT NOT NULL DEFAULT 'USD',
-    "status" TEXT NOT NULL DEFAULT 'PENDING',
-    "paymentType" TEXT NOT NULL,
-    "referenceId" TEXT,
-    "gatewayId" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'SUCCESS',
+    "provider" TEXT NOT NULL DEFAULT 'MOCK',
+    "transactionRef" TEXT NOT NULL,
+    "itemType" TEXT NOT NULL,
+    "itemId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Payment_pkey" PRIMARY KEY ("id")
@@ -496,11 +489,13 @@ CREATE TABLE "Payment" (
 CREATE TABLE "AIProfile" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
-    "overallReadinessScore" INTEGER NOT NULL DEFAULT 50,
-    "skillGapAnalysisJson" TEXT,
-    "suggestedRoles" TEXT,
-    "learningPace" TEXT DEFAULT 'MODERATE',
-    "lastAnalyzedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "careerGoal" TEXT NOT NULL DEFAULT 'Full Stack AI Engineer',
+    "currentLevel" TEXT NOT NULL DEFAULT 'Intermediate',
+    "skillSummary" TEXT,
+    "strengthsJson" TEXT,
+    "gapAnalysisJson" TEXT,
+    "suggestedRolesJson" TEXT,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "AIProfile_pkey" PRIMARY KEY ("id")
 );
@@ -510,15 +505,17 @@ CREATE TABLE "CareerRoadmap" (
     "id" TEXT NOT NULL,
     "userId" TEXT,
     "slug" TEXT,
-    "title" TEXT NOT NULL,
-    "category" TEXT NOT NULL DEFAULT 'Engineering',
-    "targetRole" TEXT NOT NULL,
-    "currentLevel" TEXT NOT NULL DEFAULT 'Beginner',
+    "title" TEXT NOT NULL DEFAULT 'Career Roadmap',
+    "category" TEXT NOT NULL DEFAULT 'General',
+    "targetRole" TEXT NOT NULL DEFAULT 'Full Stack Developer',
+    "currentLevel" TEXT NOT NULL DEFAULT 'Intermediate',
     "summary" TEXT,
     "estimatedDurationWeeks" INTEGER NOT NULL DEFAULT 12,
     "primarySkills" TEXT,
-    "phasesJson" TEXT NOT NULL,
+    "currentSkillsJson" TEXT,
+    "skillGapsJson" TEXT,
     "finalMilestone" TEXT,
+    "phasesJson" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -536,11 +533,14 @@ CREATE TABLE "RoadmapItem" (
     "milestoneType" TEXT NOT NULL DEFAULT 'SKILL',
     "difficulty" TEXT NOT NULL DEFAULT 'BEGINNER',
     "estimatedHours" INTEGER NOT NULL DEFAULT 10,
-    "isCompleted" BOOLEAN NOT NULL DEFAULT false,
-    "completedAt" TIMESTAMP(3),
+    "prerequisites" TEXT,
     "skills" TEXT,
     "recommendedCourses" TEXT,
-    "prerequisites" TEXT,
+    "isCompleted" BOOLEAN NOT NULL DEFAULT false,
+    "relatedSkill" TEXT,
+    "relatedCourseId" TEXT,
+    "relatedMentorId" TEXT,
+    "relatedJobId" TEXT,
 
     CONSTRAINT "RoadmapItem_pkey" PRIMARY KEY ("id")
 );
@@ -549,11 +549,11 @@ CREATE TABLE "RoadmapItem" (
 CREATE TABLE "AIRecommendation" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
-    "recommendationType" TEXT NOT NULL,
-    "targetEntityId" TEXT NOT NULL,
-    "score" DOUBLE PRECISION NOT NULL,
+    "recType" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
     "explanation" TEXT NOT NULL,
-    "metadata" TEXT,
+    "matchPercentage" INTEGER NOT NULL DEFAULT 90,
+    "targetEntityId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "AIRecommendation_pkey" PRIMARY KEY ("id")
@@ -613,176 +613,505 @@ CREATE TABLE "document_chunks" (
 );
 
 -- CreateTable
-CREATE TABLE "RateLimit" (
+CREATE TABLE "rate_limits" (
     "key" TEXT NOT NULL,
     "points" INTEGER NOT NULL DEFAULT 1,
-    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "expires_at" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "RateLimit_pkey" PRIMARY KEY ("key")
+    CONSTRAINT "rate_limits_pkey" PRIMARY KEY ("key")
 );
 
--- CreateIndexes
+-- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
 CREATE INDEX "User_role_idx" ON "User"("role");
+
+-- CreateIndex
 CREATE INDEX "User_email_idx" ON "User"("email");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Profile_userId_key" ON "Profile"("userId");
+
+-- CreateIndex
 CREATE INDEX "Profile_userId_idx" ON "Profile"("userId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Skill_name_key" ON "Skill"("name");
+
+-- CreateIndex
 CREATE INDEX "Skill_category_idx" ON "Skill"("category");
+
+-- CreateIndex
 CREATE INDEX "Skill_name_idx" ON "Skill"("name");
-CREATE UNIQUE INDEX "UserSkill_userId_skillId_key" ON "UserSkill"("userId", "skillId");
+
+-- CreateIndex
 CREATE INDEX "UserSkill_skillId_idx" ON "UserSkill"("skillId");
+
+-- CreateIndex
 CREATE INDEX "UserSkill_userId_idx" ON "UserSkill"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "UserSkill_userId_skillId_key" ON "UserSkill"("userId", "skillId");
+
+-- CreateIndex
 CREATE INDEX "Experience_userId_idx" ON "Experience"("userId");
+
+-- CreateIndex
 CREATE INDEX "Education_userId_idx" ON "Education"("userId");
+
+-- CreateIndex
 CREATE INDEX "Certification_userId_idx" ON "Certification"("userId");
+
+-- CreateIndex
 CREATE INDEX "Project_userId_idx" ON "Project"("userId");
+
+-- CreateIndex
 CREATE INDEX "Achievement_userId_idx" ON "Achievement"("userId");
+
+-- CreateIndex
 CREATE INDEX "Post_authorId_idx" ON "Post"("authorId");
+
+-- CreateIndex
 CREATE INDEX "Post_createdAt_idx" ON "Post"("createdAt");
+
+-- CreateIndex
 CREATE INDEX "Comment_postId_idx" ON "Comment"("postId");
+
+-- CreateIndex
 CREATE INDEX "Comment_authorId_idx" ON "Comment"("authorId");
-CREATE UNIQUE INDEX "Like_postId_userId_key" ON "Like"("postId", "userId");
+
+-- CreateIndex
 CREATE INDEX "Like_postId_idx" ON "Like"("postId");
+
+-- CreateIndex
 CREATE INDEX "Like_userId_idx" ON "Like"("userId");
-CREATE UNIQUE INDEX "Connection_requesterId_receiverId_key" ON "Connection"("requesterId", "receiverId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Like_postId_userId_key" ON "Like"("postId", "userId");
+
+-- CreateIndex
 CREATE INDEX "Connection_requesterId_idx" ON "Connection"("requesterId");
+
+-- CreateIndex
 CREATE INDEX "Connection_receiverId_idx" ON "Connection"("receiverId");
-CREATE UNIQUE INDEX "Follow_followerId_followingId_key" ON "Follow"("followerId", "followingId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Connection_requesterId_receiverId_key" ON "Connection"("requesterId", "receiverId");
+
+-- CreateIndex
 CREATE INDEX "Follow_followerId_idx" ON "Follow"("followerId");
+
+-- CreateIndex
 CREATE INDEX "Follow_followingId_idx" ON "Follow"("followingId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Follow_followerId_followingId_key" ON "Follow"("followerId", "followingId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Course_slug_key" ON "Course"("slug");
+
+-- CreateIndex
 CREATE INDEX "Course_instructorId_idx" ON "Course"("instructorId");
+
+-- CreateIndex
 CREATE INDEX "Course_isPublished_idx" ON "Course"("isPublished");
+
+-- CreateIndex
 CREATE INDEX "Course_category_idx" ON "Course"("category");
+
+-- CreateIndex
 CREATE INDEX "Course_level_idx" ON "Course"("level");
+
+-- CreateIndex
 CREATE INDEX "Course_rating_idx" ON "Course"("rating");
+
+-- CreateIndex
 CREATE INDEX "CourseModule_courseId_idx" ON "CourseModule"("courseId");
+
+-- CreateIndex
 CREATE INDEX "CourseModule_orderIndex_idx" ON "CourseModule"("orderIndex");
+
+-- CreateIndex
 CREATE INDEX "Lesson_moduleId_idx" ON "Lesson"("moduleId");
+
+-- CreateIndex
 CREATE INDEX "Lesson_orderIndex_idx" ON "Lesson"("orderIndex");
-CREATE UNIQUE INDEX "Enrollment_studentId_courseId_key" ON "Enrollment"("studentId", "courseId");
+
+-- CreateIndex
 CREATE INDEX "Enrollment_studentId_idx" ON "Enrollment"("studentId");
+
+-- CreateIndex
 CREATE INDEX "Enrollment_courseId_idx" ON "Enrollment"("courseId");
-CREATE UNIQUE INDEX "LessonProgress_enrollmentId_lessonId_key" ON "LessonProgress"("enrollmentId", "lessonId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Enrollment_studentId_courseId_key" ON "Enrollment"("studentId", "courseId");
+
+-- CreateIndex
 CREATE INDEX "LessonProgress_enrollmentId_idx" ON "LessonProgress"("enrollmentId");
+
+-- CreateIndex
 CREATE INDEX "LessonProgress_lessonId_idx" ON "LessonProgress"("lessonId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "LessonProgress_enrollmentId_lessonId_key" ON "LessonProgress"("enrollmentId", "lessonId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Certificate_certificateNumber_key" ON "Certificate"("certificateNumber");
-CREATE UNIQUE INDEX "Certificate_userId_courseId_key" ON "Certificate"("userId", "courseId");
+
+-- CreateIndex
 CREATE INDEX "Certificate_userId_idx" ON "Certificate"("userId");
+
+-- CreateIndex
 CREATE INDEX "Certificate_courseId_idx" ON "Certificate"("courseId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Certificate_userId_courseId_key" ON "Certificate"("userId", "courseId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "MentorProfile_userId_key" ON "MentorProfile"("userId");
+
+-- CreateIndex
+CREATE INDEX "MentorProfile_userId_idx" ON "MentorProfile"("userId");
+
+-- CreateIndex
+CREATE INDEX "MentorProfile_isAvailable_idx" ON "MentorProfile"("isAvailable");
+
+-- CreateIndex
+CREATE INDEX "MentorProfile_rating_idx" ON "MentorProfile"("rating");
+
+-- CreateIndex
 CREATE INDEX "MentorshipRequest_studentId_idx" ON "MentorshipRequest"("studentId");
+
+-- CreateIndex
 CREATE INDEX "MentorshipRequest_mentorId_idx" ON "MentorshipRequest"("mentorId");
+
+-- CreateIndex
 CREATE INDEX "MentorshipRequest_status_idx" ON "MentorshipRequest"("status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "MentorshipBooking_requestId_key" ON "MentorshipBooking"("requestId");
+
+-- CreateIndex
 CREATE INDEX "MentorshipBooking_studentId_idx" ON "MentorshipBooking"("studentId");
+
+-- CreateIndex
 CREATE INDEX "MentorshipBooking_mentorId_idx" ON "MentorshipBooking"("mentorId");
-CREATE INDEX "MentorshipBooking_scheduledAt_idx" ON "MentorshipBooking"("scheduledAt");
+
+-- CreateIndex
+CREATE INDEX "MentorshipBooking_status_idx" ON "MentorshipBooking"("status");
+
+-- CreateIndex
 CREATE INDEX "Job_companyId_idx" ON "Job"("companyId");
+
+-- CreateIndex
 CREATE INDEX "Job_status_idx" ON "Job"("status");
+
+-- CreateIndex
 CREATE INDEX "Job_jobType_idx" ON "Job"("jobType");
+
+-- CreateIndex
 CREATE INDEX "Job_locationType_idx" ON "Job"("locationType");
-CREATE INDEX "Job_createdAt_idx" ON "Job"("createdAt");
-CREATE UNIQUE INDEX "JobSkill_jobId_skillId_key" ON "JobSkill"("jobId", "skillId");
-CREATE INDEX "JobSkill_jobId_idx" ON "JobSkill"("jobId");
+
+-- CreateIndex
+CREATE INDEX "Job_experienceLevel_idx" ON "Job"("experienceLevel");
+
+-- CreateIndex
 CREATE INDEX "JobSkill_skillId_idx" ON "JobSkill"("skillId");
-CREATE UNIQUE INDEX "Application_jobId_applicantId_key" ON "Application"("jobId", "applicantId");
+
+-- CreateIndex
+CREATE INDEX "JobSkill_jobId_idx" ON "JobSkill"("jobId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "JobSkill_jobId_skillId_key" ON "JobSkill"("jobId", "skillId");
+
+-- CreateIndex
 CREATE INDEX "Application_jobId_idx" ON "Application"("jobId");
+
+-- CreateIndex
 CREATE INDEX "Application_applicantId_idx" ON "Application"("applicantId");
+
+-- CreateIndex
 CREATE INDEX "Application_status_idx" ON "Application"("status");
-CREATE UNIQUE INDEX "Proposal_jobId_professionalId_key" ON "Proposal"("jobId", "professionalId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Application_jobId_applicantId_key" ON "Application"("jobId", "applicantId");
+
+-- CreateIndex
 CREATE INDEX "Proposal_jobId_idx" ON "Proposal"("jobId");
+
+-- CreateIndex
 CREATE INDEX "Proposal_professionalId_idx" ON "Proposal"("professionalId");
+
+-- CreateIndex
 CREATE INDEX "Proposal_status_idx" ON "Proposal"("status");
-CREATE UNIQUE INDEX "ConversationParticipant_conversationId_userId_key" ON "ConversationParticipant"("conversationId", "userId");
-CREATE INDEX "ConversationParticipant_conversationId_idx" ON "ConversationParticipant"("conversationId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Proposal_jobId_professionalId_key" ON "Proposal"("jobId", "professionalId");
+
+-- CreateIndex
+CREATE INDEX "Conversation_createdAt_idx" ON "Conversation"("createdAt");
+
+-- CreateIndex
 CREATE INDEX "ConversationParticipant_userId_idx" ON "ConversationParticipant"("userId");
+
+-- CreateIndex
+CREATE INDEX "ConversationParticipant_conversationId_idx" ON "ConversationParticipant"("conversationId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ConversationParticipant_conversationId_userId_key" ON "ConversationParticipant"("conversationId", "userId");
+
+-- CreateIndex
 CREATE INDEX "Message_conversationId_idx" ON "Message"("conversationId");
+
+-- CreateIndex
 CREATE INDEX "Message_senderId_idx" ON "Message"("senderId");
+
+-- CreateIndex
 CREATE INDEX "Message_createdAt_idx" ON "Message"("createdAt");
-CREATE INDEX "Review_authorId_idx" ON "Review"("authorId");
+
+-- CreateIndex
 CREATE INDEX "Review_targetUserId_idx" ON "Review"("targetUserId");
+
+-- CreateIndex
 CREATE INDEX "Review_courseId_idx" ON "Review"("courseId");
-CREATE INDEX "Review_rating_idx" ON "Review"("rating");
+
+-- CreateIndex
+CREATE INDEX "Review_authorId_idx" ON "Review"("authorId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Payment_transactionRef_key" ON "Payment"("transactionRef");
+
+-- CreateIndex
 CREATE INDEX "Payment_userId_idx" ON "Payment"("userId");
+
+-- CreateIndex
 CREATE INDEX "Payment_status_idx" ON "Payment"("status");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "AIProfile_userId_key" ON "AIProfile"("userId");
+
+-- CreateIndex
 CREATE INDEX "AIProfile_userId_idx" ON "AIProfile"("userId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "CareerRoadmap_userId_key" ON "CareerRoadmap"("userId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "CareerRoadmap_slug_key" ON "CareerRoadmap"("slug");
-CREATE INDEX "CareerRoadmap_userId_idx" ON "CareerRoadmap"("userId");
-CREATE INDEX "CareerRoadmap_slug_idx" ON "CareerRoadmap"("slug");
+
+-- CreateIndex
+CREATE INDEX "CareerRoadmap_category_idx" ON "CareerRoadmap"("category");
+
+-- CreateIndex
 CREATE INDEX "CareerRoadmap_targetRole_idx" ON "CareerRoadmap"("targetRole");
+
+-- CreateIndex
+CREATE INDEX "CareerRoadmap_slug_idx" ON "CareerRoadmap"("slug");
+
+-- CreateIndex
 CREATE INDEX "RoadmapItem_roadmapId_idx" ON "RoadmapItem"("roadmapId");
+
+-- CreateIndex
 CREATE INDEX "RoadmapItem_orderIndex_idx" ON "RoadmapItem"("orderIndex");
+
+-- CreateIndex
 CREATE INDEX "AIRecommendation_userId_idx" ON "AIRecommendation"("userId");
+
+-- CreateIndex
 CREATE INDEX "AIInteraction_userId_idx" ON "AIInteraction"("userId");
+
+-- CreateIndex
 CREATE INDEX "Notification_userId_idx" ON "Notification"("userId");
+
+-- CreateIndex
 CREATE INDEX "Notification_isRead_idx" ON "Notification"("isRead");
+
+-- CreateIndex
 CREATE INDEX "Notification_createdAt_idx" ON "Notification"("createdAt");
+
+-- CreateIndex
 CREATE INDEX "AuditLog_userId_idx" ON "AuditLog"("userId");
+
+-- CreateIndex
 CREATE INDEX "AuditLog_action_idx" ON "AuditLog"("action");
+
+-- CreateIndex
 CREATE INDEX "AuditLog_createdAt_idx" ON "AuditLog"("createdAt");
+
+-- CreateIndex
 CREATE INDEX "document_chunks_source_type_idx" ON "document_chunks"("source_type");
-CREATE INDEX "RateLimit_expiresAt_idx" ON "RateLimit"("expiresAt");
+
+-- CreateIndex
+CREATE INDEX "rate_limits_expires_at_idx" ON "rate_limits"("expires_at");
+
+-- AddForeignKey
+ALTER TABLE "Profile" ADD CONSTRAINT "Profile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Skill" ADD CONSTRAINT "Skill_roadmapId_fkey" FOREIGN KEY ("roadmapId") REFERENCES "CareerRoadmap"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserSkill" ADD CONSTRAINT "UserSkill_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserSkill" ADD CONSTRAINT "UserSkill_skillId_fkey" FOREIGN KEY ("skillId") REFERENCES "Skill"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Experience" ADD CONSTRAINT "Experience_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Education" ADD CONSTRAINT "Education_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Certification" ADD CONSTRAINT "Certification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Project" ADD CONSTRAINT "Project_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Achievement" ADD CONSTRAINT "Achievement_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Post" ADD CONSTRAINT "Post_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Comment" ADD CONSTRAINT "Comment_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Post"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Comment" ADD CONSTRAINT "Comment_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Like" ADD CONSTRAINT "Like_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Post"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Like" ADD CONSTRAINT "Like_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Connection" ADD CONSTRAINT "Connection_requesterId_fkey" FOREIGN KEY ("requesterId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Connection" ADD CONSTRAINT "Connection_receiverId_fkey" FOREIGN KEY ("receiverId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Follow" ADD CONSTRAINT "Follow_followerId_fkey" FOREIGN KEY ("followerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Follow" ADD CONSTRAINT "Follow_followingId_fkey" FOREIGN KEY ("followingId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Course" ADD CONSTRAINT "Course_instructorId_fkey" FOREIGN KEY ("instructorId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CourseModule" ADD CONSTRAINT "CourseModule_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Lesson" ADD CONSTRAINT "Lesson_moduleId_fkey" FOREIGN KEY ("moduleId") REFERENCES "CourseModule"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Enrollment" ADD CONSTRAINT "Enrollment_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Enrollment" ADD CONSTRAINT "Enrollment_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "LessonProgress" ADD CONSTRAINT "LessonProgress_enrollmentId_fkey" FOREIGN KEY ("enrollmentId") REFERENCES "Enrollment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "LessonProgress" ADD CONSTRAINT "LessonProgress_lessonId_fkey" FOREIGN KEY ("lessonId") REFERENCES "Lesson"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Certificate" ADD CONSTRAINT "Certificate_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Certificate" ADD CONSTRAINT "Certificate_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "MentorProfile" ADD CONSTRAINT "MentorProfile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "MentorshipRequest" ADD CONSTRAINT "MentorshipRequest_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "MentorshipRequest" ADD CONSTRAINT "MentorshipRequest_mentorId_fkey" FOREIGN KEY ("mentorId") REFERENCES "MentorProfile"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "MentorshipBooking" ADD CONSTRAINT "MentorshipBooking_requestId_fkey" FOREIGN KEY ("requestId") REFERENCES "MentorshipRequest"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "MentorshipBooking" ADD CONSTRAINT "MentorshipBooking_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "MentorshipBooking" ADD CONSTRAINT "MentorshipBooking_mentorId_fkey" FOREIGN KEY ("mentorId") REFERENCES "MentorProfile"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Job" ADD CONSTRAINT "Job_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "JobSkill" ADD CONSTRAINT "JobSkill_jobId_fkey" FOREIGN KEY ("jobId") REFERENCES "Job"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "JobSkill" ADD CONSTRAINT "JobSkill_skillId_fkey" FOREIGN KEY ("skillId") REFERENCES "Skill"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Application" ADD CONSTRAINT "Application_jobId_fkey" FOREIGN KEY ("jobId") REFERENCES "Job"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Application" ADD CONSTRAINT "Application_applicantId_fkey" FOREIGN KEY ("applicantId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Proposal" ADD CONSTRAINT "Proposal_jobId_fkey" FOREIGN KEY ("jobId") REFERENCES "Job"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Proposal" ADD CONSTRAINT "Proposal_professionalId_fkey" FOREIGN KEY ("professionalId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ConversationParticipant" ADD CONSTRAINT "ConversationParticipant_conversationId_fkey" FOREIGN KEY ("conversationId") REFERENCES "Conversation"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ConversationParticipant" ADD CONSTRAINT "ConversationParticipant_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Message" ADD CONSTRAINT "Message_conversationId_fkey" FOREIGN KEY ("conversationId") REFERENCES "Conversation"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Message" ADD CONSTRAINT "Message_senderId_fkey" FOREIGN KEY ("senderId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Review" ADD CONSTRAINT "Review_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Review" ADD CONSTRAINT "Review_targetUserId_fkey" FOREIGN KEY ("targetUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Review" ADD CONSTRAINT "Review_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Payment" ADD CONSTRAINT "Payment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AIProfile" ADD CONSTRAINT "AIProfile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CareerRoadmap" ADD CONSTRAINT "CareerRoadmap_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RoadmapItem" ADD CONSTRAINT "RoadmapItem_roadmapId_fkey" FOREIGN KEY ("roadmapId") REFERENCES "CareerRoadmap"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AIRecommendation" ADD CONSTRAINT "AIRecommendation_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AIInteraction" ADD CONSTRAINT "AIInteraction_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Notification" ADD CONSTRAINT "Notification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditLog" ADD CONSTRAINT "AuditLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+
 
 -- Vector Cosine HNSW Index for ultra-fast production approximate nearest neighbor search
 CREATE INDEX IF NOT EXISTS document_chunks_embedding_hnsw_idx 
 ON document_chunks USING hnsw (embedding vector_cosine_ops);
-
--- Add Foreign Keys
-ALTER TABLE "Profile" ADD CONSTRAINT "Profile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Skill" ADD CONSTRAINT "Skill_roadmapId_fkey" FOREIGN KEY ("roadmapId") REFERENCES "CareerRoadmap"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE "UserSkill" ADD CONSTRAINT "UserSkill_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "UserSkill" ADD CONSTRAINT "UserSkill_skillId_fkey" FOREIGN KEY ("skillId") REFERENCES "Skill"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Experience" ADD CONSTRAINT "Experience_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Education" ADD CONSTRAINT "Education_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Certification" ADD CONSTRAINT "Certification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Project" ADD CONSTRAINT "Project_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Achievement" ADD CONSTRAINT "Achievement_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Post" ADD CONSTRAINT "Post_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Comment" ADD CONSTRAINT "Comment_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Post"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Comment" ADD CONSTRAINT "Comment_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Like" ADD CONSTRAINT "Like_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Post"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Like" ADD CONSTRAINT "Like_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Connection" ADD CONSTRAINT "Connection_requesterId_fkey" FOREIGN KEY ("requesterId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Connection" ADD CONSTRAINT "Connection_receiverId_fkey" FOREIGN KEY ("receiverId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Follow" ADD CONSTRAINT "Follow_followerId_fkey" FOREIGN KEY ("followerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Follow" ADD CONSTRAINT "Follow_followingId_fkey" FOREIGN KEY ("followingId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Course" ADD CONSTRAINT "Course_instructorId_fkey" FOREIGN KEY ("instructorId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "CourseModule" ADD CONSTRAINT "CourseModule_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Lesson" ADD CONSTRAINT "Lesson_moduleId_fkey" FOREIGN KEY ("moduleId") REFERENCES "CourseModule"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Enrollment" ADD CONSTRAINT "Enrollment_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Enrollment" ADD CONSTRAINT "Enrollment_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "LessonProgress" ADD CONSTRAINT "LessonProgress_enrollmentId_fkey" FOREIGN KEY ("enrollmentId") REFERENCES "Enrollment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "LessonProgress" ADD CONSTRAINT "LessonProgress_lessonId_fkey" FOREIGN KEY ("lessonId") REFERENCES "Lesson"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Certificate" ADD CONSTRAINT "Certificate_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Certificate" ADD CONSTRAINT "Certificate_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "MentorProfile" ADD CONSTRAINT "MentorProfile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "MentorshipRequest" ADD CONSTRAINT "MentorshipRequest_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "MentorshipRequest" ADD CONSTRAINT "MentorshipRequest_mentorId_fkey" FOREIGN KEY ("mentorId") REFERENCES "MentorProfile"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "MentorshipBooking" ADD CONSTRAINT "MentorshipBooking_requestId_fkey" FOREIGN KEY ("requestId") REFERENCES "MentorshipRequest"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE "MentorshipBooking" ADD CONSTRAINT "MentorshipBooking_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "MentorshipBooking" ADD CONSTRAINT "MentorshipBooking_mentorId_fkey" FOREIGN KEY ("mentorId") REFERENCES "MentorProfile"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Job" ADD CONSTRAINT "Job_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "JobSkill" ADD CONSTRAINT "JobSkill_jobId_fkey" FOREIGN KEY ("jobId") REFERENCES "Job"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "JobSkill" ADD CONSTRAINT "JobSkill_skillId_fkey" FOREIGN KEY ("skillId") REFERENCES "Skill"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Application" ADD CONSTRAINT "Application_jobId_fkey" FOREIGN KEY ("jobId") REFERENCES "Job"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Application" ADD CONSTRAINT "Application_applicantId_fkey" FOREIGN KEY ("applicantId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Proposal" ADD CONSTRAINT "Proposal_jobId_fkey" FOREIGN KEY ("jobId") REFERENCES "Job"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Proposal" ADD CONSTRAINT "Proposal_professionalId_fkey" FOREIGN KEY ("professionalId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "ConversationParticipant" ADD CONSTRAINT "ConversationParticipant_conversationId_fkey" FOREIGN KEY ("conversationId") REFERENCES "Conversation"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "ConversationParticipant" ADD CONSTRAINT "ConversationParticipant_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Message" ADD CONSTRAINT "Message_conversationId_fkey" FOREIGN KEY ("conversationId") REFERENCES "Conversation"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Message" ADD CONSTRAINT "Message_senderId_fkey" FOREIGN KEY ("senderId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Review" ADD CONSTRAINT "Review_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Review" ADD CONSTRAINT "Review_targetUserId_fkey" FOREIGN KEY ("targetUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE "Review" ADD CONSTRAINT "Review_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Payment" ADD CONSTRAINT "Payment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "AIProfile" ADD CONSTRAINT "AIProfile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "CareerRoadmap" ADD CONSTRAINT "CareerRoadmap_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "RoadmapItem" ADD CONSTRAINT "RoadmapItem_roadmapId_fkey" FOREIGN KEY ("roadmapId") REFERENCES "CareerRoadmap"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "AIRecommendation" ADD CONSTRAINT "AIRecommendation_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "AIInteraction" ADD CONSTRAINT "AIInteraction_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "Notification" ADD CONSTRAINT "Notification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "AuditLog" ADD CONSTRAINT "AuditLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
