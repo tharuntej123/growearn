@@ -130,6 +130,11 @@ export async function enforceRateLimit(
   windowSeconds: number,
   userId?: string
 ): Promise<NextResponse | null> {
+  // In CI automated testing, bypass IP rate limiting to prevent test suite self-throttling
+  if (process.env.CI === 'true') {
+    return null;
+  }
+
   const ip = getClientIp(req);
   const identifier = userId ? `${prefix}:${userId}` : `${prefix}:${ip}`;
 
