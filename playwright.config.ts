@@ -19,8 +19,10 @@ export default defineConfig({
   webServer: {
     command: 'npx next start -H 0.0.0.0 -p 3000',
     url: 'http://127.0.0.1:3000',
-    reuseExistingServer: true,
+    reuseExistingServer: !process.env.CI,
     timeout: 120000,
+    stdout: 'pipe',
+    stderr: 'pipe',
     env: {
       CI: 'true',
       NODE_ENV: 'production',

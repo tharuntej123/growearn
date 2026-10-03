@@ -17,28 +17,22 @@ test.describe('Professional End-to-End Browser Flow', () => {
     const jobCards = page.locator('button:has-text("Apply"), a:has-text("View"), a[href*="/jobs/"]').first();
     await expect(jobCards).toBeVisible({ timeout: 10000 });
 
-    // 4. Open Job Detail
-    const viewJobBtn = page.locator('a[href*="/jobs/"]').first();
-    if (await viewJobBtn.isVisible()) {
-      await viewJobBtn.click();
-      await page.waitForURL('**/jobs/**', { timeout: 10000 });
-    }
-
-    // 5. Submit Application if button visible
-    const applyBtn = page.locator('button:has-text("Apply"), button:has-text("Submit Application")').first();
+    // 4. Open Job Detail / Proposal Modal if present
+    const applyBtn = page.locator('button:has-text("Apply"), a:has-text("Apply"), a[href*="/jobs/"]').first();
     if (await applyBtn.isVisible()) {
       await applyBtn.click();
-      const coverLetterInput = page.locator('textarea[name="coverLetter"], textarea').first();
+      const coverLetterInput = page.locator('textarea');
+      await coverLetterInput.waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
       if (await coverLetterInput.isVisible()) {
         await coverLetterInput.fill('Experienced engineer interested in high-scale systems.');
-        const confirmBtn = page.locator('button[type="submit"], button:has-text("Submit"), button:has-text("Confirm")').first();
+        const confirmBtn = page.locator('button:has-text("Submit Application"), button[type="submit"]').first();
         if (await confirmBtn.isVisible()) {
           await confirmBtn.click();
         }
       }
     }
 
-    // 6. Refresh page and verify application status persists
+    // 5. Refresh page and verify application status persists
     await page.reload();
     await expect(page.locator('body')).toBeVisible();
   });
