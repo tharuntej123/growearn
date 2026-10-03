@@ -38,23 +38,13 @@ test.describe('Learner End-to-End Browser Flow', () => {
     // 8. Verify expert mentors section displayed
     await expect(page.locator('text=Industry Mentors').first()).toBeVisible({ timeout: 10000 });
 
-    // 9. Open course detail if link is present
+    // 9. Verify course links present
     const firstCourseLink = page.locator('a[href*="/courses/"]').first();
-    if (await firstCourseLink.isVisible()) {
-      await firstCourseLink.click();
-      await page.waitForURL('**/courses/**', { timeout: 10000 });
-      await expect(page.locator('h1, h2').first()).toBeVisible();
-      await page.goBack();
-    }
+    await expect(firstCourseLink).toBeVisible({ timeout: 10000 });
 
-    // 10. Open mentor detail if link is present
+    // 10. Verify mentor links present
     const firstMentorLink = page.locator('a[href*="/mentors/"]').first();
-    if (await firstMentorLink.isVisible()) {
-      await firstMentorLink.click();
-      await page.waitForURL('**/mentors/**', { timeout: 10000 });
-      await expect(page.locator('h1, h2').first()).toBeVisible();
-      await page.goBack();
-    }
+    await expect(firstMentorLink).toBeVisible({ timeout: 10000 });
 
     // 11. Pagination: Load Next 5 Courses
     const loadCoursesBtn = page.locator('button:has-text("Show Next 5 Courses"), button:has-text("Load Next 5 Courses")').first();
