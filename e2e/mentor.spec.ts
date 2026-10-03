@@ -14,13 +14,14 @@ test.describe('Mentor End-to-End Browser Flow', () => {
 
     // 3. Navigate to Mentor Requests
     await page.goto('/mentor/requests');
-    await expect(page.locator('h1, h2').first()).toBeVisible();
+    await expect(page.locator('h1, h2').first()).toBeVisible({ timeout: 10000 });
 
     // 4. Accept pending request if present
     const acceptBtn = page.locator('button:has-text("Accept")').first();
+    await acceptBtn.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
     if (await acceptBtn.isVisible()) {
       await acceptBtn.click();
-      await expect(page.locator('text=/Accepted/i').first()).toBeVisible({ timeout: 5000 });
+      await expect(page.locator('text=/Accepted/i').first()).toBeVisible({ timeout: 10000 });
     }
 
     // 5. Navigate to Course Creation

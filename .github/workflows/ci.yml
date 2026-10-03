@@ -98,22 +98,10 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: 13. Run Playwright End-to-End Browser Tests
-        run: |
-          npx next start -H 0.0.0.0 -p 3000 &
-          echo "Waiting for Next.js production server to be ready on http://127.0.0.1:3000..."
-          for i in $(seq 1 30); do
-            if curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000 | grep -q "[23].."; then
-              echo "Next.js server is ready and responding on http://127.0.0.1:3000!"
-              break
-            fi
-            echo "Waiting for Next.js server ($i/30)..."
-            sleep 1
-          done
-          npx playwright test
+        run: npx playwright test --reporter=list,github
         env:
           CI: "true"
           NODE_ENV: "production"
-          PORT: "3000"
           DATABASE_URL: "postgresql://postgres:postgrespassword@127.0.0.1:5432/groearn_test?sslmode=disable"
           DIRECT_URL: "postgresql://postgres:postgrespassword@127.0.0.1:5432/groearn_test?sslmode=disable"
           JWT_SECRET: "ci-test-jwt-secret-key-2026-production-testing-random-grade"

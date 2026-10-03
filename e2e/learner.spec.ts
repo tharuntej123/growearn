@@ -24,6 +24,7 @@ test.describe('Learner End-to-End Browser Flow', () => {
 
     // 5. Search Java and verify roadmap appears
     const searchInput = page.locator('input[placeholder*="Java"], input[placeholder*="Search"]').first();
+    await searchInput.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
     if (await searchInput.isVisible()) {
       await searchInput.fill('Java');
       await page.keyboard.press('Enter');

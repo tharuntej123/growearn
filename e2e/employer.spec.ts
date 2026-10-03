@@ -14,8 +14,10 @@ test.describe('Employer End-to-End Browser Flow', () => {
 
     // 3. Post a new Job
     await page.goto('/employer/jobs/new');
+    await expect(page.locator('h1, h2').first()).toBeVisible({ timeout: 10000 });
     const titleInput = page.locator('input[name="title"], input[placeholder*="title"]').first();
-    if (await titleInput.isVisible({ timeout: 5000 })) {
+    await titleInput.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
+    if (await titleInput.isVisible()) {
       await titleInput.fill(`Senior Cloud Engineer ${Date.now()}`);
       const descInput = page.locator('textarea[name="description"], textarea').first();
       if (await descInput.isVisible()) {
