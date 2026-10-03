@@ -32,10 +32,9 @@ jobs:
       JWT_SECRET: "ci-test-jwt-secret-key-2026-production-testing-random-grade"
       JWT_EXPIRES_IN: "7d"
       MOCK_AI: "true"
-      NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+      NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3000"
       STORAGE_PROVIDER: "local"
       ALLOW_PRODUCTION_SEED: "true"
-      NODE_ENV: "test"
 
     steps:
       - name: Checkout Source Code
@@ -74,7 +73,6 @@ jobs:
         run: npx tsx prisma/seed.ts
         env:
           ALLOW_PRODUCTION_SEED: "true"
-          NODE_ENV: "test"
 
       - name: 6. Run Strict TypeScript Typecheck
         run: npm run typecheck
@@ -93,6 +91,8 @@ jobs:
 
       - name: 11. Build Next.js Production Bundle
         run: npm run build
+        env:
+          NODE_ENV: "production"
 
       - name: 12. Install Playwright Browsers & OS Dependencies
         run: npx playwright install --with-deps chromium
@@ -101,7 +101,8 @@ jobs:
         run: npx playwright test
         env:
           CI: "true"
-          NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+          NODE_ENV: "production"
+          NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3000"
 
       - name: Upload Playwright Test Report Artifacts
         if: always()
