@@ -1912,11 +1912,188 @@ Community Feed: Cross-role knowledge sharing with verified role badges on every 
     });
   }
 
+  // 11. Provision Standardized Demo Accounts for Automated E2E Testing Suite
+  // Admin Account
+  await prisma.user.create({
+    data: {
+      email: 'admin@growearn.com',
+      passwordHash: demoPasswordHash,
+      name: 'System Admin',
+      role: 'ADMIN',
+      headline: 'Platform Administrator & Trust & Safety',
+      location: 'Bangalore, Karnataka, India',
+      country: 'India',
+      state: 'Karnataka',
+      city: 'Bangalore',
+      bio: 'Administrator account for platform telemetry, user management, and security audit logs.',
+      isVerified: true,
+      profile: {
+        create: {
+          title: 'System Administrator',
+          isOnboarded: true,
+          aiScore: 100,
+        },
+      },
+    },
+  });
+
+  // Learner Account
+  const learnerGrowearn = await prisma.user.create({
+    data: {
+      email: 'learner@growearn.com',
+      passwordHash: demoPasswordHash,
+      name: 'Alex Chen',
+      role: 'LEARNER',
+      headline: 'Computer Science Student & Aspiring Full Stack Developer',
+      location: 'Chennai, Tamil Nadu, India',
+      country: 'India',
+      state: 'Tamil Nadu',
+      city: 'Chennai',
+      bio: 'Enthusiastic CS learner eager to master modern distributed backends, Spring Boot, and Next.js.',
+      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      isVerified: true,
+      profile: {
+        create: {
+          title: 'Aspiring Full Stack Engineer',
+          careerGoal: 'Backend Software Engineer',
+          targetRole: 'Backend Developer',
+          experienceLevel: 'Beginner',
+          isOnboarded: true,
+          aiScore: 84,
+          yearsOfExperience: 1,
+          githubUrl: 'https://github.com/alexchen',
+          linkedinUrl: 'https://linkedin.com/in/alexchen',
+        },
+      },
+    },
+  });
+  await assignSkillsToUser(learnerGrowearn.id, ['Java', 'Spring Boot', 'PostgreSQL', 'TypeScript', 'React']);
+
+  // Professional Account
+  const profGrowearn = await prisma.user.create({
+    data: {
+      email: 'professional@growearn.com',
+      passwordHash: demoPasswordHash,
+      name: 'Pooja Verma',
+      role: 'PROFESSIONAL',
+      headline: 'Senior Mobile & Full Stack Specialist',
+      location: 'Bangalore, Karnataka, India',
+      country: 'India',
+      state: 'Karnataka',
+      city: 'Bangalore',
+      bio: 'Specialist in building high-conversion SaaS web apps, Next.js full-stack architectures, and cross-platform mobile apps.',
+      avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
+      isVerified: true,
+      profile: {
+        create: {
+          title: 'Senior Mobile & Full Stack Specialist',
+          hourlyRate: 65,
+          yearsOfExperience: 7,
+          aiScore: 95,
+          careerGoal: 'Full Stack & Mobile Engineering Consultant',
+          targetRole: 'Senior Full Stack Specialist',
+          experienceLevel: 'Advanced',
+          isOnboarded: true,
+          portfolioUrl: 'https://pooja-verma.dev',
+          githubUrl: 'https://github.com/poojaverma',
+          linkedinUrl: 'https://linkedin.com/in/pooja-verma-mobile',
+        },
+      },
+    },
+  });
+  await assignSkillsToUser(profGrowearn.id, ['React', 'Next.js', 'TypeScript', 'Flutter', 'React Native', 'Java', 'Spring Boot', 'PostgreSQL']);
+
+  // Mentor Account
+  const mentorGrowearn = await prisma.user.create({
+    data: {
+      email: 'mentor@growearn.com',
+      passwordHash: demoPasswordHash,
+      name: 'Priya Sharma',
+      role: 'MENTOR',
+      headline: 'Senior Backend Engineer & Cloud Architect',
+      location: 'Bangalore, Karnataka, India',
+      country: 'India',
+      state: 'Karnataka',
+      city: 'Bangalore',
+      bio: 'Senior backend architect with 8+ years designing fault-tolerant microservices, high-concurrency message queues, and enterprise SQL databases.',
+      avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+      isVerified: true,
+      profile: {
+        create: {
+          title: 'Senior Backend Engineer',
+          hourlyRate: 65,
+          yearsOfExperience: 8,
+          isOnboarded: true,
+          aiScore: 95,
+        },
+      },
+      mentorProfile: {
+        create: {
+          hourlyRate: 65,
+          bio: 'Senior backend architect with 8+ years designing fault-tolerant microservices and enterprise SQL databases.',
+          expertise: 'Java, Spring Boot, PostgreSQL, Microservices, System Design',
+          yearsExperience: 8,
+          rating: 4.95,
+          studentsCount: 142,
+          sessionCount: 280,
+          company: 'NovaTech Solutions',
+          title: 'Senior Backend Engineer',
+          availability: 'Weekdays 7 PM - 10 PM IST, Weekends Flexible',
+        },
+      },
+    },
+    include: {
+      mentorProfile: true,
+    },
+  });
+
+  // Mentorship request for mentor@growearn.com
+  if (mentorGrowearn.mentorProfile) {
+    await prisma.mentorshipRequest.create({
+      data: {
+        studentId: learnerGrowearn.id,
+        mentorId: mentorGrowearn.mentorProfile.id,
+        topic: 'System Architecture & Vector Search Coaching',
+        message: 'Requesting 1-on-1 coaching for production backend system design.',
+        status: 'PENDING',
+      },
+    });
+  }
+
+  // Employer Account
+  await prisma.user.create({
+    data: {
+      email: 'employer@growearn.com',
+      passwordHash: demoPasswordHash,
+      name: 'NovaTech Solutions',
+      role: 'EMPLOYER',
+      headline: 'Enterprise Cloud Architecture & Distributed Systems',
+      location: 'Bangalore, Karnataka, India',
+      country: 'India',
+      state: 'Karnataka',
+      city: 'Bangalore',
+      bio: 'Building mission-critical FinTech backends and cloud-native microservices.',
+      avatarUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=150&auto=format&fit=crop&q=80',
+      isVerified: true,
+      profile: {
+        create: {
+          title: 'Enterprise Cloud Architecture & Distributed Systems',
+          companyName: 'NovaTech Solutions',
+          companyIndustry: 'Enterprise Cloud Architecture & Distributed Systems',
+          companyWebsite: 'https://novatech-solutions.io',
+          companySize: '250-500 Employees',
+          isOnboarded: true,
+        },
+      },
+    },
+  });
+
   console.log('✨ Seed complete! Demo accounts ready:');
-  console.log('   👨‍🎓 Learner:      student@example.com      (Password: Demo1234!)');
-  console.log('   💼 Professional: professional@example.com (Password: Demo1234!)');
-  console.log('   👨‍🏫 Mentor:       priya.sharma@example.com (Password: Demo1234!)');
-  console.log('   🏢 Employer:     careers@novatech-solutions.io (Password: Demo1234!)');
+  console.log('   👨‍🎓 Learner:      learner@growearn.com / student@example.com (Password: Demo1234!)');
+  console.log('   💼 Professional: professional@growearn.com / professional@example.com (Password: Demo1234!)');
+  console.log('   👨‍🏫 Mentor:       mentor@growearn.com / priya.sharma@example.com (Password: Demo1234!)');
+  console.log('   🏢 Employer:     employer@growearn.com / careers@novatech-solutions.io (Password: Demo1234!)');
+  console.log('   🛡️ Admin:        admin@growearn.com (Password: Demo1234!)');
 }
 
 main()

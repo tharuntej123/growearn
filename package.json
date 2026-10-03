@@ -10,11 +10,15 @@
     "lint": "eslint src",
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate deploy",
     "prisma:push": "prisma db push",
     "prisma:seed": "tsx prisma/seed.ts",
     "seed": "tsx prisma/seed.ts",
     "test": "tsx src/lib/__tests__/run-all-tests.ts",
-    "test:rag": "tsx src/lib/__tests__/production-rag.test.ts"
+    "test:rag": "tsx src/lib/__tests__/production-rag.test.ts",
+    "test:rag:proof": "tsx src/lib/__tests__/live-semantic-rag-proof.ts",
+    "test:benchmark": "tsx src/lib/__tests__/load-performance-benchmark.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

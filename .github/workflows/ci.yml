@@ -8,7 +8,7 @@ on:
 
 jobs:
   validate-and-build:
-    name: Typecheck, Lint, Test & Production Build
+    name: Full CI Pipeline (Typecheck, Lint, Test, RAG, E2E & Build)
     runs-on: ubuntu-latest
 
     services:
@@ -21,20 +21,21 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
+          --health-cmd "pg_isready -U postgres -d groearn_test"
+          --health-interval 5s
           --health-timeout 5s
-          --health-retries 5
+          --health-retries 10
 
     env:
       DATABASE_URL: "postgresql://postgres:postgrespassword@127.0.0.1:5432/groearn_test?sslmode=disable"
       DIRECT_URL: "postgresql://postgres:postgrespassword@127.0.0.1:5432/groearn_test?sslmode=disable"
-      JWT_SECRET: "ci-test-jwt-secret-key-2026-production-testing-random"
+      JWT_SECRET: "ci-test-jwt-secret-key-2026-production-testing-random-grade"
       JWT_EXPIRES_IN: "7d"
       MOCK_AI: "true"
       NEXT_PUBLIC_APP_URL: "http://localhost:3000"
       STORAGE_PROVIDER: "local"
       ALLOW_PRODUCTION_SEED: "true"
+      NODE_ENV: "test"
 
     steps:
       - name: Checkout Source Code
@@ -46,39 +47,66 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Wait for PostgreSQL Service
+      - name: 1. Clean Dependency Installation
+        run: npm ci --legacy-peer-deps || npm install --no-audit --prefer-offline
+
+      - name: 2. Verify PostgreSQL & pgvector Readiness
         run: |
-          for i in {1..30}; do
+          sudo apt-get update -y && sudo apt-get install -y postgresql-client
+          for i in $(seq 1 30); do
             if pg_isready -h 127.0.0.1 -p 5432 -U postgres -d groearn_test; then
-              echo "PostgreSQL pgvector is ready!"
+              echo "PostgreSQL service is ready and accepting connections!"
               break
             fi
             echo "Waiting for PostgreSQL ($i/30)..."
             sleep 1
           done
+          psql "postgresql://postgres:postgrespassword@127.0.0.1:5432/groearn_test?sslmode=disable" -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          psql "postgresql://postgres:postgrespassword@127.0.0.1:5432/groearn_test?sslmode=disable" -c "SELECT extname, extversion FROM pg_extension WHERE extname = 'vector';"
 
-      - name: 1. Clean Dependency Installation
-        run: npm ci
-
-      - name: 2. Generate Prisma Client
+      - name: 3. Generate Prisma Client
         run: npx prisma generate
 
-      - name: 3. Synchronize Database Schema
-        run: npx prisma db push --skip-generate
+      - name: 4. Deploy Prisma Database Migrations
+        run: npx prisma migrate deploy
 
-      - name: 4. Seed Database for Testing
+      - name: 5. Seed Database for Testing
         run: npx tsx prisma/seed.ts
         env:
           ALLOW_PRODUCTION_SEED: "true"
+          NODE_ENV: "test"
 
-      - name: 5. Run Strict TypeScript Typecheck
+      - name: 6. Run Strict TypeScript Typecheck
         run: npm run typecheck
 
-      - name: 6. Run ESLint Rules Check
+      - name: 7. Run ESLint Rules Check
         run: npm run lint
 
-      - name: 7. Run Master End-to-End Test Suite
+      - name: 8. Run Master Integration & Security Test Suite
         run: npm test
 
-      - name: 8. Build Next.js Production Bundle
+      - name: 9. Run Live pgvector Semantic RAG & HNSW Proof
+        run: npm run test:rag:proof
+
+      - name: 10. Run Production RAG Pipeline Check
+        run: npm run test:rag
+
+      - name: 11. Build Next.js Production Bundle
         run: npm run build
+
+      - name: 12. Install Playwright Browsers & OS Dependencies
+        run: npx playwright install --with-deps chromium
+
+      - name: 13. Run Playwright End-to-End Browser Tests
+        run: npx playwright test
+        env:
+          CI: "true"
+          NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+
+      - name: Upload Playwright Test Report Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
