@@ -107,9 +107,11 @@ export async function getCurrentUser(req?: NextRequest): Promise<(JWTPayload & {
 }
 
 export function getAuthCookieOptions() {
+  const isHttps = process.env.NEXT_PUBLIC_APP_URL?.startsWith('https://') || Boolean(process.env.VERCEL_URL?.startsWith('https://'));
+  const isProductionNonCi = process.env.NODE_ENV === 'production' && !process.env.CI;
   return {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isHttps || isProductionNonCi,
     sameSite: 'lax' as const,
     maxAge: 60 * 60 * 24 * 7, // 7 days
     path: '/',
