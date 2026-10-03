@@ -18,7 +18,7 @@
  * Output: { intent: IntentCategory, confidence: number, rationale: string }
  */
 
-import { generateEmbedding } from './embeddings';
+import { generateEmbedding, isEmbeddingConfigured } from './embeddings';
 
 export type IntentCategory = 'course' | 'mentor' | 'jobs' | 'roadmap' | 'profile' | 'general';
 
@@ -119,9 +119,53 @@ async function ensurePrototypes(): Promise<void> {
   prototypeEmbeddingsInitialized = true;
 }
 
+function classifyHeuristically(query: string): {
+  intent: IntentCategory;
+  confidence: number;
+  scores: Record<IntentCategory, number>;
+} {
+  const q = query.toLowerCase();
+  const scores: Record<IntentCategory, number> = {
+    roadmap: 0.1,
+    mentor: 0.1,
+    jobs: 0.1,
+    course: 0.1,
+    profile: 0.1,
+    general: 0.2,
+  };
+
+  let detected: IntentCategory = 'general';
+  if (/\b(roadmap|roadmaps|career path|learning path|timeline|curriculum|step by step|how to become)\b/i.test(q)) {
+    detected = 'roadmap';
+    scores.roadmap = 0.95;
+  } else if (/\b(mentor|mentors|mentorship|coach|coaches|coaching|1-on-1|mock interview|review my)\b/i.test(q)) {
+    detected = 'mentor';
+    scores.mentor = 0.95;
+  } else if (/\b(job|jobs|gig|gigs|freelance|freelancer|hiring|vacanc|opening|openings|positions|salary|salaries|internship|internships)\b/i.test(q)) {
+    detected = 'jobs';
+    scores.jobs = 0.95;
+  } else if (/\b(course|courses|tutorial|tutorials|syllabus|class|classes|module|lesson|learn .* fundamentals)\b/i.test(q)) {
+    detected = 'course';
+    scores.course = 0.95;
+  } else if (/\b(resume|portfolio|audit.*profile|missing skill|missing skills|analyze.*skill|profile score)\b/i.test(q)) {
+    detected = 'profile';
+    scores.profile = 0.95;
+  } else {
+    detected = 'general';
+    scores.general = 0.85;
+  }
+
+  return {
+    intent: detected,
+    confidence: scores[detected],
+    scores,
+  };
+}
+
 export class IntentClassifier {
   /**
    * Classify user query using vector similarity against category semantic prototypes.
+   * Gracefully falls back to structured rule-based classification if embeddings provider is unavailable.
    */
   static async classify(query: string): Promise<{
     intent: IntentCategory;
@@ -136,38 +180,46 @@ export class IntentClassifier {
       };
     }
 
-    await ensurePrototypes();
-    const queryEmbedding = await generateEmbedding(query);
-
-    const scores: Record<IntentCategory, number> = {
-      course: 0,
-      mentor: 0,
-      jobs: 0,
-      roadmap: 0,
-      profile: 0,
-      general: 0,
-    };
-
-    let highestCategory: IntentCategory = 'general';
-    let highestScore = -1;
-
-    for (const proto of CATEGORY_PROTOTYPES) {
-      if (proto.prototypeEmbedding) {
-        const score = dotProduct(queryEmbedding, proto.prototypeEmbedding);
-        const normalizedScore = Number(Math.max(0, Math.min(1, (score + 1) / 2)).toFixed(4));
-        scores[proto.category] = normalizedScore;
-
-        if (score > highestScore) {
-          highestScore = score;
-          highestCategory = proto.category;
-        }
-      }
+    if (!isEmbeddingConfigured()) {
+      return classifyHeuristically(query);
     }
 
-    return {
-      intent: highestCategory,
-      confidence: scores[highestCategory],
-      scores,
-    };
+    try {
+      await ensurePrototypes();
+      const queryEmbedding = await generateEmbedding(query);
+
+      const scores: Record<IntentCategory, number> = {
+        course: 0,
+        mentor: 0,
+        jobs: 0,
+        roadmap: 0,
+        profile: 0,
+        general: 0,
+      };
+
+      let highestCategory: IntentCategory = 'general';
+      let highestScore = -1;
+
+      for (const proto of CATEGORY_PROTOTYPES) {
+        if (proto.prototypeEmbedding) {
+          const score = dotProduct(queryEmbedding, proto.prototypeEmbedding);
+          const normalizedScore = Number(Math.max(0, Math.min(1, (score + 1) / 2)).toFixed(4));
+          scores[proto.category] = normalizedScore;
+
+          if (score > highestScore) {
+            highestScore = score;
+            highestCategory = proto.category;
+          }
+        }
+      }
+
+      return {
+        intent: highestCategory,
+        confidence: scores[highestCategory],
+        scores,
+      };
+    } catch {
+      return classifyHeuristically(query);
+    }
   }
 }
