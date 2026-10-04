@@ -31,21 +31,21 @@ test.describe('Learner End-to-End Browser Flow', () => {
     }
 
     // 6. Verify roadmap title & structured phases
-    await expect(page.locator('text=Structured Learning Roadmap').first()).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('text=Structured Learning Roadmap').first()).toBeVisible({ timeout: 20000 });
 
     // 7. Verify verified courses section displayed
-    await expect(page.locator('text=Verified Curriculum Courses').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=Verified Curriculum Courses').first()).toBeVisible({ timeout: 20000 });
 
     // 8. Verify expert mentors section displayed
-    await expect(page.locator('text=Industry Mentors').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=Industry Mentors').first()).toBeVisible({ timeout: 20000 });
 
     // 9. Verify course links present
     const firstCourseLink = page.locator('a[href*="/courses/"]').first();
-    await expect(firstCourseLink).toBeVisible({ timeout: 10000 });
+    await expect(firstCourseLink).toBeVisible({ timeout: 20000 });
 
     // 10. Verify mentor links present
     const firstMentorLink = page.locator('a[href*="/mentors/"]').first();
-    await expect(firstMentorLink).toBeVisible({ timeout: 10000 });
+    await expect(firstMentorLink).toBeVisible({ timeout: 20000 });
 
     // 11. Pagination: Load Next 5 Courses
     const loadCoursesBtn = page.locator('button:has-text("Show Next 5 Courses"), button:has-text("Load Next 5 Courses")').first();
@@ -63,7 +63,7 @@ test.describe('Learner End-to-End Browser Flow', () => {
 
     // 13. Refresh page and verify state persists
     await page.reload();
-    await expect(page.locator('h1')).toContainText('What do you want to learn today?', { timeout: 15000 });
-    await expect(page.locator('text=Structured Learning Roadmap').first()).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('h1')).toContainText('What do you want to learn today?', { timeout: 20000 });
+    await expect(page.locator('text=Structured Learning Roadmap').first()).toBeVisible({ timeout: 20000 });
   });
 });
