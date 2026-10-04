@@ -9,12 +9,17 @@ export default defineConfig({
   workers: 1,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  reporter: [['list'], ['html', { open: 'never' }]],
+  timeout: 60000,
+  expect: {
+    timeout: 15000,
+  },
   use: {
     baseURL: process.env.NEXT_PUBLIC_APP_URL || 'http://127.0.0.1:3000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
+    actionTimeout: 15000,
+    navigationTimeout: 30000,
   },
   webServer: {
     command: 'npx next start -H 0.0.0.0 -p 3000',

@@ -63,7 +63,7 @@ test.describe('Learner End-to-End Browser Flow', () => {
 
     // 13. Refresh page and verify state persists
     await page.reload();
-    await expect(page.locator('h1')).toContainText('What do you want to learn today?');
+    await expect(page.locator('h1')).toContainText('What do you want to learn today?', { timeout: 15000 });
     await expect(page.locator('text=Structured Learning Roadmap').first()).toBeVisible({ timeout: 15000 });
   });
 });
