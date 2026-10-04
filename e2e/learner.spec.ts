@@ -23,11 +23,21 @@ test.describe('Learner End-to-End Browser Flow', () => {
     }
 
     // 5. Search Java and verify roadmap appears
-    const searchInput = page.locator('input[placeholder*="Java"], input[placeholder*="Search"]').first();
-    await searchInput.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
-    if (await searchInput.isVisible()) {
-      await searchInput.fill('Java');
-      await page.keyboard.press('Enter');
+    const javaPill = page.locator('button:has-text("Java")').first();
+    if (await javaPill.isVisible()) {
+      await javaPill.click();
+    } else {
+      const searchInput = page.locator('input[placeholder*="Java"], input[placeholder*="Search"]').first();
+      await searchInput.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
+      if (await searchInput.isVisible()) {
+        await searchInput.fill('Java');
+        const submitBtn = page.locator('button:has-text("Generate Path")').first();
+        if (await submitBtn.isVisible()) {
+          await submitBtn.click();
+        } else {
+          await page.keyboard.press('Enter');
+        }
+      }
     }
 
     // 6. Verify roadmap title & structured phases

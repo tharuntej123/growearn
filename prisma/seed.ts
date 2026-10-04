@@ -15,6 +15,7 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { generateEmbedding } from '../src/lib/ai/embeddings';
 import { PRODUCTION_ROADMAPS_CATALOG } from '../src/lib/ai/roadmaps-catalog';
+import { RoadmapRepository } from '../src/repositories/roadmap.repository';
 
 const prisma = new PrismaClient();
 
@@ -1828,7 +1829,8 @@ async function main() {
       { roadmapId: r.id, slug: r.slug, title: r.title, category: r.category, skills: r.primarySkills }
     );
   }
-  console.log(`✅ Seeded ${PRODUCTION_ROADMAPS_CATALOG.length} production career roadmaps with pgvector chunk embeddings.`);
+  await RoadmapRepository.ensureRoadmapsSeeded();
+  console.log(`✅ Seeded ${PRODUCTION_ROADMAPS_CATALOG.length} production career roadmaps with relational schemas and pgvector embeddings.`);
 
   // 8b. Ingest Platform Ecosystem Overview into pgvector
   await insertChunk(
