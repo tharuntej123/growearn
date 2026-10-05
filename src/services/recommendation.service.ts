@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma';
 import { UserAIContext } from './user-context.service';
 import { SkillAnalysisService } from '@/lib/ai/skill-analysis.service';
+import { isEmbeddingConfigured, generateEmbedding } from '@/lib/ai/embeddings';
+import { PgVectorStore } from '@/lib/ai/vector-store';
 
 export interface ScoredJob {
   id: string;
@@ -23,6 +25,7 @@ export interface ScoredJob {
   };
   skills: { skill: { name: string } }[];
   matchScore: number;
+  vectorSimilarity?: number;
   matchedSkills: string[];
   missingSkills: string[];
   whyMatches: string;
@@ -30,11 +33,16 @@ export interface ScoredJob {
 }
 
 export class RecommendationService {
+  /**
+   * Professional/Freelancer RAG job recommendation pipeline.
+   * Uses real OpenAI embeddings + pgvector cosine similarity <=> when enabled,
+   * combined with deterministic skill overlap, experience, and location scoring.
+   */
   static async getJobs(
     userContext: UserAIContext | null,
     limit = 10,
     filters?: { city?: string; locationType?: string; jobType?: string; query?: string; isLocal?: boolean }
-  ): Promise<{ jobs: ScoredJob[]; isPersonalized: boolean; emptyReason?: string }> {
+  ): Promise<{ jobs: ScoredJob[]; isPersonalized: boolean; searchMode: 'SEMANTIC_RAG' | 'DETERMINISTIC_HYBRID_FALLBACK'; emptyReason?: string }> {
     const where: any = { status: 'OPEN' };
 
     if (filters?.isLocal !== undefined) {
@@ -56,15 +64,51 @@ export class RecommendationService {
       ];
     }
 
-    const allJobs = await prisma.job.findMany({
-      where,
-      include: {
-        company: { select: { name: true, avatarUrl: true } },
-        skills: { include: { skill: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 50,
-    });
+    // Concurrently fetch jobs and calculate vector similarities if embeddings enabled
+    const vectorSimilarities: Record<string, number> = {};
+    let isSemanticVectorActive = false;
+
+    const [allJobs] = await Promise.all([
+      prisma.job.findMany({
+        where,
+        include: {
+          company: { select: { name: true, avatarUrl: true } },
+          skills: { include: { skill: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+      }),
+      (async () => {
+        if (userContext && userContext.hasSkills && isEmbeddingConfigured()) {
+          try {
+            const profileQuery = [
+              userContext.skills.join(' '),
+              userContext.profile?.targetRole,
+              userContext.profile?.careerGoal,
+              userContext.headline,
+              filters?.query,
+            ]
+              .filter(Boolean)
+              .join(' ');
+
+            if (profileQuery.trim().length > 0) {
+              const queryEmbedding = await generateEmbedding(profileQuery);
+              const vectorMatches = await PgVectorStore.similaritySearch(queryEmbedding, 30, 'job');
+
+              vectorMatches.forEach((vm) => {
+                const jobId = vm.metadata?.jobId || (vm.source?.startsWith('job_') ? vm.source.replace('job_', '') : vm.source);
+                if (jobId && vm.similarity !== undefined) {
+                  vectorSimilarities[jobId] = vm.similarity;
+                }
+              });
+              isSemanticVectorActive = Object.keys(vectorSimilarities).length > 0;
+            }
+          } catch {
+            // Fall back gracefully to deterministic skill overlap
+          }
+        }
+      })(),
+    ]);
 
     if (!userContext || !userContext.hasSkills) {
       const generalJobs: ScoredJob[] = allJobs.slice(0, limit).map((j) => ({
@@ -94,6 +138,7 @@ export class RecommendationService {
       return {
         jobs: generalJobs,
         isPersonalized: false,
+        searchMode: 'DETERMINISTIC_HYBRID_FALLBACK',
         emptyReason: 'Add your skills to receive personalized job recommendations.',
       };
     }
@@ -101,7 +146,6 @@ export class RecommendationService {
     const userSkillsLower = userContext.skills.map((s) => s.toLowerCase());
     const targetRoleLower = (userContext.profile?.targetRole || userContext.profile?.careerGoal || '').toLowerCase();
     const userLocationLower = (userContext.location || userContext.profile?.preferredLocation || '').toLowerCase();
-    const preferredJobType = userContext.profile?.preferredJobType || 'ANY';
 
     const scoredJobs: ScoredJob[] = allJobs.map((job) => {
       const requiredSkills = job.skills.map((s) => s.skill.name);
@@ -144,7 +188,6 @@ export class RecommendationService {
         locScore = 100;
       }
 
-      // Certification & Project Match
       let certScore = 50;
       const matchedCerts: string[] = [];
       const userCerts = userContext.certifications || [];
@@ -166,23 +209,41 @@ export class RecommendationService {
         }
       });
 
-      const typeScore = job.jobType === 'CONTRACT' || job.jobType === 'FULL_TIME' ? 95 : 80;
+      const vectorSim = vectorSimilarities[job.id];
+      const vectorScore = vectorSim !== undefined ? Math.round(vectorSim * 100) : null;
 
-      const totalScore = Math.min(
-        100,
-        Math.round(
-          skillScore * 0.35 +
-            roleScore * 0.2 +
-            expScore * 0.15 +
-            certScore * 0.15 +
-            locScore * 0.08 +
-            typeScore * 0.07
-        )
-      );
+      // Multi-signal hybrid score calculation
+      let totalScore: number;
+      if (vectorScore !== null) {
+        totalScore = Math.min(
+          100,
+          Math.round(
+            vectorScore * 0.40 +
+              skillScore * 0.30 +
+              roleScore * 0.15 +
+              expScore * 0.10 +
+              locScore * 0.05
+          )
+        );
+      } else {
+        totalScore = Math.min(
+          100,
+          Math.round(
+            skillScore * 0.40 +
+              roleScore * 0.25 +
+              expScore * 0.15 +
+              certScore * 0.10 +
+              locScore * 0.05 +
+              (job.jobType === 'FULL_TIME' ? 5 : 0)
+          )
+        );
+      }
 
       let whyMatches = '';
-      if (matched.length > 0) {
-        whyMatches = `Strong match: ${matched.join(', ')}${matchedCerts.length > 0 ? ` • Verified Cert: ${matchedCerts[0]}` : ''}${missing.length > 0 ? ` (Missing: ${missing[0]})` : ''}.`;
+      if (vectorScore !== null) {
+        whyMatches = `Semantic match: ${vectorScore}% | Skills: ${matched.slice(0, 3).join(', ')}${missing.length > 0 ? ` (Missing: ${missing[0]})` : ''}`;
+      } else if (matched.length > 0) {
+        whyMatches = `Skill match: ${matched.join(', ')}${matchedCerts.length > 0 ? ` • Verified Cert: ${matchedCerts[0]}` : ''}${missing.length > 0 ? ` (Missing: ${missing[0]})` : ''}.`;
       } else {
         whyMatches = `Aligned with your ${userContext.profile?.targetRole || 'engineering'} profile.`;
       }
@@ -205,6 +266,7 @@ export class RecommendationService {
         company: job.company,
         skills: job.skills,
         matchScore: totalScore,
+        vectorSimilarity: vectorSim,
         matchedSkills: matched,
         missingSkills: missing,
         whyMatches,
@@ -212,11 +274,12 @@ export class RecommendationService {
       };
     });
 
-    scoredJobs.sort((a, b) => b.matchScore - a.matchScore);
+    scoredJobs.sort((a, b) => b.matchScore - a.matchScore || b.createdAt.getTime() - a.createdAt.getTime());
 
     return {
       jobs: scoredJobs.slice(0, limit),
       isPersonalized: true,
+      searchMode: isSemanticVectorActive ? 'SEMANTIC_RAG' : 'DETERMINISTIC_HYBRID_FALLBACK',
     };
   }
 

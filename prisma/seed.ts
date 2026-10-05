@@ -13,7 +13,7 @@
 
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-import { generateEmbedding } from '../src/lib/ai/embeddings';
+import { generateEmbedding, isEmbeddingConfigured } from '../src/lib/ai/embeddings';
 import { PRODUCTION_ROADMAPS_CATALOG } from '../src/lib/ai/roadmaps-catalog';
 import { RoadmapRepository } from '../src/repositories/roadmap.repository';
 
@@ -29,7 +29,7 @@ async function insertChunk(
   sourceType: string,
   metadata: Record<string, any> = {}
 ) {
-  if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.trim().length === 0) {
+  if (!isEmbeddingConfigured()) {
     return;
   }
   try {
@@ -618,14 +618,14 @@ async function main() {
         passwordHash: demoPasswordHash,
         name: c.name,
         role: 'EMPLOYER',
-        headline: c.headline,
+        headline: `[SEED TEST COMPANY] ${c.headline}`,
         location: `${c.city}, ${c.state}, India`,
         country: 'India',
         state: c.state,
         city: c.city,
-        bio: c.bio,
+        bio: `[SEED TEST COMPANY] Synthetic organization / Development only. ${c.bio}`,
         avatarUrl: c.avatarUrl,
-        isVerified: true,
+        isVerified: false,
         profile: {
           create: {
             title: c.industry,
@@ -639,7 +639,7 @@ async function main() {
     });
     companyUserIds[c.name] = user.id;
   }
-  console.log(`✅ Seeded ${companiesData.length} realistic tech companies.`);
+  console.log(`✅ Seeded ${companiesData.length} development test companies.`);
 
   // 5. Seed 12 Indian Mentors
   const mentorsData = [
@@ -869,53 +869,57 @@ async function main() {
         passwordHash: demoPasswordHash,
         name: m.name,
         role: 'MENTOR',
-        headline: `${m.title} @ ${m.company} (${m.yearsExperience}+ Yrs Exp)`,
+        headline: `[SEED TEST MENTOR] ${m.title} (Synthetic Development Profile)`,
         location: `${m.city}, ${m.state}, India`,
         country: 'India',
         state: m.state,
         city: m.city,
-        bio: m.bio,
+        bio: `[SEED TEST MENTOR] Synthetic profile / Development only. ${m.bio}`,
         avatarUrl: m.avatarUrl,
-        isVerified: true,
+        isVerified: false,
         profile: {
           create: {
             title: m.title,
             yearsOfExperience: m.yearsExperience,
             hourlyRate: m.hourlyRate,
-            aiScore: 96,
-            githubUrl: `https://github.com/${m.name.toLowerCase().replace(/\s+/g, '')}`,
-            linkedinUrl: m.linkedin,
+            aiScore: 90,
+            githubUrl: null,
+            linkedinUrl: null,
           },
         },
         mentorProfile: {
           create: {
             hourlyRate: m.hourlyRate,
-            bio: m.bio,
+            bio: `[SEED TEST MENTOR] Synthetic profile / Development only. ${m.bio}`,
             expertise: m.expertise,
             yearsExperience: m.yearsExperience,
             company: m.company,
             title: m.title,
-            rating: m.rating,
-            studentsCount: m.studentsCount,
-            sessionCount: m.sessionCount,
+            rating: 0,
+            studentsCount: 0,
+            sessionCount: 0,
             isAvailable: true,
             availability: m.availability,
           },
         },
+      },
+      include: {
+        mentorProfile: true,
       },
     });
     mentorUserIds[m.name] = user.id;
     await assignSkillsToUser(user.id, m.expertise.split(',').map((s) => s.trim()));
 
     // Ingest mentor profile into pgvector
+    const mentorProfileId = user.mentorProfile?.id || user.id;
     await insertChunk(
-      `Mentor Profile: ${m.name}\nTitle: ${m.title} at ${m.company}\nLocation: ${m.city}, ${m.state}, India\nExpertise: ${m.expertise}\nHourly Rate: $${m.hourlyRate}/hr\nRating: ${m.rating} ⭐\nExperience: ${m.yearsExperience} years\nBio: ${m.bio}\nAvailability: ${m.availability}`,
+      `Mentor Profile: ${m.name}\nTitle: ${m.title}\nExpertise: ${m.expertise}\nHourly Rate: $${m.hourlyRate}/hr\nBio: ${m.bio}`,
       `Mentor: ${m.name}`,
       'mentor',
-      { mentorId: user.id, name: m.name, expertise: m.expertise, hourlyRate: m.hourlyRate }
+      { mentorProfileId, mentorId: user.id, name: m.name, expertise: m.expertise, hourlyRate: m.hourlyRate }
     );
   }
-  console.log(`✅ Seeded ${mentorsData.length} Indian mentors with pgvector chunk embeddings.`);
+  console.log(`✅ Seeded ${mentorsData.length} development test mentors with pgvector chunk embeddings.`);
 
   // 6. Seed 20 Real Technical Courses
   const coursesData = [

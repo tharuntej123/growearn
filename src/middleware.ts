@@ -1,22 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'growearn-super-secret-jwt-key-2026-production-grade'
-);
+function getMiddlewareJwtSecret(): Uint8Array {
+  const secret = process.env.JWT_SECRET;
+  if (!secret || secret.length < 32) {
+    return new TextEncoder().encode('__UNCONFIGURED_JWT_SECRET_FAIL_CLOSED_NO_TOKENS_VALID__');
+  }
+  return new TextEncoder().encode(secret);
+}
 
 const AUTH_COOKIE_NAME = 'growearn_auth_token';
 const LEGACY_COOKIE_NAME = 'ufp_auth_token';
 
-type CanonicalRole = 'LEARNER' | 'PROFESSIONAL' | 'MENTOR' | 'EMPLOYER' | 'ADMIN';
+type CanonicalRole = 'LEARNER' | 'FREELANCER' | 'MENTOR' | 'COMPANY' | 'ADMIN';
 
 function getNormalizedRole(rawRole?: string): CanonicalRole | 'UNKNOWN' {
   if (!rawRole) return 'UNKNOWN';
   const role = rawRole.toUpperCase();
   if (role === 'LEARNER' || role === 'STUDENT') return 'LEARNER';
-  if (role === 'EMPLOYER' || role === 'COMPANY') return 'EMPLOYER';
+  if (role === 'COMPANY' || role === 'EMPLOYER') return 'COMPANY';
   if (role === 'MENTOR') return 'MENTOR';
-  if (role === 'PROFESSIONAL' || role === 'FREELANCER') return 'PROFESSIONAL';
+  if (role === 'FREELANCER' || role === 'PROFESSIONAL') return 'FREELANCER';
   if (role === 'ADMIN') return 'ADMIN';
   return 'UNKNOWN';
 }
@@ -25,12 +29,12 @@ function getDefaultDashboard(role: CanonicalRole | 'UNKNOWN'): string {
   switch (role) {
     case 'LEARNER':
       return '/learner/dashboard';
-    case 'PROFESSIONAL':
-      return '/professional/dashboard';
+    case 'FREELANCER':
+      return '/freelancer/dashboard';
     case 'MENTOR':
       return '/mentor/dashboard';
-    case 'EMPLOYER':
-      return '/employer/dashboard';
+    case 'COMPANY':
+      return '/company/dashboard';
     case 'ADMIN':
       return '/admin/dashboard';
     default:
@@ -61,20 +65,20 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL('/learner/dashboard', req.url));
   }
 
-  if (pathname.startsWith('/company/')) {
-    const canonicalPath = pathname.replace('/company/', '/employer/');
+  if (pathname.startsWith('/employer/')) {
+    const canonicalPath = pathname.replace('/employer/', '/company/');
     return NextResponse.redirect(new URL(canonicalPath, req.url));
   }
-  if (pathname === '/company') {
-    return NextResponse.redirect(new URL('/employer/dashboard', req.url));
+  if (pathname === '/employer') {
+    return NextResponse.redirect(new URL('/company/dashboard', req.url));
   }
 
-  if (pathname.startsWith('/freelancer/')) {
-    const canonicalPath = pathname.replace('/freelancer/', '/professional/');
+  if (pathname.startsWith('/professional/')) {
+    const canonicalPath = pathname.replace('/professional/', '/freelancer/');
     return NextResponse.redirect(new URL(canonicalPath, req.url));
   }
-  if (pathname === '/freelancer') {
-    return NextResponse.redirect(new URL('/professional/dashboard', req.url));
+  if (pathname === '/professional') {
+    return NextResponse.redirect(new URL('/freelancer/dashboard', req.url));
   }
 
   const token = req.cookies.get(AUTH_COOKIE_NAME)?.value || req.cookies.get(LEGACY_COOKIE_NAME)?.value;
@@ -82,7 +86,7 @@ export async function middleware(req: NextRequest) {
 
   if (token) {
     try {
-      const { payload } = await jwtVerify(token, JWT_SECRET);
+      const { payload } = await jwtVerify(token, getMiddlewareJwtSecret());
       userPayload = payload as unknown as { userId: string; email: string; role: string; name: string };
     } catch {
       userPayload = null;
@@ -118,14 +122,14 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // Employer Area Protection
-  if (pathname.startsWith('/employer')) {
+  // Company Area Protection
+  if (pathname.startsWith('/company')) {
     if (!isAuthenticated) {
       const loginUrl = new URL('/login', req.url);
       loginUrl.searchParams.set('redirect', pathname);
       return NextResponse.redirect(loginUrl);
     }
-    if (normalizedRole !== 'EMPLOYER' && normalizedRole !== 'ADMIN') {
+    if (normalizedRole !== 'COMPANY' && normalizedRole !== 'ADMIN') {
       const properDashboard = getDefaultDashboard(normalizedRole);
       return NextResponse.redirect(new URL(properDashboard, req.url));
     }
@@ -144,14 +148,14 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // Professional Area Protection
-  if (pathname.startsWith('/professional')) {
+  // Freelancer Area Protection
+  if (pathname.startsWith('/freelancer')) {
     if (!isAuthenticated) {
       const loginUrl = new URL('/login', req.url);
       loginUrl.searchParams.set('redirect', pathname);
       return NextResponse.redirect(loginUrl);
     }
-    if (normalizedRole !== 'PROFESSIONAL' && normalizedRole !== 'ADMIN') {
+    if (normalizedRole !== 'FREELANCER' && normalizedRole !== 'ADMIN') {
       const properDashboard = getDefaultDashboard(normalizedRole);
       return NextResponse.redirect(new URL(properDashboard, req.url));
     }

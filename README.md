@@ -1,69 +1,67 @@
-# GroEarn — Career-Growth Ecosystem
+# GroEarn — Career & Talent Ecosystem
 
 > **“Learn. Build Skills. Get Guidance. Earn. Grow. Mentor — All in One.”**
 
-GroEarn is a production-grade career-growth ecosystem connecting learners, verified professionals, mentors, and employers. Built with Next.js 16, PostgreSQL + pgvector, Prisma ORM, LangChain RAG, and strict Role-Based Access Control (RBAC).
+GroEarn is a production-grade career and talent ecosystem bridging learning, 1-on-1 mentorship, professional work contracts, and intelligent hiring. Built with Next.js 16, PostgreSQL + pgvector, Prisma ORM, real OpenAI embeddings RAG, Razorpay payments, and strict Role-Based Access Control (RBAC).
 
 ---
 
 ## 🛠️ Technology Stack
 
-| Layer | Technology | Purpose |
+| Layer | Technology | Implementation Details |
 | :--- | :--- | :--- |
 | **Frontend Framework** | **Next.js 16 (App Router)** | React 19 Server & Client Components, Turbopack, canonical routing |
-| **Styling** | **Tailwind CSS v4** | CSS variables, emerald design tokens, responsive layouts |
-| **UI Primitives** | **Radix UI / Sonner / Lucide** | Accessible UI primitives, toast alerts, vector icons |
-| **Database** | **PostgreSQL (Neon Serverless)** | Relational entities, foreign keys, unique constraints, and indexes |
-| **Vector Database** | **pgvector (`vector(1536)`)** | Cosine similarity document chunk retrieval for grounded RAG |
-| **ORM** | **Prisma ORM v6** | Type-safe data modeling and transactional query execution |
+| **Styling** | **Tailwind CSS v4** | CSS tokens, emerald design system, responsive layouts |
+| **UI Primitives** | **Radix UI / Sonner / Lucide** | Accessible primitives, toast notifications, vector icons |
+| **Database** | **PostgreSQL (pg15+)** | Relational integrity, foreign keys, unique constraints, and indexes |
+| **Vector Engine** | **pgvector (`vector(1536)`)** | HNSW graph cosine indexing on `document_chunks` for grounded RAG |
+| **ORM** | **Prisma ORM v6** | Type-safe migrations (`prisma migrate deploy`), transactional queries |
 | **AI / Embeddings** | **OpenAI (`text-embedding-3-small`)** | Real 1536-dimensional vector embedding generation |
-| **LLM Inference** | **Groq API / Llama 3.3 70B** | Grounded explanation, intent classification, and message polishing |
-| **Authentication** | **Stateless JWT & Bcrypt** | Salted password hashing, HttpOnly secure cookies, RBAC edge middleware |
-| **Validation** | **Zod v3** | Runtime schema validation for all API inputs and authentication payloads |
-| **Testing** | **TSX & Automated Master Suite** | Unit, integration, security, and full multi-dashboard lifecycle tests |
+| **Payments** | **Razorpay SDK** | Server-side order creation, HMAC-SHA256 verification, idempotent webhooks |
+| **Authentication** | **Stateless JWT & Bcrypt** | Fail-closed runtime validation, HttpOnly Secure SameSite cookies, RBAC |
+| **Validation** | **Zod v3** | Runtime schema validation across all API routes and models |
+| **Testing** | **Automated Master Suite & Playwright** | Unit, integration, security, RAG proof, performance benchmarks, and E2E |
 
 ---
 
 ## 🌟 Implemented Role Workflows
 
 ### 1. 🎓 Learner Experience (`/learner/dashboard`)
-- **Skill-First Discovery:** Input a skill (e.g. `Java`, `Next.js`, `Python AI`) to retrieve structured database-backed roadmaps.
-- **Top 5 Courses:** Multi-signal ranked courses from the PostgreSQL catalog.
-- **Top 5 Mentors:** Real mentor profiles with verified expertise and hourly coaching rates.
-- **Duplicate-Free Pagination:** "Next 5 Courses / Mentors" pagination strictly excludes already displayed IDs.
-- **Course Enrollment:** Real database persistence in `Enrollment` with duplicate prevention.
-- **1-on-1 Mentorship Requests:** Transactional mentorship requests with status tracking (`PENDING`, `ACCEPTED`, `REJECTED`).
+- **Skill-First RAG Discovery:** Input a skill (e.g. `Java`, `Next.js`, `Machine Learning`) to retrieve database-backed roadmaps via real pgvector embeddings.
+- **Top 5 Courses & Mentors:** Multi-signal ranked courses and expert mentors with duplicate-free pagination.
+- **Paid Course Checkout:** Complete Razorpay INR payments to unlock course entitlements and lesson access.
+- **1-on-1 Mentorship Booking:** Book coaching sessions, process verified payments, and unlock real-time direct messaging.
 
 ### 2. 💼 Professional Experience (`/professional/dashboard`)
-- **Job Discovery:** Real industry job postings with full descriptions, compensation ranges, and skill requirements.
-- **5-Factor Hybrid Match Scoring:** Transparent scoring based on skills (50%), experience (20%), location (10%), career goal (10%), and AI relevance (10%).
-- **Job Applications:** Persisted application submission with cover letters and real-time status tracking (`APPLIED`, `SHORTLISTED`, `INTERVIEW`, `HIRED`, `REJECTED`).
-- **Profile & Resume Management:** Server-side file upload (PDF/DOCX up to 5MB) with metadata persistence.
+- **Semantic Job Matching:** Multi-signal ranking based on verified skills (50%), experience (20%), location (10%), career goal (10%), and pgvector similarity (10%).
+- **Job Applications:** Submit applications with cover letters and track status (`APPLIED`, `SHORTLISTED`, `INTERVIEW`, `ACCEPTED`, `REJECTED`).
+- **Portfolio & Resumes:** Upload resumes with metadata extraction and verified skill badges.
 
 ### 3. 👨‍🏫 Mentor Experience (`/mentor/dashboard`)
-- **Mentor Profile Studio:** Configure expertise tags, bio, hourly rate, and availability calendar.
-- **Course Publishing:** Build and publish technical courses with modules, lessons, and required skills to the platform catalog (`/mentor/courses/new`).
-- **Mentorship Request Management:** Review pending student requests, accept/reject, and auto-initialize 1-on-1 messaging (`/mentor/requests`).
+- **Course Studio:** Author and publish free or paid technical courses with video modules and lessons (`/mentor/courses/new`).
+- **Mentorship Offerings:** Set hourly rates and manage incoming student requests (`/mentor/requests`).
+- **Earnings & Revenue Analytics:** Live telemetry calculating gross earnings, 10% platform fee, net revenue, and transaction history (`/api/payments/mentor/earnings`).
 
 ### 4. 🏢 Employer Experience (`/employer/dashboard`)
-- **Company Profile:** Manage organization information, industry, and official website.
-- **Job Posting Studio:** Create, publish, and close job postings (`/employer/jobs/new`).
-- **Applicant Tracking System (ATS):** Review candidate profiles, match breakdowns, and transition applicants through the hiring pipeline (`/employer/jobs/[id]/applicants`).
+- **Job Posting Studio:** Create, publish, and manage job listings (`/employer/jobs/new`).
+- **Semantic Candidate Matching:** Query candidate chunks using real embeddings to discover top-fit verified talent.
+- **Applicant Tracking System (ATS):** Review candidate profiles, match score explanations, and manage hiring pipeline stages (`/employer/jobs/[id]/applicants`).
 
 ### 5. 🛡️ Admin Experience (`/admin/dashboard`)
-- **Platform Telemetry:** Live platform metrics for total users, courses, jobs, applications, and messages.
-- **User Management & Verification:** Search users, modify roles, and toggle verification status (`/admin/users`).
-- **Content Moderation:** Publish, unpublish, and feature courses (`/admin/courses`) and jobs (`/admin/jobs`).
-- **Security Audit Logging:** Immutable telemetry tracking authentication and administrative actions (`/admin/audit`).
+- **Platform Telemetry:** Live analytics for users, courses, jobs, applications, payments, and messages.
+- **User & Verification Management:** Manage roles and moderation status (`/admin/users`).
+- **Security Audit Logs:** Immutable telemetry tracking authentication and administrative actions (`/admin/audit`).
 
 ---
 
-## 🔒 Security & RBAC Specifications
+## 🔒 Security & RBAC Policies
 
-- **ADMIN Self-Registration Prevention:** The `ADMIN` role is blocked from all public registration endpoints (`/api/auth/register`, `/api/auth/role-select`).
-- **JWT Environment Enforcement:** Fails safely if `JWT_SECRET` is missing in production; no insecure fallbacks.
-- **IDOR Protection:** Backend validation ensures employers can only manage their own jobs/applications and users can only view their own private conversations.
-- **Input Validation:** Every route validates payloads via Zod schemas before database execution.
+- **Strict JWT Secret Enforcement:** Fails closed if `JWT_SECRET` is missing or $< 32$ characters; zero hardcoded fallback secrets.
+- **Cookie Security:** `HttpOnly: true`, `SameSite: lax`, `Secure: true` in production.
+- **IDOR Protection:** Strict ownership checks across all mentorship, job, application, resume, and payment endpoints.
+- **Payment Verification:** Server calculates authoritative amounts, validates HMAC-SHA256 signatures, and processes webhooks idempotently using unique database constraints.
+- **Cloud Storage Fail-Closed:** Explicit failure in production if cloud credentials fail (no silent local fallbacks).
+- **Demo Mode Isolation:** Demo credentials and quick-login shortcuts are guarded behind `DEMO_MODE=true`.
 
 ---
 
@@ -77,24 +75,35 @@ npm ci
 ```
 
 ### 2. Configure Environment Variables
-Copy `.env.example` to `.env` and configure your database URL and secrets:
+Copy `.env.example` to `.env` and fill in your PostgreSQL connection string:
 ```bash
 cp .env.example .env
 ```
 
-### 3. Synchronize Database & Seed
+### 3. Run Migrations & Seed Database
 ```bash
 npx prisma generate
-npx prisma db push
-npm run prisma:seed
+npx prisma migrate deploy
+npm run seed
 ```
 
-### 4. Run Test & Quality Suite
+### 4. Run Test Suites
 ```bash
+# Typecheck & Lint
 npm run typecheck
 npm run lint
+
+# Master Unit, Integration, Payment & Security Test Suite
 npm test
-npm run build
+
+# pgvector Semantic RAG Proof
+npm run test:rag:proof
+
+# Realistic Concurrent Performance Benchmark
+npm run test:load
+
+# Playwright E2E Verification
+npm run test:e2e
 ```
 
 ### 5. Start Development Server
@@ -102,21 +111,3 @@ npm run build
 npm run dev
 ```
 Open [http://localhost:3000](http://localhost:3000) in your browser.
-
----
-
-## 📋 Feature Implementation Status
-
-| Feature Domain | Status | Notes |
-| :--- | :--- | :--- |
-| **Authentication & RBAC** | ✅ Implemented | Bcrypt, JWT in HttpOnly cookies, ADMIN escalation prevention, AuditLog |
-| **Canonical Routing** | ✅ Implemented | `/learner/*`, `/professional/*`, `/mentor/*`, `/employer/*`, `/admin/*` with 307 redirects |
-| **Skill Roadmaps** | ✅ Implemented | Database-backed roadmaps with structured phases, hours, and difficulty |
-| **Course Catalog & Enrollment** | ✅ Implemented | Multi-module syllabus, DB enrollment persistence, duplicate blocking |
-| **Mentorship Requests** | ✅ Implemented | Real requests, status transitions (`PENDING` $\to$ `ACCEPTED`), conversation creation |
-| **Job Discovery & Applications**| ✅ Implemented | 5-factor hybrid scoring, application persistence, ATS candidate review |
-| **Direct Messaging** | ✅ Implemented | PostgreSQL persistence, participant validation, AI tone improver |
-| **Admin Moderation & Audit** | ✅ Implemented | User role management, course/job moderation, security audit logs |
-| **Vector Search (pgvector)** | ✅ Implemented | 1536-dim embeddings with OpenAI text-embedding-3-small and graceful keyword fallback |
-| **Resume File Storage** | ✅ Implemented | Server-side MIME/size validation (5MB max) with DB URL persistence |
-| **Payment Gateways** | ⏳ Planned / Isolated | Integrated payment provider interfaces ready for Stripe/Razorpay webhooks |

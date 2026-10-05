@@ -1,166 +1,158 @@
+/**
+ * @file live-semantic-rag-proof.ts
+ * @description Real Live Semantic RAG & pgvector HNSW Verification Proof with Local BGE-M3 (1024-dim).
+ * 
+ * Rules:
+ * - NO Math.sin, Math.cos, or synthetic vectors.
+ * - NO hardcoded scores (0.94, 0.92, 0.42, etc.).
+ * - Calls the actual local BGE-M3 model.
+ * - Receives real 1024-dimensional vector.
+ * - Queries PostgreSQL pgvector using HNSW cosine index (<=>).
+ * - Verifies real database records and metadata integrity.
+ * - Mode is ONLY reported as 'SEMANTIC_RAG' if real BGE-M3 model was used.
+ */
+
 import { prisma } from '../prisma';
-import { PgVectorStore, formatVectorForPg } from '../ai/vector-store';
-import { EMBEDDING_DIMENSION } from '../ai/embeddings';
+import { PgVectorStore } from '../ai/vector-store';
+import { generateEmbedding, EMBEDDING_DIMENSION, getEmbeddingProvider } from '../ai/embeddings';
 import { SkillRAGService } from '../ai/skill-rag.service';
 
 async function testLiveSemanticRag() {
   console.log('================================================================================');
-  console.log('🔬 GROEARN LIVE SEMANTIC RAG & PGVECTOR HNSW VERIFICATION PROOF');
+  console.log('🔬 GROEARN LOCAL BGE-M3 SEMANTIC RAG & PGVECTOR HNSW VERIFICATION PROOF');
   console.log('================================================================================\n');
 
-  const query = 'Java';
-  console.log(`1. Target Query: "${query}"`);
+  const provider = getEmbeddingProvider();
+  console.log(`Embedding provider: ${provider.name}`);
+  console.log(`Embedding dimensions: ${EMBEDDING_DIMENSION}`);
+  console.log(`Vector search: pgvector`);
+  console.log(`Index: HNSW`);
+  console.log(`Distance: cosine`);
 
-  // Step 1: Prove 1536-Dimension Vector Structure
-  console.log(`2. Embedding Dimension: Exactly ${EMBEDDING_DIMENSION} dimensions (OpenAI text-embedding-3-small standard)`);
-
-  // Step 2: Index sample document chunk into pgvector if table empty
-  const countBefore = await PgVectorStore.countChunks();
-  console.log(`3. Existing Document Chunks in pgvector: ${countBefore}`);
-
-  // Create real test vector (1536-dim normalized vector for Java semantics)
-  const testEmbedding: number[] = new Array(EMBEDDING_DIMENSION).fill(0);
-  // Seed distinct high-entropy semantic coordinates
-  for (let i = 0; i < EMBEDDING_DIMENSION; i++) {
-    testEmbedding[i] = Math.sin((i + 1) * 0.42) * Math.cos((i + 1) * 0.17) / Math.sqrt(EMBEDDING_DIMENSION);
+  // 1. Health check
+  const health = await provider.checkHealth();
+  if (!health.healthy) {
+    console.error(`\n❌ BLOCKED: Local BGE-M3 service is unreachable: ${health.error}`);
+    console.error('Mode: SEMANTIC_RAG_UNAVAILABLE');
+    process.exit(1);
   }
 
-  // Insert test semantic chunk into PostgreSQL
-  const chunkId = await PgVectorStore.insertChunk({
-    content: 'Comprehensive Java Spring Boot Microservices, Hibernate ORM, and Apache Kafka Event Streaming',
-    source: 'course_java_spring_101',
-    sourceType: 'course',
-    metadata: { courseTitle: 'Enterprise Java Microservices', level: 'ADVANCED', skill: 'Java' },
-    embedding: testEmbedding,
+  const query = 'I want to become a Java backend developer';
+  console.log(`\n1. Target Query: "${query}"`);
+
+  // 2. Real Model Inference: Generate 1024-dim embedding via BGE-M3
+  console.log('2. Generating real 1024-dimensional vector embedding via Local BGE-M3 model inference...');
+  const startTime = Date.now();
+  const queryEmbedding = await generateEmbedding(query);
+  const embeddingLatency = Date.now() - startTime;
+
+  if (!Array.isArray(queryEmbedding) || queryEmbedding.length !== EMBEDDING_DIMENSION) {
+    throw new Error(`Embedding generation returned invalid vector dimensions (${queryEmbedding?.length} vs expected ${EMBEDDING_DIMENSION})`);
+  }
+  console.log(`   ✓ Vector Dimension: Exactly ${queryEmbedding.length} dimensions verified.`);
+  console.log(`   ✓ Inference Latency: ${embeddingLatency}ms`);
+  console.log(`   ✓ Sample Vector Slice: [${queryEmbedding.slice(0, 4).map((n) => n.toFixed(5)).join(', ')}...]`);
+
+  // 3. Query PostgreSQL pgvector with HNSW cosine distance
+  console.log('\n3. Executing pgvector Cosine Distance Query on document_chunks table:');
+  const countChunks = await PgVectorStore.countChunks();
+  console.log(`   Total Indexed Chunks in PostgreSQL: ${countChunks}`);
+
+  const vectorStart = Date.now();
+  const rawResults = await PgVectorStore.similaritySearch(queryEmbedding, 5);
+  const vectorLatency = Date.now() - vectorStart;
+  console.log(`   Retrieved ${rawResults.length} Vector Match(es) (Latency: ${vectorLatency}ms):`);
+
+  rawResults.forEach((r, idx) => {
+    console.log(`   [Match ${idx + 1}] Similarity: ${(r.similarity! * 100).toFixed(2)}% | Source: ${r.source} | SourceType: ${r.sourceType}`);
+    console.log(`       Metadata: ${JSON.stringify(r.metadata)}`);
   });
 
-  console.log(`4. Ingested Test Chunk with 1536-dim vector into PostgreSQL document_chunks table.`);
-  console.log(`   Chunk ID: ${chunkId}`);
-
-  // Step 3: Execute pgvector Cosine Similarity Search using <=> Operator
-  console.log('\n5. Executing pgvector Cosine Distance Query:');
-  console.log(`   SQL: SELECT id, content, (1 - (embedding <=> $1::vector)) AS similarity FROM document_chunks ORDER BY embedding <=> $1::vector ASC LIMIT 5`);
-
-  const results = await PgVectorStore.similaritySearch(testEmbedding, 5, 'course');
-  console.log(`   Retrieved ${results.length} Vector Match(es):`);
-  results.forEach((r, idx) => {
-    console.log(`   [Match ${idx + 1}] Similarity: ${(r.similarity! * 100).toFixed(2)}% | Source: ${r.source} | Content: "${r.content.slice(0, 70)}..."`);
-  });
-
-  // Step 4: Verify HNSW Index Status in PostgreSQL
+  // 4. Verify HNSW Vector Index in PostgreSQL pg_indexes
+  console.log('\n4. Verifying PostgreSQL HNSW Index:');
   const indexCheck = await prisma.$queryRawUnsafe<Array<{ indexname: string; indexdef: string }>>(`
     SELECT indexname, indexdef 
     FROM pg_indexes 
-    WHERE tablename = 'document_chunks' AND indexname = 'document_chunks_embedding_hnsw_idx'
+    WHERE tablename = 'document_chunks' AND (indexname LIKE '%hnsw%' OR indexdef LIKE '%hnsw%')
   `);
 
   if (indexCheck.length > 0) {
-    console.log(`\n6. HNSW Vector Index Verification:`);
-    console.log(`   Index Name: ${indexCheck[0].indexname}`);
-    console.log(`   Index Definition: ${indexCheck[0].indexdef}`);
+    console.log(`   ✓ HNSW Index Verified: ${indexCheck[0].indexname}`);
+    console.log(`   ✓ Index Definition: ${indexCheck[0].indexdef}`);
   } else {
-    console.log(`\n6. Creating HNSW Vector Index:`);
+    console.log('   Creating HNSW Vector Index with vector_cosine_ops...');
     await prisma.$executeRawUnsafe(`
       CREATE INDEX IF NOT EXISTS document_chunks_embedding_hnsw_idx 
       ON document_chunks USING hnsw (embedding vector_cosine_ops)
     `);
-    console.log(`   HNSW Index 'document_chunks_embedding_hnsw_idx' successfully verified & active!`);
+    console.log('   ✓ HNSW Index created and verified active.');
   }
 
-  // Step 5: Full Multi-Signal Skill RAG Execution with SEMANTIC_RAG mode demonstration
-  console.log('\n7. Executing Vector-Powered Multi-Signal RAG Pipeline for "Java":');
-  
-  // Retrieve top courses directly from PostgreSQL with vector similarity signals
-  const allCourses = await prisma.course.findMany({
-    where: { isPublished: true },
-    include: {
-      instructor: {
-        select: { id: true, name: true, avatarUrl: true, headline: true },
-      },
-    },
+  // 5. Test Full End-to-End Skill RAG Pipeline
+  console.log('\n5. Testing End-to-End Skill RAG Multi-Signal Pipeline:');
+  const ragStartTime = Date.now();
+  const ragResult = await SkillRAGService.querySkillRAG('Java', 'Beginner');
+  const totalRagLatency = Date.now() - ragStartTime;
+
+  const retrievedCourseIds = ragResult.topCourses.map((c) => c.id);
+  const retrievedMentorIds = ragResult.topMentors.map((m) => m.id);
+
+  console.log(`Retrieved course IDs: [${retrievedCourseIds.join(', ')}]`);
+  console.log(`Retrieved mentor IDs: [${retrievedMentorIds.join(', ')}]`);
+  console.log(`Mode: ${ragResult.ragMetrics.searchMode}`);
+  console.log(`Ranking Method: ${ragResult.ragMetrics.rankingMethod}`);
+  console.log(`Total RAG Latency: ${totalRagLatency}ms`);
+
+  // Verify Course IDs exist in Course table
+  if (retrievedCourseIds.length > 0) {
+    const verifiedCourses = await prisma.course.findMany({
+      where: { id: { in: retrievedCourseIds } },
+      select: { id: true, title: true },
+    });
+    console.log(`   ✓ Verified Course IDs exist in DB: ${verifiedCourses.length}/${retrievedCourseIds.length}`);
+    if (verifiedCourses.length !== retrievedCourseIds.length) {
+      throw new Error('Course ID referential integrity check failed!');
+    }
+  }
+
+  // Verify Mentor Profile IDs exist in MentorProfile table (and do not mix with User IDs)
+  if (retrievedMentorIds.length > 0) {
+    const verifiedMentors = await prisma.mentorProfile.findMany({
+      where: { id: { in: retrievedMentorIds } },
+      select: { id: true, userId: true },
+    });
+    console.log(`   ✓ Verified Mentor Profile IDs exist in MentorProfile table: ${verifiedMentors.length}/${retrievedMentorIds.length}`);
+    if (verifiedMentors.length !== retrievedMentorIds.length) {
+      throw new Error('MentorProfile ID referential integrity check failed!');
+    }
+  }
+
+  // Verify Roadmap ID exists
+  if (ragResult.roadmap.id) {
+    console.log(`   ✓ Roadmap ID Verified: ${ragResult.roadmap.id} (${ragResult.roadmap.title})`);
+  }
+
+  // Verify Pagination with Zero Duplicates
+  const page2Courses = await SkillRAGService.searchCourses({
+    skill: 'Java',
+    limit: 5,
+    offset: 5,
+    excludeIds: retrievedCourseIds,
   });
-
-  // Calculate multi-signal scores with real vector similarity
-  const scoredCourses = allCourses.map((c) => {
-    const isJava = c.title.toLowerCase().includes('java') || c.description.toLowerCase().includes('java');
-    const vectorSimilarity = isJava ? 0.94 : 0.42; // Cosine similarity against 1536-dim Java embedding
-    const skillScore = isJava ? 95 : 40;
-    const ratingScore = Math.min(100, Math.round((c.rating / 5) * 100));
-    const levelScore = 80;
-    
-    // Multi-signal formula: Vector 35% + Skill 35% + Quality 15% + Level 15%
-    const finalScore = Math.round(
-      (vectorSimilarity * 100) * 0.35 + skillScore * 0.35 + ratingScore * 0.15 + levelScore * 0.15
-    );
-
-    return {
-      id: c.id,
-      title: c.title,
-      level: c.level,
-      rating: c.rating,
-      vectorSimilarity: (vectorSimilarity * 100).toFixed(1),
-      finalScore,
-    };
-  }).sort((a, b) => b.finalScore - a.finalScore).slice(0, 5);
-
-  console.log(`   Top 5 Courses (Multi-Signal Ranked via 1536-dim Vector + Quality):`);
-  scoredCourses.forEach((c, idx) => {
-    console.log(`     #${idx + 1}: [${c.id}] ${c.title}`);
-    console.log(`         -> Vector Similarity: ${c.vectorSimilarity}% | Rating: ${c.rating}⭐ | Final Score: ${c.finalScore}%`);
-  });
-
-  // Retrieve top mentors directly from PostgreSQL with vector similarity signals
-  const allMentors = await prisma.mentorProfile.findMany({
-    include: {
-      user: {
-        select: { id: true, name: true, avatarUrl: true, headline: true },
-      },
-    },
-  });
-
-  const scoredMentors = allMentors.map((m) => {
-    const expertiseStr = (m.expertise || '').toLowerCase();
-    const bioStr = (m.bio || '').toLowerCase();
-    const isJava = expertiseStr.includes('java') || bioStr.includes('java');
-    const vectorSimilarity = isJava ? 0.92 : 0.38;
-    const skillScore = isJava ? 95 : 35;
-    const ratingScore = Math.min(100, Math.round((m.rating / 5) * 100));
-    const expScore = Math.min(100, m.yearsExperience * 10);
-
-    const finalScore = Math.round(
-      (vectorSimilarity * 100) * 0.35 + skillScore * 0.35 + ratingScore * 0.15 + expScore * 0.15
-    );
-
-    return {
-      id: m.id,
-      userId: m.userId,
-      name: m.user?.name || 'Mentor',
-      headline: m.user?.headline || '',
-      hourlyRate: m.hourlyRate,
-      rating: m.rating,
-      vectorSimilarity: (vectorSimilarity * 100).toFixed(1),
-      finalScore,
-    };
-  }).sort((a, b) => b.finalScore - a.finalScore).slice(0, 5);
-
-  console.log(`\n   Top 5 Mentors (Multi-Signal Ranked via 1536-dim Vector + Experience + Rating):`);
-  scoredMentors.forEach((m, idx) => {
-    console.log(`     #${idx + 1}: [${m.id}] ${m.name} (${m.headline})`);
-    console.log(`         -> Vector Similarity: ${m.vectorSimilarity}% | Rate: $${m.hourlyRate}/hr | Final Score: ${m.finalScore}%`);
-  });
-
-  console.log(`\n8. Search Mode & Transparency:`);
-  console.log(`   Mode: SEMANTIC_RAG (pgvector HNSW cosine distance + multi-signal ranking)`);
-  console.log(`   Ranking Method: Multi-Signal (Vector 35% + Domain Overlap 35% + Quality 15% + Experience/Level 15%)`);
-  console.log(`   Indexed Courses: ${allCourses.length}`);
-  console.log(`   Indexed Mentors: ${allMentors.length}`);
+  const hasDupes = page2Courses.courses.some((c) => retrievedCourseIds.includes(c.id));
+  console.log(`   ✓ Pagination Zero Duplicates Check: ${hasDupes ? 'FAILED (Duplicates found)' : 'PASSED (0 duplicates)'}`);
+  if (hasDupes) {
+    throw new Error('Pagination duplicate exclusion failed!');
+  }
 
   console.log('\n================================================================================');
-  console.log('✅ LIVE SEMANTIC RAG & PGVECTOR HNSW VERIFICATION PASSED WITH COMPLETE EVIDENCE');
+  console.log('🎉 REAL BGE-M3 (1024-DIM) SEMANTIC RAG VERIFICATION PASSED PERFECTLY');
   console.log('================================================================================\n');
 }
 
 testLiveSemanticRag()
-  .catch(console.error)
+  .catch((err) => {
+    console.error('❌ Live RAG Verification Error:', err);
+    process.exit(1);
+  })
   .finally(() => prisma.$disconnect());
-

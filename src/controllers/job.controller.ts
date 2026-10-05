@@ -194,7 +194,8 @@ export class JobController {
       const body = await req.json();
       const validated = createJobSchema.safeParse(body);
       if (!validated.success) {
-        return apiError(validated.error.errors[0]?.message || 'Validation failed', 'VALIDATION_ERROR', 400);
+        const msg = validated.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ');
+        return apiError(msg || 'Validation failed', 'VALIDATION_ERROR', 400);
       }
 
       const { skills, deadline, ...jobFields } = validated.data;
@@ -288,13 +289,13 @@ export class JobController {
         matchExplanation: match.explanation,
       });
 
-      // Send notification to employer
+      // Send notification to company
       await prisma.notification.create({
         data: {
           userId: job.companyId,
           title: 'New Job Application Received',
           message: `${authUser.name} applied for "${job.title}" (${match.overallScore}% match).`,
-          link: `/employer/jobs/${job.id}/applicants`,
+          link: `/company/jobs/${job.id}/applicants`,
           notificationType: 'JOB_APPLICATION',
         },
       }).catch(() => {});
@@ -389,7 +390,7 @@ export class JobController {
           userId: app.applicantId,
           title: `Application Status Update: ${status}`,
           message: `Your application for "${app.job.title}" has been updated to "${status}".`,
-          link: '/professional/applications',
+          link: '/freelancer/applications',
           notificationType: 'JOB_APPLICATION',
         },
       }).catch(() => {});

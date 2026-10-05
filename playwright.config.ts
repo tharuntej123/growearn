@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { defineConfig, devices } from '@playwright/test';
 
 /**
@@ -32,10 +33,12 @@ export default defineConfig({
       CI: 'true',
       NODE_ENV: 'production',
       PORT: '3000',
-      DATABASE_URL: process.env.DATABASE_URL || 'postgresql://postgres:postgrespassword@127.0.0.1:5432/groearn_test?sslmode=disable',
-      DIRECT_URL: process.env.DIRECT_URL || 'postgresql://postgres:postgrespassword@127.0.0.1:5432/groearn_test?sslmode=disable',
-      JWT_SECRET: process.env.JWT_SECRET || 'ci-test-jwt-secret-key-2026-production-testing-random-grade',
+      DATABASE_URL: process.env.DATABASE_URL || '',
+      DIRECT_URL: process.env.DIRECT_URL || '',
+      JWT_SECRET: process.env.JWT_SECRET || 'ufp-super-secret-jwt-key-2026-production-grade',
       NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'http://127.0.0.1:3000',
+      NEXT_PUBLIC_DEMO_MODE: 'true',
+      DEMO_MODE: 'true',
     },
   },
   projects: [

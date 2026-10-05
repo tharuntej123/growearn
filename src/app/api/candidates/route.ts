@@ -3,7 +3,7 @@ import { UserRepository } from '@/repositories/user.repository';
 import { apiSuccess, apiError } from '@/lib/utils';
 import { HybridMatcher } from '@/lib/ai/hybrid-matcher';
 import { PgVectorStore } from '@/lib/ai/vector-store';
-import { generateEmbedding } from '@/lib/ai/embeddings';
+import { generateEmbedding, isEmbeddingConfigured } from '@/lib/ai/embeddings';
 import prisma from '@/lib/prisma';
 
 export async function GET(req: NextRequest) {
@@ -49,17 +49,48 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Retrieve candidates from database
-    const candidates = await UserRepository.getAllCandidates({
-      search,
-      skill,
-      location,
-    });
+    // Concurrently retrieve candidates from database and perform vector search
+    const vectorSimilarities: Record<string, number> = {};
+    let isVectorSearchApplied = false;
 
-    // If job or target skills are specified, compute authentic RAG vector similarity & Hybrid matching
+    const [candidates] = await Promise.all([
+      UserRepository.getAllCandidates({
+        search,
+        skill,
+        location,
+      }),
+      (async () => {
+        if (isEmbeddingConfigured() && (targetJob || search || skill)) {
+          try {
+            const queryText = targetJob
+              ? `${targetJob.title} ${targetJob.description} ${targetJob.skills.join(' ')} ${targetJob.experienceLevel}`
+              : `${search || ''} ${skill || ''}`.trim();
+
+            if (queryText.length > 0) {
+              const queryVector = await generateEmbedding(queryText);
+              const vectorMatches = await PgVectorStore.similaritySearch(queryVector, 40, 'candidate');
+
+              vectorMatches.forEach((vm) => {
+                const candidateUserId =
+                  vm.metadata?.userId ||
+                  (vm.source?.startsWith('candidate_') ? vm.source.replace('candidate_', '') : vm.source);
+                if (candidateUserId && vm.similarity !== undefined) {
+                  vectorSimilarities[candidateUserId] = vm.similarity;
+                }
+              });
+              isVectorSearchApplied = Object.keys(vectorSimilarities).length > 0;
+            }
+          } catch {
+            // Fall back gracefully to deterministic hybrid matcher
+          }
+        }
+      })(),
+    ]);
+
     const scoredCandidates = candidates.map((candidate) => {
       const candidateSkills = candidate.skills.map((s) => s.skill.name);
       const yearsExp = candidate.profile?.yearsOfExperience || 0;
+      const candidateVectorSim = vectorSimilarities[candidate.id];
 
       if (targetJob) {
         const matchResult = HybridMatcher.calculateJobMatch(
@@ -83,17 +114,39 @@ export async function GET(req: NextRequest) {
           }
         );
 
+        let finalScore = matchResult.overallScore;
+        if (candidateVectorSim !== undefined) {
+          const vectorScore = Math.round(candidateVectorSim * 100);
+          finalScore = Math.min(
+            100,
+            Math.round(
+              vectorScore * 0.35 +
+                matchResult.factors.skillMatch.score * 0.35 +
+                matchResult.factors.experienceMatch.score * 0.20 +
+                matchResult.factors.locationMatch.score * 0.10
+            )
+          );
+        }
+
         return {
           ...candidate,
-          aiMatch: matchResult,
-          matchScore: matchResult.overallScore,
+          vectorSimilarity: candidateVectorSim,
+          aiMatch: {
+            ...matchResult,
+            overallScore: finalScore,
+            explanation: candidateVectorSim !== undefined
+              ? `Semantic match: ${(candidateVectorSim * 100).toFixed(1)}% | ${matchResult.explanation}`
+              : matchResult.explanation,
+          },
+          matchScore: finalScore,
         };
       }
 
-      // Default scoring based on profile completeness & skills
+      // Default candidate directory scoring
       const defaultScore = candidate.profile?.aiScore || (candidateSkills.length > 3 ? 90 : 80);
       return {
         ...candidate,
+        vectorSimilarity: candidateVectorSim,
         aiMatch: {
           overallScore: defaultScore,
           factors: {
@@ -101,7 +154,10 @@ export async function GET(req: NextRequest) {
             experienceMatch: { score: Math.min(100, yearsExp * 15), userYears: yearsExp, requiredYears: 3 },
             locationMatch: { score: 100, explanation: candidate.location || 'Remote' },
             careerGoalMatch: { score: 85, alignment: candidate.profile?.title || 'Professional' },
-            aiSemanticScore: { score: defaultScore, reasoning: 'Database profile strength score' },
+            aiSemanticScore: {
+              score: candidateVectorSim ? Math.round(candidateVectorSim * 100) : defaultScore,
+              reasoning: candidateVectorSim ? 'pgvector Cosine Retrieval Score' : 'Database profile completeness score',
+            },
           },
           explanation: `${candidate.name} has ${candidateSkills.length} verified skills in database (${candidateSkills.slice(0, 3).join(', ')}).`,
         },
@@ -109,7 +165,6 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    // If target job was provided, sort by match score descending
     if (targetJob) {
       scoredCandidates.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
     }
@@ -117,6 +172,7 @@ export async function GET(req: NextRequest) {
     return apiSuccess({
       candidates: scoredCandidates.slice(0, topK),
       targetJob,
+      searchMode: isVectorSearchApplied ? 'SEMANTIC_RAG' : 'DETERMINISTIC_HYBRID_FALLBACK',
       totalCount: scoredCandidates.length,
     });
   } catch (error: any) {

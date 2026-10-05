@@ -1,0 +1,99 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: groearn-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-groearn}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-groearn_secure_password}
+      POSTGRES_DB: ${POSTGRES_DB:-groearn}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-groearn} -d ${POSTGRES_DB:-groearn}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - groearn-internal
+
+  embedding-service:
+    image: ollama/ollama:latest
+    container_name: groearn-embedding-service
+    restart: unless-stopped
+    volumes:
+      - ollama_models:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+    # Do not expose to public internet in production unless required; available to backend on internal network
+    expose:
+      - "11434"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:11434/api/tags || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - groearn-internal
+
+  # Model initializer service to pre-download BGE-M3 without downloading on every request
+  model-init:
+    image: ollama/ollama:latest
+    container_name: groearn-model-init
+    depends_on:
+      embedding-service:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "Checking and pre-loading BGE-M3 embedding model..."
+        ollama pull $${BGE_M3_MODEL:-bge-m3} --host http://embedding-service:11434
+        echo "BGE-M3 model ready for production RAG inference."
+    environment:
+      - BGE_M3_MODEL=${BGE_M3_MODEL:-bge-m3}
+    networks:
+      - groearn-internal
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: groearn-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      embedding-service:
+        condition: service_healthy
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-groearn}:${POSTGRES_PASSWORD:-groearn_secure_password}@postgres:5432/${POSTGRES_DB:-groearn}?schema=public
+      - JWT_SECRET=${JWT_SECRET}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - EMBEDDING_BASE_URL=http://embedding-service:11434
+      - BGE_M3_MODEL=${BGE_M3_MODEL:-bge-m3}
+      - CASHFREE_CLIENT_ID=${CASHFREE_CLIENT_ID}
+      - CASHFREE_CLIENT_SECRET=${CASHFREE_CLIENT_SECRET}
+      - CASHFREE_ENVIRONMENT=${CASHFREE_ENVIRONMENT:-sandbox}
+      - CASHFREE_API_VERSION=${CASHFREE_API_VERSION:-2023-08-01}
+      - PLATFORM_COMMISSION_PERCENT=${PLATFORM_COMMISSION_PERCENT:-10}
+      - DEMO_MODE=false
+      - NEXT_PUBLIC_DEMO_MODE=false
+    networks:
+      - groearn-internal
+
+networks:
+  groearn-internal:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  ollama_models:

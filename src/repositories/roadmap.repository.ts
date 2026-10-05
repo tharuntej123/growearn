@@ -1,11 +1,21 @@
 import { prisma } from '@/lib/prisma';
 import { PRODUCTION_ROADMAPS_CATALOG } from '@/lib/ai/roadmaps-catalog';
 
+let isRoadmapsSeededInMemory = false;
+
 export class RoadmapRepository {
   /**
    * Seed / Ensure all 10 production roadmaps exist in PostgreSQL database.
    */
   static async ensureRoadmapsSeeded() {
+    if (isRoadmapsSeededInMemory) return;
+
+    const count = await prisma.careerRoadmap.count({ where: { userId: null } });
+    if (count >= PRODUCTION_ROADMAPS_CATALOG.length) {
+      isRoadmapsSeededInMemory = true;
+      return;
+    }
+
     for (const catalogItem of PRODUCTION_ROADMAPS_CATALOG) {
       const existing = await prisma.careerRoadmap.findUnique({
         where: { slug: catalogItem.slug },
@@ -47,6 +57,7 @@ export class RoadmapRepository {
         }
       }
     }
+    isRoadmapsSeededInMemory = true;
   }
 
   /**

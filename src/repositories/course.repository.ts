@@ -34,7 +34,21 @@ export class CourseRepository {
 
     return prisma.course.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        description: true,
+        category: true,
+        level: true,
+        price: true,
+        durationHours: true,
+        thumbnail: true,
+        skillsCovered: true,
+        rating: true,
+        reviewsCount: true,
+        isPublished: true,
+        createdAt: true,
         instructor: {
           select: {
             id: true,
@@ -43,19 +57,16 @@ export class CourseRepository {
             headline: true,
           },
         },
-        modules: {
-          include: {
-            lessons: true,
-          },
-        },
         _count: {
           select: {
+            modules: true,
             enrollments: true,
             reviews: true,
           },
         },
       },
       orderBy: { rating: 'desc' },
+      take: 50,
     });
   }
 

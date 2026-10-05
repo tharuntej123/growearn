@@ -4,10 +4,11 @@
  * 
  * Architecture:
  * - Database: PostgreSQL with pgvector extension
- * - Table: document_chunks (content, source, source_type, metadata, embedding vector(1536), created_at)
+ * - Table: document_chunks (content, source, source_type, metadata, embedding vector(1024), created_at)
+ * - Index: HNSW with vector_cosine_ops
  * - Metric: Cosine Distance (<=> operator), Cosine Similarity = 1 - distance
  * 
- * Input: 1536-dimensional query embedding vector, top-k limit (default 5), optional source filtering
+ * Input: 1024-dimensional query embedding vector, top-k limit (default 5), optional source filtering
  * Output: Grounded chunks sorted by cosine similarity with real similarity scores [0.0 - 1.0]
  */
 

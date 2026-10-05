@@ -33,8 +33,8 @@ export default function RoleSelectPage() {
       color: 'bg-emerald-600',
     },
     {
-      role: ROLES.PROFESSIONAL,
-      title: 'Verified Professional',
+      role: ROLES.FREELANCER,
+      title: 'Freelancer',
       tagline: 'Work & Earn',
       description: 'Showcase verified skills, discover contract projects, and generate 1-click AI proposals.',
       icon: Briefcase,
@@ -49,7 +49,7 @@ export default function RoleSelectPage() {
       color: 'bg-emerald-700',
     },
     {
-      role: ROLES.EMPLOYER,
+      role: ROLES.COMPANY,
       title: 'Company',
       tagline: 'Hire & Scale',
       description: 'Post jobs, discover verified candidates with AI matching, and hire top-tier talent effortlessly.',
@@ -67,11 +67,11 @@ export default function RoleSelectPage() {
       toast.success(`Active profile set to ${selectedRole}`);
       if (selectedRole === ROLES.LEARNER || (selectedRole as string) === 'STUDENT') {
         router.push('/onboarding');
-      } else if (selectedRole === ROLES.PROFESSIONAL || (selectedRole as string) === 'FREELANCER') {
-        router.push('/professional/dashboard');
+      } else if (selectedRole === ROLES.FREELANCER || (selectedRole as string) === 'PROFESSIONAL') {
+        router.push('/freelancer/dashboard');
       } else if (selectedRole === ROLES.MENTOR) {
         router.push('/mentor/dashboard');
-      } else if (selectedRole === ROLES.EMPLOYER || (selectedRole as string) === 'COMPANY') {
+      } else if (selectedRole === ROLES.COMPANY || (selectedRole as string) === 'EMPLOYER') {
         router.push('/company/dashboard');
       } else {
         router.push('/feed');

@@ -21,7 +21,7 @@ import {
   Zap,
   ShieldCheck,
 } from 'lucide-react';
-import { DEMO_USERS } from '@/lib/constants';
+import { DEMO_USERS, isDemoMode } from '@/lib/constants';
 import { toast } from 'sonner';
 
 export default function LandingPage() {
@@ -29,6 +29,7 @@ export default function LandingPage() {
   const router = useRouter();
   const [activeRoleTab, setActiveRoleTab] = useState<'student' | 'professional' | 'mentor' | 'company'>('student');
   const [isLoggingInDemo, setIsLoggingInDemo] = useState(false);
+  const showDemo = isDemoMode();
 
   const handleQuickDemoLogin = async (email: string, targetDashboard: string) => {
     setIsLoggingInDemo(true);
@@ -69,7 +70,7 @@ export default function LandingPage() {
         { title: 'Contract Execution', desc: 'Deliver projects, communicate with hiring companies, and receive verified 5-star ratings.' },
         { title: 'Evolve to Mentor', desc: 'Unlock coaching and mentorship capabilities as your industry reputation grows.' },
       ],
-      dashboard: '/professional/dashboard',
+      dashboard: '/freelancer/dashboard',
     },
     mentor: {
       title: 'Expert Mentor & Instructor',
@@ -95,7 +96,7 @@ export default function LandingPage() {
         { title: 'Unified Pipeline', desc: 'Manage applicants from Applied → Shortlisted → Interview → Hired.' },
         { title: 'Direct Messaging', desc: 'Communicate with candidates and polish interview messages using AI.' },
       ],
-      dashboard: '/employer/dashboard',
+      dashboard: '/company/dashboard',
     },
   };
 
@@ -131,37 +132,39 @@ export default function LandingPage() {
           </Link>
         </div>
 
-        <div className="mt-12 p-4 rounded-2xl border border-slate-200 bg-white shadow-xs max-w-4xl mx-auto">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2 text-slate-700 font-semibold">
-              <Zap className="h-4 w-4 text-emerald-600" />
-              <span>1-Click Instant Guest Demo Logins:</span>
-            </div>
-            <div className="flex flex-wrap gap-2 justify-center">
-              {DEMO_USERS.map((demo) => (
-                <button
-                  key={demo.email}
-                  disabled={isLoggingInDemo}
-                  onClick={() =>
-                    handleQuickDemoLogin(
-                      demo.email,
-                      demo.role === 'LEARNER' || (demo.role as string) === 'STUDENT'
-                        ? '/student/dashboard'
-                        : demo.role === 'MENTOR'
-                        ? '/mentor/dashboard'
-                        : demo.role === 'PROFESSIONAL' || (demo.role as string) === 'FREELANCER'
-                        ? '/professional/dashboard'
-                        : '/company/dashboard'
-                    )
-                  }
-                  className="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800 font-medium transition-all hover:border-emerald-400 flex items-center gap-1.5 cursor-pointer"
-                >
-                  <span className="font-bold text-emerald-700">{demo.role}:</span> {demo.name.split(' ')[0]}
-                </button>
-              ))}
+        {showDemo && (
+          <div className="mt-12 p-4 rounded-2xl border border-slate-200 bg-white shadow-xs max-w-4xl mx-auto">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 text-slate-700 font-semibold">
+                <Zap className="h-4 w-4 text-emerald-600" />
+                <span>1-Click Instant Guest Demo Logins:</span>
+              </div>
+              <div className="flex flex-wrap gap-2 justify-center">
+                {DEMO_USERS.map((demo) => (
+                  <button
+                    key={demo.email}
+                    disabled={isLoggingInDemo}
+                    onClick={() =>
+                      handleQuickDemoLogin(
+                        demo.email,
+                        (demo.role as string) === 'LEARNER' || (demo.role as string) === 'STUDENT'
+                          ? '/learner/dashboard'
+                          : (demo.role as string) === 'MENTOR'
+                          ? '/mentor/dashboard'
+                          : (demo.role as string) === 'FREELANCER' || (demo.role as string) === 'PROFESSIONAL'
+                          ? '/freelancer/dashboard'
+                          : '/company/dashboard'
+                      )
+                    }
+                    className="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800 font-medium transition-all hover:border-emerald-400 flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span className="font-bold text-emerald-700">{demo.role}:</span> {demo.name.split(' ')[0]}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <div className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-left">
           <div className="bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-md transition-all p-5 rounded-2xl relative overflow-hidden group shadow-xs">

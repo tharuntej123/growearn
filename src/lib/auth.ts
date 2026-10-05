@@ -3,15 +3,13 @@ import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 import { NextRequest } from 'next/server';
 
-const DEFAULT_JWT_SECRET = 'growearn-super-secret-jwt-key-2026-production-grade';
-
-function getJwtSecret(): string {
+export function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    if (process.env.NODE_ENV === 'production') {
-      console.warn('⚠️ Warning: JWT_SECRET environment variable is not explicitly set in production. Using fallback secret key.');
-    }
-    return DEFAULT_JWT_SECRET;
+  if (!secret || secret.trim().length === 0) {
+    throw new Error('FATAL SECURITY ERROR: JWT_SECRET environment variable is missing. Authentication cannot operate without a secure secret.');
+  }
+  if (secret.length < 32) {
+    throw new Error('INSECURE CONFIGURATION ERROR: JWT_SECRET must be at least 32 characters long to ensure cryptographic token security.');
   }
   return secret;
 }
@@ -48,13 +46,13 @@ export function verifyJwtToken(token: string): JWTPayload | null {
   }
 }
 
-export function normalizeRole(rawRole?: string): 'LEARNER' | 'PROFESSIONAL' | 'MENTOR' | 'EMPLOYER' | 'ADMIN' {
+export function normalizeRole(rawRole?: string): 'LEARNER' | 'FREELANCER' | 'MENTOR' | 'COMPANY' | 'ADMIN' {
   if (!rawRole) return 'LEARNER';
   const r = rawRole.toUpperCase();
   if (r === 'STUDENT' || r === 'LEARNER') return 'LEARNER';
-  if (r === 'FREELANCER' || r === 'PROFESSIONAL') return 'PROFESSIONAL';
+  if (r === 'FREELANCER' || r === 'PROFESSIONAL') return 'FREELANCER';
   if (r === 'MENTOR') return 'MENTOR';
-  if (r === 'COMPANY' || r === 'EMPLOYER') return 'EMPLOYER';
+  if (r === 'COMPANY' || r === 'EMPLOYER') return 'COMPANY';
   if (r === 'ADMIN') return 'ADMIN';
   return 'LEARNER';
 }

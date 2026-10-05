@@ -7,7 +7,7 @@
  *   ↓
  * Intent Classifier (course | mentor | jobs | roadmap | profile | general)
  *   ↓
- * Embedding Model (1536 dim)
+ * Embedding Model: Local BGE-M3 (1024 dim)
  *   ↓
  * Vector Database (PostgreSQL pgvector Cosine Search)
  *   ↓
@@ -29,6 +29,7 @@ import { ragPromptTemplate } from './prompt';
 import { PgVectorRetriever } from './retriever';
 import { IntentClassifier, IntentCategory } from './intent-classifier';
 import { GrokLLMClient } from './grok-client';
+import { isEmbeddingConfigured } from './embeddings';
 import { UserAIContext } from '@/services/user-context.service';
 
 export interface GroundedRAGDocument {
@@ -71,23 +72,30 @@ export class ProductionRAGChain {
     // 1. Structured Intent Classification
     const { intent } = await IntentClassifier.classify(q);
 
-    // 2. Query pgvector Vector Store for Top-5 Grounded Chunks
-    const retriever = new PgVectorRetriever({ topK: 5 });
-    const chunkRecords = await retriever.retrieveRecords(q);
+    // 2. Query pgvector Vector Store (if live embeddings configured) or database fallback
+    let chunkRecords: any[] = [];
+    if (isEmbeddingConfigured()) {
+      try {
+        const retriever = new PgVectorRetriever({ topK: 5 });
+        chunkRecords = await retriever.retrieveRecords(q);
+      } catch {
+        chunkRecords = [];
+      }
+    }
 
     const retrievedDocuments: GroundedRAGDocument[] = chunkRecords.map((r) => ({
       id: r.id,
       source: r.source,
       sourceType: r.sourceType,
       content: r.content,
-      similarity: r.similarity ?? 0.85,
+      similarity: r.similarity ?? 0,
     }));
 
     const avgSimilarity =
       retrievedDocuments.length > 0
         ? Number(
             (
-              retrievedDocuments.reduce((sum, d) => sum + d.similarity, 0) /
+              retrievedDocuments.reduce((sum, d) => sum + (d.similarity || 0), 0) /
               retrievedDocuments.length
             ).toFixed(4)
           )

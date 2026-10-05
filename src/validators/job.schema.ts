@@ -4,9 +4,9 @@ import { WORK_MODES, JOB_TYPES, EXPERIENCE_LEVELS } from '@/lib/constants';
 export const createJobSchema = z.object({
   title: z.string().min(3, 'Job title must be at least 3 characters'),
   description: z.string().min(20, 'Job description must be at least 20 characters'),
-  country: z.string().default('India'),
-  state: z.string().optional(),
-  city: z.string().optional(),
+  country: z.string().optional().nullable().default('India'),
+  state: z.string().optional().nullable(),
+  city: z.string().optional().nullable(),
   locationType: z.enum(WORK_MODES).default('REMOTE'),
   jobType: z.enum(JOB_TYPES).default('FREELANCE'),
   minSalary: z.number().min(0, 'Minimum salary must be positive'),
@@ -14,7 +14,7 @@ export const createJobSchema = z.object({
   currency: z.string().default('USD'),
   experienceLevel: z.enum(EXPERIENCE_LEVELS).default('MID'),
   isLocal: z.boolean().default(false),
-  deadline: z.string().optional(),
+  deadline: z.string().optional().nullable(),
   skills: z.array(z.string()).min(1, 'At least one skill is required'),
 });
 

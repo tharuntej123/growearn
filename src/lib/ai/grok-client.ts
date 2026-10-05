@@ -31,9 +31,7 @@ export class GrokLLMClient {
     }
 
     const openAIKey = process.env.OPENAI_API_KEY;
-    if (openAIKey && openAIKey.trim() !== '') {
-      if (openAIKey.trim().startsWith('gsk_')) return 'groq';
-      if (openAIKey.trim().startsWith('xai-')) return 'grok';
+    if (openAIKey && openAIKey.trim() !== '' && !openAIKey.startsWith('gsk_')) {
       return 'openai';
     }
 
@@ -100,18 +98,19 @@ export class GrokLLMClient {
   }
 
   private static async callGroq(options: LLMCompletionOptions): Promise<LLMCompletionResult | null> {
-    const apiKey = (process.env.GROQ_API_KEY || process.env.GROK_API_KEY || process.env.OPENAI_API_KEY || '').trim();
+    const apiKey = (process.env.GROQ_API_KEY || (process.env.GROK_API_KEY?.startsWith('gsk_') ? process.env.GROK_API_KEY : '')).trim();
     if (!apiKey) return null;
 
-    const model = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
+    const model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
     const endpoint = 'https://api.groq.com/openai/v1/chat/completions';
 
     const fallbackCandidates = [
       model,
+      'llama-3.3-70b-versatile',
+      'llama-3.1-8b-instant',
+      'mixtral-8x7b-32768',
+      'gemma2-9b-it',
       'openai/gpt-oss-120b',
-      'openai/gpt-oss-20b',
-      'qwen/qwen3.8-27b',
-      'groq/compound',
     ].filter((m, i, arr) => arr.indexOf(m) === i);
 
     for (const candidateModel of fallbackCandidates) {

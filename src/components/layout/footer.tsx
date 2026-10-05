@@ -4,7 +4,11 @@ import React from 'react';
 import Link from 'next/link';
 import { Sparkles, Globe, Code2 } from 'lucide-react';
 
+import { isDemoMode } from '@/lib/constants';
+
 export function Footer() {
+  const showDemo = isDemoMode();
+
   return (
     <footer className="border-t border-slate-200 bg-slate-50 text-slate-600 py-12 px-4 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -27,10 +31,10 @@ export function Footer() {
         <div>
           <h4 className="text-sm font-semibold text-slate-900 mb-3">Ecosystem Roles</h4>
           <ul className="space-y-2 text-xs">
-            <li><Link href="/student/dashboard" className="hover:text-emerald-600 transition-colors">For Learners & Students</Link></li>
-            <li><Link href="/professional/dashboard" className="hover:text-emerald-600 transition-colors">For Verified Professionals</Link></li>
-            <li><Link href="/mentor/dashboard" className="hover:text-emerald-600 transition-colors">For Expert Mentors</Link></li>
-            <li><Link href="/company/dashboard" className="hover:text-emerald-600 transition-colors">For Companies & Employers</Link></li>
+            <li><Link href="/learner/dashboard" className="hover:text-emerald-600 transition-colors">For Learners</Link></li>
+            <li><Link href="/freelancer/dashboard" className="hover:text-emerald-600 transition-colors">For Freelancers</Link></li>
+            <li><Link href="/mentor/dashboard" className="hover:text-emerald-600 transition-colors">For Mentors</Link></li>
+            <li><Link href="/company/dashboard" className="hover:text-emerald-600 transition-colors">For Companies</Link></li>
           </ul>
         </div>
 
@@ -46,14 +50,28 @@ export function Footer() {
         </div>
 
         <div>
-          <h4 className="text-sm font-semibold text-slate-900 mb-3">Demo Accounts</h4>
-          <div className="p-3 rounded-xl border border-slate-200 bg-white text-xs space-y-1.5 font-mono shadow-xs">
-            <p className="text-slate-700"><span className="text-emerald-700 font-semibold">Learner:</span> student@example.com</p>
-            <p className="text-slate-700"><span className="text-teal-700 font-semibold">Mentor:</span> mentor@example.com</p>
-            <p className="text-slate-700"><span className="text-emerald-700 font-semibold">Professional:</span> professional@example.com</p>
-            <p className="text-slate-700"><span className="text-slate-800 font-semibold">Employer:</span> company@example.com</p>
-            <p className="text-slate-500 pt-1 border-t border-slate-100">Password: <span className="text-emerald-700 font-bold">Demo1234!</span></p>
-          </div>
+          {showDemo ? (
+            <>
+              <h4 className="text-sm font-semibold text-slate-900 mb-3">Demo Accounts</h4>
+              <div className="p-3 rounded-xl border border-slate-200 bg-white text-xs space-y-1.5 font-mono shadow-xs">
+                <p className="text-slate-700"><span className="text-emerald-700 font-semibold">Learner:</span> student@example.com</p>
+                <p className="text-slate-700"><span className="text-teal-700 font-semibold">Mentor:</span> priya.sharma@example.com</p>
+                <p className="text-slate-700"><span className="text-emerald-700 font-semibold">Freelancer:</span> professional@example.com</p>
+                <p className="text-slate-700"><span className="text-slate-800 font-semibold">Company:</span> careers@novatech-solutions.io</p>
+                <p className="text-slate-500 pt-1 border-t border-slate-100">Password: <span className="text-emerald-700 font-bold">Demo1234!</span></p>
+              </div>
+            </>
+          ) : (
+            <>
+              <h4 className="text-sm font-semibold text-slate-900 mb-3">Trust & Security</h4>
+              <div className="p-3 rounded-xl border border-slate-200 bg-white text-xs space-y-1.5 text-slate-600 shadow-xs">
+                <p className="font-semibold text-slate-800">Verified Platform</p>
+                <p className="text-[11px] leading-relaxed">
+                  Enterprise-grade authentication, RBAC, Razorpay payments, and pgvector RAG.
+                </p>
+              </div>
+            </>
+          )}
         </div>
       </div>
 

@@ -62,6 +62,8 @@ model User {
   writtenReviews        Review[]              @relation("ReviewAuthor")
   receivedReviews       Review[]              @relation("TargetUserReviews")
   payments              Payment[]
+  paymentOrders         PaymentOrder[]
+  coursePurchases       CoursePurchase[]
 
   aiProfile             AIProfile?
   careerRoadmap         CareerRoadmap?
@@ -311,6 +313,8 @@ model Course {
   enrollments   Enrollment[]
   certificates  Certificate[]
   reviews       Review[]
+  purchases     CoursePurchase[]
+  payments      Payment[]
 
   @@index([instructorId])
   @@index([isPublished])
@@ -416,6 +420,7 @@ model MentorProfile {
 
   requests        MentorshipRequest[] @relation("MentorRequests")
   bookings        MentorshipBooking[] @relation("MentorBookings")
+  payments        Payment[]
 
   @@index([userId])
   @@index([isAvailable])
@@ -457,6 +462,9 @@ model MentorshipBooking {
   meetingUrl      String?           @default("https://meet.jit.si/growearn-mentorship-session")
   feedback        String?
   createdAt       DateTime          @default(now())
+
+  paymentId       String?           @unique
+  payment         Payment?
 
   @@index([studentId])
   @@index([mentorId])
@@ -607,21 +615,104 @@ model Review {
   @@index([authorId])
 }
 
-model Payment {
-  id             String    @id @default(cuid())
-  userId         String
-  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  amount         Float
-  currency       String    @default("USD")
-  status         String    @default("SUCCESS") // PENDING, SUCCESS, FAILED, REFUNDED
-  provider       String    @default("MOCK") // MOCK, STRIPE, RAZORPAY
-  transactionRef String    @unique
-  itemType       String    // COURSE, MENTORSHIP, PROFESSIONAL_ESCROW
-  itemId         String
-  createdAt      DateTime  @default(now())
+model PaymentOrder {
+  id              String          @id @default(cuid())
+  userId          String
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  razorpayOrderId String          @unique
+  amount          Float
+  amountInPaise   Int
+  currency        String          @default("INR")
+  status          String          @default("CREATED") // CREATED, ATTEMPTED, PAID, FAILED, EXPIRED
+  itemType        String          // COURSE, MENTORSHIP
+  itemId          String
+  idempotencyKey  String?         @unique
+  receipt         String          @unique
+  notes           Json?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  payment         Payment?
+  coursePurchase  CoursePurchase?
 
   @@index([userId])
   @@index([status])
+  @@index([razorpayOrderId])
+}
+
+model Payment {
+  id                String              @id @default(cuid())
+  orderId           String?             @unique
+  order             PaymentOrder?       @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  userId            String
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  razorpayOrderId   String              @unique
+  razorpayPaymentId String?             @unique
+  razorpaySignature String?
+  amount            Float
+  amountInPaise     Int
+  currency          String              @default("INR")
+  status            String              @default("PENDING") // CREATED, PENDING, AUTHORIZED, CAPTURED, FAILED, REFUNDED, PARTIALLY_REFUNDED, CANCELLED
+  provider          String              @default("RAZORPAY")
+  itemType          String              // COURSE, MENTORSHIP
+  itemId            String
+  courseId          String?
+  course            Course?             @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  mentorProfileId   String?
+  mentorProfile     MentorProfile?      @relation(fields: [mentorProfileId], references: [id], onDelete: SetNull)
+  bookingId         String?             @unique
+  booking           MentorshipBooking?  @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  failureReason     String?
+  refundAmount      Float?              @default(0)
+  refundStatus      String?
+  webhookEventId    String?
+  metadata          Json?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  coursePurchases   CoursePurchase[]
+  webhookEvents     WebhookEvent[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([razorpayOrderId])
+  @@index([razorpayPaymentId])
+  @@index([courseId])
+  @@index([mentorProfileId])
+}
+
+model WebhookEvent {
+  id           String    @id @default(cuid())
+  eventId      String    @unique
+  eventType    String
+  paymentId    String?
+  payment      Payment?  @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  payload      Json
+  status       String    @default("PROCESSED") // PROCESSED, IGNORED, FAILED
+  processedAt  DateTime  @default(now())
+  errorMessage String?
+
+  @@index([eventId])
+  @@index([eventType])
+}
+
+model CoursePurchase {
+  id          String        @id @default(cuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId    String
+  course      Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  paymentId   String
+  payment     Payment       @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  orderId     String?       @unique
+  order       PaymentOrder? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  amountPaid  Float
+  currency    String        @default("INR")
+  purchasedAt DateTime      @default(now())
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
 }
 
 model AIProfile {
@@ -754,7 +845,7 @@ model DocumentChunk {
   source     String
   sourceType String   @map("source_type")
   metadata   Json?
-  embedding  Unsupported("vector(1536)")?
+  embedding  Unsupported("vector(1024)")?
   createdAt  DateTime @default(now()) @map("created_at")
 
   @@index([sourceType])

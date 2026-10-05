@@ -29,8 +29,8 @@ export function DashboardSidebar() {
   const rawRole = (user?.role || 'LEARNER').toUpperCase();
   const isLearner = rawRole === 'STUDENT' || rawRole === 'LEARNER';
   const isMentor = rawRole === 'MENTOR';
-  const isProfessional = rawRole === 'FREELANCER' || rawRole === 'PROFESSIONAL';
-  const isEmployer = rawRole === 'COMPANY' || rawRole === 'EMPLOYER';
+  const isFreelancer = rawRole === 'FREELANCER' || rawRole === 'PROFESSIONAL';
+  const isCompany = rawRole === 'COMPANY' || rawRole === 'EMPLOYER';
   const isAdmin = rawRole === 'ADMIN';
 
   const roleConfig = ROLE_INFO[rawRole] || ROLE_INFO.LEARNER;
@@ -71,11 +71,11 @@ export function DashboardSidebar() {
       ];
     }
 
-    if (isProfessional) {
+    if (isFreelancer) {
       return [
-        { label: 'Professional Workspace', href: '/professional/dashboard', icon: Briefcase, highlight: true },
+        { label: 'Freelancer Workspace', href: '/freelancer/dashboard', icon: Briefcase, highlight: true },
         { label: 'Explore Jobs & Contracts', href: '/jobs', icon: Briefcase },
-        { label: 'My Applications', href: '/professional/applications', icon: FolderCheck },
+        { label: 'My Applications', href: '/freelancer/applications', icon: FolderCheck },
         { label: 'AI Proposal Assistant', href: '/ai-assistant', icon: Sparkles, badge: 'AI' },
         { label: 'Feed & Network', href: '/feed', icon: Compass },
         { label: 'Messages', href: '/messages', icon: MessageSquare },
@@ -83,11 +83,11 @@ export function DashboardSidebar() {
       ];
     }
 
-    if (isEmployer) {
+    if (isCompany) {
       return [
-        { label: 'Employer Dashboard', href: '/employer/dashboard', icon: Building2, highlight: true },
-        { label: 'Post a Job', href: '/employer/jobs/new', icon: PlusCircle },
-        { label: 'Manage Jobs & Applicants', href: '/employer/jobs', icon: Briefcase },
+        { label: 'Company Dashboard', href: '/company/dashboard', icon: Building2, highlight: true },
+        { label: 'Post a Job', href: '/company/jobs/new', icon: PlusCircle },
+        { label: 'Active Jobs & ATS', href: '/company/dashboard', icon: Briefcase },
         { label: 'AI Hiring Assistant', href: '/ai-assistant', icon: Sparkles, badge: 'AI' },
         { label: 'Feed & Network', href: '/feed', icon: Compass },
         { label: 'Messages', href: '/messages', icon: MessageSquare },
@@ -105,6 +105,7 @@ export function DashboardSidebar() {
   };
 
   const navItems = getNavItems();
+  const canonicalRoleName = isLearner ? 'LEARNER' : isFreelancer ? 'FREELANCER' : isMentor ? 'MENTOR' : isCompany ? 'COMPANY' : rawRole;
 
   return (
     <aside className="w-64 shrink-0 hidden md:block border-r border-slate-200 bg-white p-4 min-h-[calc(100vh-4rem)]">
@@ -118,7 +119,7 @@ export function DashboardSidebar() {
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
               <span className="text-[11px] font-semibold text-emerald-700 uppercase tracking-wider">
-                {rawRole === 'STUDENT' ? 'LEARNER' : rawRole === 'FREELANCER' ? 'PROFESSIONAL' : rawRole === 'COMPANY' ? 'EMPLOYER' : rawRole}
+                {canonicalRoleName}
               </span>
             </div>
           </div>
@@ -127,7 +128,7 @@ export function DashboardSidebar() {
 
       <div className="space-y-1">
         <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider px-3 mb-2">
-          {rawRole === 'STUDENT' ? 'LEARNER' : rawRole === 'FREELANCER' ? 'PROFESSIONAL' : rawRole === 'COMPANY' ? 'EMPLOYER' : rawRole} Navigation
+          {canonicalRoleName} Navigation
         </p>
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -160,7 +161,7 @@ export function DashboardSidebar() {
       <div className="mt-8 p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/50">
         <div className="flex items-center gap-2 text-xs font-bold text-emerald-800 mb-1">
           <TrendingUp className="h-4 w-4 text-emerald-600" />
-          <span>Role: {rawRole === 'STUDENT' ? 'LEARNER' : rawRole === 'COMPANY' ? 'EMPLOYER' : rawRole}</span>
+          <span>Role: {canonicalRoleName}</span>
         </div>
         <p className="text-[11px] text-slate-600 leading-relaxed">
           Platform views and permissions are strictly enforced for your active role.

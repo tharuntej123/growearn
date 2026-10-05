@@ -16,8 +16,9 @@ async function runProductionRAGVerification() {
   console.log('================================================================\n');
 
   if (!isEmbeddingConfigured()) {
-    console.log('ℹ️ [RAG Credential Check]: OPENAI_API_KEY is not provided in environment.');
-    console.log('   Testing Intent Classifier (pgvector extension & cosine proof is verified via live-semantic-rag-proof.ts)...');
+    console.log('BLOCKED: LIVE SEMANTIC RAG REQUIRES LOCAL BGE-M3 EMBEDDING SERVICE');
+    console.log('ℹ️ [RAG Service Notice]: Local BGE-M3 embedding service is not configured.');
+    console.log('   Testing Structured Intent Classifier (Deterministic Component)...');
     
     const testIntents = [
       { query: 'Give me a roadmap for Backend Developer', expected: 'roadmap' },
@@ -33,12 +34,12 @@ async function runProductionRAGVerification() {
       console.log(`   - "${item.query}" -> Detected Intent: ${result.intent} (Confidence: ${result.confidence})`);
     }
     console.log('\n✅ PASS: Structured Intent Classifier functional.');
-    console.log('⚠️ Note: Live OpenAI embedding calls skipped due to absent external credentials.\n');
+    console.log('⚠️ Live embedding and pgvector cosine tests skipped because local embedding service is offline.\n');
     await prisma.$disconnect();
     return;
   }
 
-  // 1. Test pgvector count (when OPENAI_API_KEY is provided and database is seeded with embeddings)
+  // 1. Test pgvector count
   const chunkCount = await PgVectorStore.countChunks();
   console.log(`📊 Total pgvector chunks in PostgreSQL database: ${chunkCount}`);
   if (chunkCount < 10) {
@@ -66,7 +67,7 @@ async function runProductionRAGVerification() {
   }
   console.log('✅ PASS: Structured Intent Classifier functional.\n');
 
-  // 3. Test Vector Cosine Retrieval
+  // 3. Test Vector Cosine Retrieval with real embedding
   console.log('🔍 Testing pgvector Cosine Similarity Search:');
   const retriever = new PgVectorRetriever({ topK: 5 });
   const retrievedMentors = await retriever.retrieveRecords('Priya Sharma Java Spring Boot backend');
@@ -96,7 +97,7 @@ async function runProductionRAGVerification() {
 
   await prisma.$disconnect();
   console.log('================================================================');
-  console.log('🎉 ALL PRODUCTION RAG & VECTOR SEARCH TESTS PASSED 100%!');
+  console.log('🎉 ALL PRODUCTION RAG & VECTOR SEARCH TESTS PASSED');
   console.log('================================================================\n');
 }
 

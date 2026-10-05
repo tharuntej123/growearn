@@ -1,118 +1,76 @@
 import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
-import { prisma } from '@/lib/prisma';
+import { PaymentService } from '@/services/payment/payment.service';
 
 /**
- * Real Stripe Webhook Signature Verification Endpoint
+ * Real Multi-Provider Webhook Verification & Idempotent Event Processing
  * 
- * Verifies Stripe cryptographic signature against STRIPE_WEBHOOK_SECRET
- * Handles: checkout.session.completed, payment_intent.succeeded, payment_intent.payment_failed
+ * Supports:
+ * - Cashfree Webhooks (`x-webhook-signature`, `x-webhook-timestamp`)
+ * - Razorpay Webhooks (`x-razorpay-signature`)
  */
 export async function POST(req: NextRequest) {
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-  
-  if (!webhookSecret) {
+  const headersObj: Record<string, string | string[] | undefined> = {};
+  req.headers.forEach((val, key) => {
+    headersObj[key.toLowerCase()] = val;
+  });
+
+  const isCashfree = Boolean(
+    headersObj['x-webhook-signature'] ||
+    headersObj['x-cashfree-signature']
+  );
+  const isRazorpay = Boolean(headersObj['x-razorpay-signature']);
+
+  if (!isCashfree && !isRazorpay) {
     return NextResponse.json(
-      {
-        error: 'Stripe webhook secret is not configured in the environment. Payments are in PARTIALLY IMPLEMENTED status.',
-        status: 'PARTIALLY_IMPLEMENTED',
-      },
-      { status: 501 }
+      { error: 'Missing webhook signature header (x-webhook-signature or x-razorpay-signature)' },
+      { status: 400 }
     );
   }
 
-  const signature = req.headers.get('stripe-signature');
-  if (!signature) {
-    return NextResponse.json({ error: 'Missing stripe-signature header' }, { status: 400 });
+  // Fail-closed checks for webhook secret configuration
+  if (isCashfree && (!process.env.CASHFREE_CLIENT_SECRET || process.env.CASHFREE_CLIENT_SECRET.trim().length === 0)) {
+    return NextResponse.json(
+      {
+        error: 'LIVE PAYMENT VERIFICATION BLOCKED — CASHFREE_CLIENT_SECRET NOT CONFIGURED',
+        status: 'BLOCKED',
+      },
+      { status: 503 }
+    );
+  }
+
+  if (isRazorpay && (!process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_WEBHOOK_SECRET.trim().length === 0)) {
+    return NextResponse.json(
+      {
+        error: 'LIVE PAYMENT VERIFICATION BLOCKED — RAZORPAY_WEBHOOK_SECRET NOT CONFIGURED',
+        status: 'BLOCKED',
+      },
+      { status: 503 }
+    );
   }
 
   try {
     const rawBody = await req.text();
-
-    // Verify Stripe v1 signature: t=timestamp,v1=signature
-    const parts = signature.split(',').reduce((acc: Record<string, string>, item) => {
-      const [k, v] = item.split('=');
-      if (k && v) acc[k.trim()] = v.trim();
-      return acc;
-    }, {});
-
-    const timestamp = parts['t'];
-    const expectedSig = parts['v1'];
-
-    if (!timestamp || !expectedSig) {
-      return NextResponse.json({ error: 'Invalid stripe-signature format' }, { status: 400 });
+    if (!rawBody || rawBody.trim().length === 0) {
+      return NextResponse.json({ error: 'Empty webhook payload' }, { status: 400 });
     }
 
-    // Check for replay attacks (tolerance: 5 minutes)
-    const timestampSec = parseInt(timestamp, 10);
-    const nowSec = Math.floor(Date.now() / 1000);
-    if (Math.abs(nowSec - timestampSec) > 300) {
-      return NextResponse.json({ error: 'Webhook timestamp outside tolerance window' }, { status: 400 });
-    }
-
-    // Compute expected HMAC SHA256 signature
-    const signedPayload = `${timestamp}.${rawBody}`;
-    const computedSig = crypto.createHmac('sha256', webhookSecret).update(signedPayload).digest('hex');
-
-    const isValid = crypto.timingSafeEqual(
-      Buffer.from(expectedSig, 'utf8'),
-      Buffer.from(computedSig, 'utf8')
+    const result = await PaymentService.processWebhook(
+      rawBody,
+      headersObj,
+      isCashfree ? 'CASHFREE' : 'RAZORPAY'
     );
-
-    if (!isValid) {
+    return NextResponse.json({ received: true, ...result }, { status: 200 });
+  } catch (error: any) {
+    console.error('[PaymentWebhook:Error]', error.message);
+    if (
+      error.message?.includes('Invalid') &&
+      error.message?.includes('signature')
+    ) {
       return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 });
     }
-
-    const event = JSON.parse(rawBody);
-
-    // Process genuine verified Stripe events
-    switch (event.type) {
-      case 'checkout.session.completed': {
-        const session = event.data.object;
-        const userId = session.client_reference_id || session.metadata?.userId;
-        const courseId = session.metadata?.courseId;
-
-        if (userId && courseId) {
-          await prisma.enrollment.upsert({
-            where: {
-              studentId_courseId: { studentId: userId, courseId },
-            },
-            update: {
-              progressPercent: 0,
-            },
-            create: {
-              studentId: userId,
-              courseId,
-              progressPercent: 0,
-            },
-          });
-
-          await prisma.notification.create({
-            data: {
-              userId,
-              title: 'Payment Successful! 🎉',
-              message: 'Your course enrollment is now active. Start learning now!',
-              link: `/courses/${courseId}`,
-              notificationType: 'PAYMENT_SUCCESS',
-            },
-          }).catch(() => {});
-        }
-        break;
-      }
-
-      case 'payment_intent.succeeded': {
-        // Handle payment intent succeeded
-        break;
-      }
-
-      case 'payment_intent.payment_failed': {
-        // Handle payment intent failed
-        break;
-      }
-    }
-
-    return NextResponse.json({ received: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Webhook processing failed' }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || 'Webhook processing failed' },
+      { status: 500 }
+    );
   }
 }

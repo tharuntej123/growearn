@@ -1,11 +1,11 @@
 export const ROLES = {
   LEARNER: 'LEARNER',
   STUDENT: 'LEARNER',
-  PROFESSIONAL: 'PROFESSIONAL',
-  FREELANCER: 'PROFESSIONAL',
+  FREELANCER: 'FREELANCER',
+  PROFESSIONAL: 'FREELANCER',
   MENTOR: 'MENTOR',
-  EMPLOYER: 'EMPLOYER',
-  COMPANY: 'EMPLOYER',
+  COMPANY: 'COMPANY',
+  EMPLOYER: 'COMPANY',
   ADMIN: 'ADMIN',
 } as const;
 
@@ -42,32 +42,32 @@ export const ROLE_INFO: Record<
     defaultDashboard: '/mentor/dashboard',
     icon: 'Sparkles',
   },
-  PROFESSIONAL: {
-    title: 'Verified Professional',
-    description: 'Showcase your verified portfolio, discover project contracts, and submit AI-enhanced proposals.',
-    badgeColor: 'bg-teal-50 text-teal-700 border-teal-200',
-    defaultDashboard: '/professional/dashboard',
-    icon: 'Briefcase',
-  },
   FREELANCER: {
-    title: 'Verified Professional',
+    title: 'Verified Freelancer',
     description: 'Showcase your verified portfolio, discover project contracts, and submit AI-enhanced proposals.',
     badgeColor: 'bg-teal-50 text-teal-700 border-teal-200',
-    defaultDashboard: '/professional/dashboard',
+    defaultDashboard: '/freelancer/dashboard',
     icon: 'Briefcase',
   },
-  EMPLOYER: {
-    title: 'Company',
-    description: 'Post full-time or contract roles, utilize AI candidate matching, and hire verified top-tier talent.',
-    badgeColor: 'bg-slate-100 text-slate-800 border-slate-200',
-    defaultDashboard: '/employer/dashboard',
-    icon: 'Building2',
+  PROFESSIONAL: {
+    title: 'Verified Freelancer',
+    description: 'Showcase your verified portfolio, discover project contracts, and submit AI-enhanced proposals.',
+    badgeColor: 'bg-teal-50 text-teal-700 border-teal-200',
+    defaultDashboard: '/freelancer/dashboard',
+    icon: 'Briefcase',
   },
   COMPANY: {
     title: 'Company',
     description: 'Post full-time or contract roles, utilize AI candidate matching, and hire verified top-tier talent.',
     badgeColor: 'bg-slate-100 text-slate-800 border-slate-200',
-    defaultDashboard: '/employer/dashboard',
+    defaultDashboard: '/company/dashboard',
+    icon: 'Building2',
+  },
+  EMPLOYER: {
+    title: 'Company',
+    description: 'Post full-time or contract roles, utilize AI candidate matching, and hire verified top-tier talent.',
+    badgeColor: 'bg-slate-100 text-slate-800 border-slate-200',
+    defaultDashboard: '/company/dashboard',
     icon: 'Building2',
   },
   ADMIN: {
@@ -109,14 +109,23 @@ export const DEMO_USERS = [
   },
   {
     email: 'professional@example.com',
-    role: ROLES.PROFESSIONAL,
+    role: ROLES.FREELANCER,
     name: 'Pooja Verma',
     title: 'Senior Mobile & Full Stack Specialist',
   },
   {
     email: 'careers@novatech-solutions.io',
-    role: ROLES.EMPLOYER,
+    role: ROLES.COMPANY,
     name: 'NovaTech Solutions',
     title: 'Enterprise Cloud & FinTech Platforms',
   },
 ];
+
+export function isDemoMode(): boolean {
+  if (typeof process === 'undefined') return false;
+  return (
+    process.env.NEXT_PUBLIC_DEMO_MODE === 'true' ||
+    process.env.DEMO_MODE === 'true'
+  );
+}
+

@@ -37,7 +37,14 @@ export interface IStorageProvider {
 export class LocalStorageProvider implements IStorageProvider {
   readonly providerType: StorageProviderType = 'local';
   private privateBaseDir = path.join(process.cwd(), 'storage', 'private');
-  private signingSecret = process.env.STORAGE_SIGNING_SECRET || process.env.JWT_SECRET || 'groearn-storage-fallback-secret-2026';
+
+  private getSigningSecret(): string {
+    const secret = process.env.STORAGE_SIGNING_SECRET || process.env.JWT_SECRET;
+    if (!secret || secret.length < 32) {
+      throw new Error('STORAGE_SIGNING_SECRET or JWT_SECRET (min 32 chars) must be configured for secure storage URLs');
+    }
+    return secret;
+  }
 
   private async ensureDir(targetDir: string) {
     try {
@@ -83,7 +90,7 @@ export class LocalStorageProvider implements IStorageProvider {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const expiresAt = Math.floor(Date.now() / 1000) + expiresInSeconds;
     const payload = `${key}:${expiresAt}`;
-    const sig = crypto.createHmac('sha256', this.signingSecret).update(payload).digest('hex');
+    const sig = crypto.createHmac('sha256', this.getSigningSecret()).update(payload).digest('hex');
     return `${appUrl}/api/storage/file?key=${encodeURIComponent(key)}&expires=${expiresAt}&sig=${sig}`;
   }
 
@@ -91,7 +98,7 @@ export class LocalStorageProvider implements IStorageProvider {
     const now = Math.floor(Date.now() / 1000);
     if (now > expires) return false;
     const payload = `${key}:${expires}`;
-    const expectedSig = crypto.createHmac('sha256', this.signingSecret).update(payload).digest('hex');
+    const expectedSig = crypto.createHmac('sha256', this.getSigningSecret()).update(payload).digest('hex');
     return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSig));
   }
 
@@ -179,10 +186,38 @@ export class S3StorageProvider implements IStorageProvider {
   }
 
   async getSignedUrl(key: string, expiresInSeconds = 3600): Promise<string> {
-    // Generate S3 presigned GET URL format
+    if (!this.accessKeyId || !this.secretAccessKey) {
+      throw new Error('AWS S3 credentials not configured for presigned URL generation');
+    }
     const host = `${this.bucket}.s3.${this.region}.amazonaws.com`;
-    const expiresAt = Math.floor(Date.now() / 1000) + expiresInSeconds;
-    return `https://${host}/${encodeURIComponent(key)}?X-Amz-Expires=${expiresInSeconds}&X-Amz-Date=${expiresAt}`;
+    const datetime = new Date().toISOString().replace(/[:-]|\.\d{3}/g, '');
+    const datestamp = datetime.substring(0, 8);
+    const credentialScope = `${datestamp}/${this.region}/s3/aws4_request`;
+    const canonicalUri = `/${encodeURIComponent(key)}`;
+    
+    const algorithm = 'AWS4-HMAC-SHA256';
+    const credential = `${this.accessKeyId}/${credentialScope}`;
+    const signedHeaders = 'host';
+    
+    const canonicalQueryString = [
+      `X-Amz-Algorithm=${algorithm}`,
+      `X-Amz-Credential=${encodeURIComponent(credential)}`,
+      `X-Amz-Date=${datetime}`,
+      `X-Amz-Expires=${expiresInSeconds}`,
+      `X-Amz-SignedHeaders=${signedHeaders}`,
+    ].sort().join('&');
+
+    const canonicalRequest = `GET\n${canonicalUri}\n${canonicalQueryString}\nhost:${host}\n\n${signedHeaders}\nUNSIGNED-PAYLOAD`;
+    const hashedCanonicalRequest = crypto.createHash('sha256').update(canonicalRequest).digest('hex');
+    const stringToSign = `${algorithm}\n${datetime}\n${credentialScope}\n${hashedCanonicalRequest}`;
+
+    const kDate = crypto.createHmac('sha256', `AWS4${this.secretAccessKey}`).update(datestamp).digest();
+    const kRegion = crypto.createHmac('sha256', kDate).update(this.region).digest();
+    const kService = crypto.createHmac('sha256', kRegion).update('s3').digest();
+    const kSigning = crypto.createHmac('sha256', kService).update('aws4_request').digest();
+    const signature = crypto.createHmac('sha256', kSigning).update(stringToSign).digest('hex');
+
+    return `https://${host}${canonicalUri}?${canonicalQueryString}&X-Amz-Signature=${signature}`;
   }
 
   async download(key: string): Promise<{ buffer: Buffer; mimeType: string }> {
@@ -261,8 +296,39 @@ export class R2StorageProvider implements IStorageProvider {
   }
 
   async getSignedUrl(key: string, expiresInSeconds = 3600): Promise<string> {
+    if (!this.accountId || !this.accessKeyId || !this.secretAccessKey) {
+      throw new Error('Cloudflare R2 credentials not configured for presigned URL generation');
+    }
     const host = `${this.accountId}.r2.cloudflarestorage.com`;
-    return `https://${host}/${this.bucket}/${encodeURIComponent(key)}?expires=${expiresInSeconds}`;
+    const region = 'auto';
+    const datetime = new Date().toISOString().replace(/[:-]|\.\d{3}/g, '');
+    const datestamp = datetime.substring(0, 8);
+    const credentialScope = `${datestamp}/${region}/s3/aws4_request`;
+    const canonicalUri = `/${this.bucket}/${encodeURIComponent(key)}`;
+    
+    const algorithm = 'AWS4-HMAC-SHA256';
+    const credential = `${this.accessKeyId}/${credentialScope}`;
+    const signedHeaders = 'host';
+    
+    const canonicalQueryString = [
+      `X-Amz-Algorithm=${algorithm}`,
+      `X-Amz-Credential=${encodeURIComponent(credential)}`,
+      `X-Amz-Date=${datetime}`,
+      `X-Amz-Expires=${expiresInSeconds}`,
+      `X-Amz-SignedHeaders=${signedHeaders}`,
+    ].sort().join('&');
+
+    const canonicalRequest = `GET\n${canonicalUri}\n${canonicalQueryString}\nhost:${host}\n\n${signedHeaders}\nUNSIGNED-PAYLOAD`;
+    const hashedCanonicalRequest = crypto.createHash('sha256').update(canonicalRequest).digest('hex');
+    const stringToSign = `${algorithm}\n${datetime}\n${credentialScope}\n${hashedCanonicalRequest}`;
+
+    const kDate = crypto.createHmac('sha256', `AWS4${this.secretAccessKey}`).update(datestamp).digest();
+    const kRegion = crypto.createHmac('sha256', kDate).update(region).digest();
+    const kService = crypto.createHmac('sha256', kRegion).update('s3').digest();
+    const kSigning = crypto.createHmac('sha256', kService).update('aws4_request').digest();
+    const signature = crypto.createHmac('sha256', kSigning).update(stringToSign).digest('hex');
+
+    return `https://${host}${canonicalUri}?${canonicalQueryString}&X-Amz-Signature=${signature}`;
   }
 
   async download(key: string): Promise<{ buffer: Buffer; mimeType: string }> {
@@ -327,7 +393,18 @@ export class GCSStorageProvider implements IStorageProvider {
   }
 
   async getSignedUrl(key: string, expiresInSeconds = 3600): Promise<string> {
-    return `https://storage.googleapis.com/${this.bucket}/${encodeURIComponent(key)}?expires=${expiresInSeconds}`;
+    const clientEmail = process.env.GCS_CLIENT_EMAIL;
+    const privateKey = process.env.GCS_PRIVATE_KEY;
+    if (!clientEmail || !privateKey) {
+      throw new Error('Google Cloud Storage service account credentials (GCS_CLIENT_EMAIL, GCS_PRIVATE_KEY) not configured for signed URL generation');
+    }
+    const expiresAt = Math.floor(Date.now() / 1000) + expiresInSeconds;
+    const canonicalResource = `/${this.bucket}/${encodeURIComponent(key)}`;
+    const stringToSign = `GET\n\n\n${expiresAt}\n${canonicalResource}`;
+    const signer = crypto.createSign('RSA-SHA256');
+    signer.update(stringToSign);
+    const signature = encodeURIComponent(signer.sign(privateKey.replace(/\\n/g, '\n'), 'base64'));
+    return `https://storage.googleapis.com/${this.bucket}/${encodeURIComponent(key)}?GoogleAccessId=${encodeURIComponent(clientEmail)}&Expires=${expiresAt}&Signature=${signature}`;
   }
 
   async download(key: string): Promise<{ buffer: Buffer; mimeType: string }> {
@@ -421,9 +498,11 @@ export class StorageService {
       result.signedUrl = await provider.getSignedUrl(key, 3600);
       return result;
     } catch (err) {
-      // If cloud provider fails in non-production, fallback to local
       if (providerType !== 'local') {
-        console.warn(`[StorageService] Cloud upload failed, falling back to local storage:`, err);
+        if (process.env.NODE_ENV === 'production') {
+          throw new Error(`Production storage error: Failed to upload file to cloud storage provider (${providerType}): ${err instanceof Error ? err.message : String(err)}`);
+        }
+        console.warn(`[StorageService:DEV] Cloud upload failed, falling back to local storage in development mode:`, err);
         const localResult = await this.localProvider.upload(fileBuffer, key, mimeType, isPrivate, originalName);
         localResult.signedUrl = await this.localProvider.getSignedUrl(key, 3600);
         return localResult;

@@ -169,10 +169,10 @@ export default function OnboardingPage() {
         toast.success('✨ Your personalized career workspace is ready!');
         await refreshUser();
         setTimeout(() => {
-          if (user?.role === 'PROFESSIONAL' || (user?.role as string) === 'FREELANCER') {
-            router.push('/professional/dashboard');
+          if (user?.role === 'FREELANCER' || (user?.role as string) === 'PROFESSIONAL') {
+            router.push('/freelancer/dashboard');
           } else {
-            router.push('/student/dashboard');
+            router.push('/learner/dashboard');
           }
         }, 800);
       } else {

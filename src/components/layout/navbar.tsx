@@ -186,12 +186,12 @@ export function Navbar() {
                 </Link>
               )}
 
-              {/* Employer link for Employers */}
+              {/* Company link for Companies */}
               {isEmployer && (
                 <Link
-                  href="/employer/dashboard"
+                  href="/company/dashboard"
                   className={`px-3 py-1.5 rounded-lg transition-colors ${
-                    pathname.startsWith('/employer') || pathname.startsWith('/company')
+                    pathname.startsWith('/company') || pathname.startsWith('/employer')
                       ? 'text-emerald-700 bg-emerald-50 font-semibold'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   }`}
@@ -243,7 +243,7 @@ export function Navbar() {
                   className="hidden sm:inline-flex items-center gap-1.5 text-xs py-1 px-3 border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all cursor-pointer font-semibold shadow-xs"
                 >
                   <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
-                  {user.role === 'STUDENT' ? 'Learner' : user.role === 'FREELANCER' ? 'Professional' : user.role === 'COMPANY' ? 'Employer' : user.role} Dashboard
+                  {user.role === 'STUDENT' || user.role === 'LEARNER' ? 'Learner' : user.role === 'FREELANCER' || user.role === 'PROFESSIONAL' ? 'Freelancer' : user.role === 'COMPANY' || user.role === 'EMPLOYER' ? 'Company' : user.role} Dashboard
                 </Badge>
               </Link>
 

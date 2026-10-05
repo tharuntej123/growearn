@@ -38,8 +38,8 @@ export async function GET(req: NextRequest) {
 
           if (authUser.id === ownerId) {
             isSessionAuthorized = true;
-          } else if (authUser.role === 'EMPLOYER') {
-            // Check if employer has an active job application from this user
+          } else if (authUser.role === 'EMPLOYER' || authUser.role === 'COMPANY') {
+            // Check if employer/company has an active job application from this user
             const application = await prisma.application.findFirst({
               where: {
                 applicantId: ownerId,

@@ -24,7 +24,7 @@ import {
   Eye,
   EyeOff,
 } from 'lucide-react';
-import { DEMO_USERS, ROLE_INFO } from '@/lib/constants';
+import { DEMO_USERS, ROLE_INFO, isDemoMode } from '@/lib/constants';
 import { toast } from 'sonner';
 
 type SelectedRoleKey = 'STUDENT' | 'MENTOR' | 'FREELANCER' | 'COMPANY';
@@ -42,6 +42,7 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeDemoEmail, setActiveDemoEmail] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const showDemo = isDemoMode();
 
   const hasMinLength = password.length >= 8;
   const hasUppercase = /[A-Z]/.test(password);
@@ -50,7 +51,7 @@ export default function SignupPage() {
 
   const roleOptions: {
     key: SelectedRoleKey;
-    dbRole: 'LEARNER' | 'MENTOR' | 'PROFESSIONAL' | 'EMPLOYER';
+    dbRole: 'LEARNER' | 'MENTOR' | 'FREELANCER' | 'COMPANY' | 'PROFESSIONAL' | 'EMPLOYER';
     title: string;
     tagline: string;
     description: string;
@@ -64,7 +65,7 @@ export default function SignupPage() {
       tagline: 'Learn & Master Skills',
       description: 'Follow AI career roadmaps, learn from top courses, and get 1-on-1 mentorship coaching.',
       icon: GraduationCap,
-      dashboard: '/student/dashboard',
+      dashboard: '/learner/dashboard',
     },
     {
       key: 'MENTOR',
@@ -77,17 +78,17 @@ export default function SignupPage() {
     },
     {
       key: 'FREELANCER',
-      dbRole: 'PROFESSIONAL',
-      title: 'Freelancer / Pro',
+      dbRole: 'FREELANCER',
+      title: 'Freelancer',
       tagline: 'Work & Earn',
       description: 'Discover remote & local client jobs, submit 1-click AI proposals, and build verified portfolio.',
       icon: Briefcase,
-      dashboard: '/professional/dashboard',
+      dashboard: '/freelancer/dashboard',
     },
     {
       key: 'COMPANY',
-      dbRole: 'EMPLOYER',
-      title: 'Company / Employer',
+      dbRole: 'COMPANY',
+      title: 'Company',
       tagline: 'Hire & Scale',
       description: 'Post full-time & contract roles, use AI candidate matching, and hire verified top tech talent.',
       icon: Building2,
@@ -105,9 +106,9 @@ export default function SignupPage() {
       if (res.success && res.user) {
         toast.success(`Signed in as ${res.user.role}: ${res.user.name}`);
         const norm = res.user.role?.toUpperCase();
-        if (norm === 'STUDENT' || norm === 'LEARNER') router.push('/student/dashboard');
+        if (norm === 'STUDENT' || norm === 'LEARNER') router.push('/learner/dashboard');
         else if (norm === 'MENTOR') router.push('/mentor/dashboard');
-        else if (norm === 'FREELANCER' || norm === 'PROFESSIONAL') router.push('/professional/dashboard');
+        else if (norm === 'FREELANCER' || norm === 'PROFESSIONAL') router.push('/freelancer/dashboard');
         else if (norm === 'COMPANY' || norm === 'EMPLOYER') router.push('/company/dashboard');
         else router.push(ROLE_INFO[norm]?.defaultDashboard || '/feed');
       } else {
@@ -347,34 +348,36 @@ export default function SignupPage() {
               </Button>
             </form>
 
-            {/* Instant 1-Click Guest Login Alternative */}
-            <div className="pt-3 border-t border-slate-100 space-y-2">
-              <div className="flex items-center gap-1.5 text-xs text-slate-700 font-bold">
-                <Zap className="h-3.5 w-3.5 text-emerald-600" />
-                <span>Or Jump In with 1-Click Guest Demo:</span>
+            {/* Instant 1-Click Guest Login Alternative (Only when DEMO_MODE=true) */}
+            {showDemo && (
+              <div className="pt-3 border-t border-slate-100 space-y-2">
+                <div className="flex items-center gap-1.5 text-xs text-slate-700 font-bold">
+                  <Zap className="h-3.5 w-3.5 text-emerald-600" />
+                  <span>Or Jump In with 1-Click Guest Demo:</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {DEMO_USERS.map((demo) => {
+                    const isThisLoading = activeDemoEmail === demo.email;
+                    return (
+                      <button
+                        key={demo.email}
+                        type="button"
+                        disabled={Boolean(activeDemoEmail) || isLoading}
+                        onClick={() => handleInstantDemoLogin(demo.email, demo.role)}
+                        className={`p-2 rounded-xl border text-left transition-all text-xs ${
+                          isThisLoading
+                            ? 'border-emerald-500 bg-emerald-50'
+                            : 'border-slate-200 bg-slate-50/60 hover:bg-emerald-50/50 hover:border-emerald-300'
+                        }`}
+                      >
+                        <p className="font-bold text-slate-800 text-[11px] truncate">{demo.role}</p>
+                        <p className="text-[10px] text-emerald-700 font-medium truncate">{demo.name.split(' ')[0]}</p>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {DEMO_USERS.map((demo) => {
-                  const isThisLoading = activeDemoEmail === demo.email;
-                  return (
-                    <button
-                      key={demo.email}
-                      type="button"
-                      disabled={Boolean(activeDemoEmail) || isLoading}
-                      onClick={() => handleInstantDemoLogin(demo.email, demo.role)}
-                      className={`p-2 rounded-xl border text-left transition-all text-xs ${
-                        isThisLoading
-                          ? 'border-emerald-500 bg-emerald-50'
-                          : 'border-slate-200 bg-slate-50/60 hover:bg-emerald-50/50 hover:border-emerald-300'
-                      }`}
-                    >
-                      <p className="font-bold text-slate-800 text-[11px] truncate">{demo.role}</p>
-                      <p className="text-[10px] text-emerald-700 font-medium truncate">{demo.name.split(' ')[0]}</p>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            )}
 
             <p className="text-center text-xs text-slate-500">
               Already have an account?{' '}

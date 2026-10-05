@@ -28,4 +28,20 @@ test.describe('Security & Access Control Browser Tests', () => {
     const json = await res.json();
     expect(json.success).toBe(false);
   });
+
+  test('Cross-role access enforcement redirects or isolates unauthorized resources', async ({ page }) => {
+    // 1. Login as Learner
+    await page.goto('/login');
+    await page.fill('input[type="email"], input[name="email"]', 'student@example.com');
+    await page.fill('input[type="password"], input[name="password"]', 'Demo1234!');
+    await page.click('button[type="submit"]');
+    await page.waitForURL('**/learner/dashboard', { timeout: 15000 });
+
+    // 2. Learner attempts to access Company dashboard
+    await page.goto('/company/dashboard');
+    // Middleware should redirect learner to their canonical dashboard or login
+    await page.waitForTimeout(1000);
+    const currentUrl = page.url();
+    expect(currentUrl).not.toContain('/company/dashboard');
+  });
 });

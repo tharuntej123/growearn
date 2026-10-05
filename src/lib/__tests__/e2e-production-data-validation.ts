@@ -94,9 +94,9 @@ async function runEndToEndProductionValidation() {
   }
 
   // ============================================================================
-  // SECTION 2: Vector Database (pgvector), 1536-dim Embeddings & Cosine Search
+  // SECTION 2: Vector Database (pgvector), 1024-dim BGE-M3 Embeddings & Cosine Search
   // ============================================================================
-  console.log('📐 SECTION 2: Verifying Vector Embeddings & pgvector Cosine Similarity Search...');
+  console.log('📐 SECTION 2: Verifying 1024-dim Vector Embeddings & pgvector Cosine Similarity Search...');
   try {
     const testQueries = [
       'Next.js 15 Server Components and Prisma Full-Stack',

@@ -273,6 +273,26 @@ export class CourseController {
         return apiError('Course not found', 'NOT_FOUND', 404);
       }
 
+      // Check if this is a paid course
+      if (course.price > 0 && authUser.role !== 'ADMIN' && course.instructorId !== authUser.id) {
+        const purchase = await prisma.coursePurchase.findUnique({
+          where: {
+            userId_courseId: {
+              userId: authUser.id,
+              courseId: course.id,
+            },
+          },
+        });
+
+        if (!purchase) {
+          return apiError(
+            `Payment required: "${course.title}" is a paid course (₹${course.price}). Please complete Razorpay payment checkout to gain access.`,
+            'PAYMENT_REQUIRED',
+            402
+          );
+        }
+      }
+
       const enrollment = await CourseRepository.enrollStudent(authUser.id, course.id);
 
       // Create persistent notification for student

@@ -3,7 +3,7 @@
  * @description LangChain Vector Retriever for PostgreSQL pgvector.
  * 
  * Architecture:
- * - Query -> Embedding Model (1536 dim) -> Cosine Search via PgVectorStore -> Top-5 Grounded Chunks
+ * - Query -> Local BGE-M3 Embedding (1024 dim) -> Cosine Search via PgVectorStore -> Top-5 Grounded Chunks
  * - No keyword-matching hacks or artificial semantic scores.
  * 
  * Input: User search query string, optional filter and topK limit (default 5)

@@ -109,40 +109,55 @@ export class SkillRAGService {
     offset?: number;
     limit?: number;
     excludeIds?: string[];
-  }): Promise<{ courses: RAGCourseResult[]; total: number }> {
+  }): Promise<{ courses: RAGCourseResult[]; total: number; vectorUsed?: boolean }> {
     const q = params.skill.trim().toLowerCase();
     const qWords = q.split(/\s+/).filter(Boolean);
     const limit = params.limit || 5;
     const offset = params.offset || 0;
     const excludeSet = new Set(params.excludeIds || []);
-
-    const allCourses = await prisma.course.findMany({
-      where: { isPublished: true },
-      include: {
-        instructor: {
-          select: { id: true, name: true, avatarUrl: true, headline: true },
-        },
-      },
-    });
-
     const vectorSimilarities: Record<string, number> = {};
     let vectorUsed = false;
 
-    if (isEmbeddingConfigured()) {
-      try {
-        const queryVector = await generateEmbedding(params.skill);
-        const vectorMatches = await PgVectorStore.similaritySearch(queryVector, 20, 'course');
-        vectorMatches.forEach((m) => {
-          const courseId = m.metadata?.courseId || m.source;
-          if (courseId && m.similarity !== undefined) {
-            vectorSimilarities[courseId] = m.similarity;
+    // Concurrently fetch courses and vector search if embeddings enabled
+    const [allCourses] = await Promise.all([
+      prisma.course.findMany({
+        where: { isPublished: true },
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          description: true,
+          category: true,
+          level: true,
+          price: true,
+          durationHours: true,
+          thumbnail: true,
+          skillsCovered: true,
+          rating: true,
+          reviewsCount: true,
+          instructor: {
+            select: { id: true, name: true, avatarUrl: true, headline: true },
+          },
+        },
+      }),
+      (async () => {
+        if (isEmbeddingConfigured()) {
+          try {
+            const queryVector = await generateEmbedding(params.skill);
+            const vectorMatches = await PgVectorStore.similaritySearch(queryVector, 20, 'course');
+            vectorMatches.forEach((m) => {
+              const courseId = m.metadata?.courseId || (m.source?.startsWith('course_') ? m.source.replace('course_', '') : m.source);
+              if (courseId && m.similarity !== undefined) {
+                vectorSimilarities[courseId] = m.similarity;
+              }
+            });
+            vectorUsed = true;
+          } catch {
+            // Fall back gracefully to keyword/skill scoring
           }
-        });
-        vectorUsed = true;
-      } catch {
-        // Fall back gracefully to keyword/skill scoring
-      }
-    }
+        }
+      })(),
+    ]);
 
     const scored = allCourses
       .filter((c) => !excludeSet.has(c.id))
@@ -217,6 +232,7 @@ export class SkillRAGService {
     return {
       courses: scored.slice(offset, offset + limit),
       total: scored.length,
+      vectorUsed,
     };
   }
 
@@ -228,38 +244,56 @@ export class SkillRAGService {
     offset?: number;
     limit?: number;
     excludeIds?: string[];
-  }): Promise<{ mentors: RAGMentorResult[]; total: number }> {
+  }): Promise<{ mentors: RAGMentorResult[]; total: number; vectorUsed?: boolean }> {
     const q = params.skill.trim().toLowerCase();
     const qWords = q.split(/\s+/).filter(Boolean);
     const limit = params.limit || 5;
     const offset = params.offset || 0;
     const excludeSet = new Set(params.excludeIds || []);
 
-    const allMentors = await prisma.mentorProfile.findMany({
-      where: { isAvailable: true },
-      include: {
-        user: {
-          select: { id: true, name: true, avatarUrl: true, headline: true, location: true },
-        },
-      },
-    });
-
     const vectorSimilarities: Record<string, number> = {};
+    let vectorUsed = false;
 
-    if (isEmbeddingConfigured()) {
-      try {
-        const queryVector = await generateEmbedding(params.skill);
-        const vectorMatches = await PgVectorStore.similaritySearch(queryVector, 20, 'mentor');
-        vectorMatches.forEach((m) => {
-          const mentorId = m.metadata?.mentorId || m.source;
-          if (mentorId && m.similarity !== undefined) {
-            vectorSimilarities[mentorId] = m.similarity;
+    // Concurrently fetch mentors and vector search if embeddings enabled
+    const [allMentors] = await Promise.all([
+      prisma.mentorProfile.findMany({
+        where: { isAvailable: true },
+        select: {
+          id: true,
+          title: true,
+          bio: true,
+          expertise: true,
+          hourlyRate: true,
+          rating: true,
+          studentsCount: true,
+          sessionCount: true,
+          yearsExperience: true,
+          user: {
+            select: { id: true, name: true, avatarUrl: true, headline: true, location: true },
+          },
+        },
+      }),
+      (async () => {
+        if (isEmbeddingConfigured()) {
+          try {
+            const queryVector = await generateEmbedding(params.skill);
+            const vectorMatches = await PgVectorStore.similaritySearch(queryVector, 20, 'mentor');
+            vectorMatches.forEach((m) => {
+              const mentorProfileId =
+                m.metadata?.mentorProfileId ||
+                m.metadata?.mentorId ||
+                (m.source?.startsWith('mentor_') ? m.source.replace('mentor_', '') : m.source);
+              if (mentorProfileId && m.similarity !== undefined) {
+                vectorSimilarities[mentorProfileId] = m.similarity;
+              }
+            });
+            vectorUsed = true;
+          } catch {
+            // Fall back gracefully to keyword/skill scoring
           }
-        });
-      } catch {
-        // Fall back gracefully
-      }
-    }
+        }
+      })(),
+    ]);
 
     const scored = allMentors
       .filter((m) => !excludeSet.has(m.id))
@@ -326,6 +360,7 @@ export class SkillRAGService {
     return {
       mentors: scored.slice(offset, offset + limit),
       total: scored.length,
+      vectorUsed,
     };
   }
 
@@ -338,19 +373,17 @@ export class SkillRAGService {
   ): Promise<RAGSkillSearchResult> {
     const q = skillQuery.trim();
 
-    // 1. Fetch database-backed roadmap
-    const dbRoadmap = await RoadmapRepository.findRoadmapBySkill(q);
-
-    // 2. Fetch Top 5 Courses & Top 5 Mentors with real multi-signal ranking
-    const [coursesResult, mentorsResult] = await Promise.all([
+    // Concurrently fetch database roadmap, courses, mentors, and counts
+    const [dbRoadmap, coursesResult, mentorsResult, totalCourses, totalMentors] = await Promise.all([
+      RoadmapRepository.findRoadmapBySkill(q),
       this.searchCourses({ skill: q, level: userLevel, limit: 5, offset: 0 }),
       this.searchMentors({ skill: q, limit: 5, offset: 0 }),
+      prisma.course.count({ where: { isPublished: true } }),
+      prisma.mentorProfile.count({ where: { isAvailable: true } }),
     ]);
 
-    const totalCourses = await prisma.course.count({ where: { isPublished: true } });
-    const totalMentors = await prisma.mentorProfile.count({ where: { isAvailable: true } });
-
     const phases = dbRoadmap.phasesJson ? JSON.parse(dbRoadmap.phasesJson) : [];
+    const vectorApplied = Boolean(coursesResult.vectorUsed || mentorsResult.vectorUsed);
 
     return {
       skill: q,
@@ -383,9 +416,9 @@ export class SkillRAGService {
         totalIndexedMentors: totalMentors,
         retrievedCoursesCount: coursesResult.courses.length,
         retrievedMentorsCount: mentorsResult.mentors.length,
-        vectorSearchApplied: isEmbeddingConfigured(),
-        searchMode: isEmbeddingConfigured() ? 'SEMANTIC_RAG' : 'KEYWORD_FALLBACK',
-        rankingMethod: isEmbeddingConfigured()
+        vectorSearchApplied: vectorApplied,
+        searchMode: vectorApplied ? 'SEMANTIC_RAG' : 'KEYWORD_FALLBACK',
+        rankingMethod: vectorApplied
           ? 'Hybrid Cosine Vector Similarity + Skill Overlap + Quality Weighting'
           : 'Multi-Signal Domain & Skill Overlap + Quality Weighting',
       },

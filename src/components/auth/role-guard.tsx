@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
-import { ROLE_INFO, DEMO_USERS } from '@/lib/constants';
+import { ROLE_INFO, DEMO_USERS, isDemoMode } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
 import { Lock, ArrowRight, ShieldAlert, Zap } from 'lucide-react';
 import Link from 'next/link';
@@ -124,7 +124,7 @@ export function RoleGuard({
               </Button>
             </Link>
 
-            {matchingDemo && (
+            {isDemoMode() && matchingDemo && (
               <Button
                 variant="outline"
                 onClick={handleSwitchRole}

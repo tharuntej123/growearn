@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Sparkles, Mail, Lock, Zap, ArrowRight, Eye, EyeOff, GraduationCap, Users, Briefcase, Building2 } from 'lucide-react';
-import { DEMO_USERS, ROLE_INFO } from '@/lib/constants';
+import { DEMO_USERS, ROLE_INFO, isDemoMode } from '@/lib/constants';
 import { toast } from 'sonner';
 
 export default function LoginPage() {
@@ -21,13 +21,14 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeDemoEmail, setActiveDemoEmail] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const showDemo = isDemoMode();
 
   const getTargetDashboard = (role: string) => {
     const normalized = role?.toUpperCase();
     if (normalized === 'STUDENT' || normalized === 'LEARNER') return '/learner/dashboard';
     if (normalized === 'MENTOR') return '/mentor/dashboard';
-    if (normalized === 'FREELANCER' || normalized === 'PROFESSIONAL') return '/professional/dashboard';
-    if (normalized === 'COMPANY' || normalized === 'EMPLOYER') return '/employer/dashboard';
+    if (normalized === 'FREELANCER' || normalized === 'PROFESSIONAL') return '/freelancer/dashboard';
+    if (normalized === 'COMPANY' || normalized === 'EMPLOYER') return '/company/dashboard';
     if (normalized === 'ADMIN') return '/admin/dashboard';
     return ROLE_INFO[normalized]?.defaultDashboard || '/feed';
   };
@@ -87,10 +88,13 @@ export default function LoginPage() {
   };
 
   const roleLabels: Record<string, string> = {
-    LEARNER: 'Learner / Student',
+    LEARNER: 'Learner',
+    STUDENT: 'Learner',
     MENTOR: 'Expert Mentor',
-    PROFESSIONAL: 'Freelancer / Professional',
-    EMPLOYER: 'Company / Employer',
+    FREELANCER: 'Freelancer',
+    PROFESSIONAL: 'Freelancer',
+    COMPANY: 'Company',
+    EMPLOYER: 'Company',
   };
 
   return (
@@ -103,7 +107,7 @@ export default function LoginPage() {
             </div>
             <CardTitle className="text-2xl font-bold text-slate-900">Welcome Back</CardTitle>
             <CardDescription className="text-xs text-slate-500">
-              Sign in to your Growearn account or use 1-click guest demo login below
+              Sign in to your Growearn account to access your workspace
             </CardDescription>
           </CardHeader>
 
@@ -114,52 +118,56 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Instant 1-Click Guest Logins */}
-            <div className="p-3.5 rounded-2xl bg-slate-50/90 border border-slate-200 space-y-2.5">
-              <div className="flex items-center gap-1.5 text-xs text-slate-800 font-bold">
-                <Zap className="h-4 w-4 text-emerald-600" />
-                <span>1-Click Instant Guest Demo Login:</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {DEMO_USERS.map((demo) => {
-                  const Icon = roleIcons[demo.role] || Sparkles;
-                  const isThisLoading = activeDemoEmail === demo.email;
+            {/* Instant 1-Click Guest Logins (Only when DEMO_MODE=true) */}
+            {showDemo && (
+              <>
+                <div className="p-3.5 rounded-2xl bg-slate-50/90 border border-slate-200 space-y-2.5">
+                  <div className="flex items-center gap-1.5 text-xs text-slate-800 font-bold">
+                    <Zap className="h-4 w-4 text-emerald-600" />
+                    <span>1-Click Instant Guest Demo Login:</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {DEMO_USERS.map((demo) => {
+                      const Icon = roleIcons[demo.role] || Sparkles;
+                      const isThisLoading = activeDemoEmail === demo.email;
 
-                  return (
-                    <button
-                      key={demo.email}
-                      type="button"
-                      disabled={Boolean(activeDemoEmail) || isLoading}
-                      onClick={() => handleInstantDemoLogin(demo.email, demo.role)}
-                      className={`p-2.5 rounded-xl border text-left transition-all relative ${
-                        isThisLoading
-                          ? 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-400/30'
-                          : 'border-slate-200 bg-white hover:border-emerald-400 hover:bg-emerald-50/40 hover:shadow-xs'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="p-1 rounded-md bg-emerald-100/70 text-emerald-700">
-                          <Icon className="h-3.5 w-3.5" />
-                        </div>
-                        <p className="font-bold text-slate-900 text-xs truncate">
-                          {roleLabels[demo.role] || demo.role}
-                        </p>
-                      </div>
-                      <p className="text-[11px] font-semibold text-emerald-700 truncate">{demo.name}</p>
-                      <p className="text-[10px] text-slate-400 truncate">{demo.email}</p>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+                      return (
+                        <button
+                          key={demo.email}
+                          type="button"
+                          disabled={Boolean(activeDemoEmail) || isLoading}
+                          onClick={() => handleInstantDemoLogin(demo.email, demo.role)}
+                          className={`p-2.5 rounded-xl border text-left transition-all relative ${
+                            isThisLoading
+                              ? 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-400/30'
+                              : 'border-slate-200 bg-white hover:border-emerald-400 hover:bg-emerald-50/40 hover:shadow-xs'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="p-1 rounded-md bg-emerald-100/70 text-emerald-700">
+                              <Icon className="h-3.5 w-3.5" />
+                            </div>
+                            <p className="font-bold text-slate-900 text-xs truncate">
+                              {roleLabels[demo.role] || demo.role}
+                            </p>
+                          </div>
+                          <p className="text-[11px] font-semibold text-emerald-700 truncate">{demo.name}</p>
+                          <p className="text-[10px] text-slate-400 truncate">{demo.email}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
-            <div className="relative flex py-1 items-center">
-              <div className="flex-grow border-t border-slate-200"></div>
-              <span className="flex-shrink mx-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                Or Sign In with Credentials
-              </span>
-              <div className="flex-grow border-t border-slate-200"></div>
-            </div>
+                <div className="relative flex py-1 items-center">
+                  <div className="flex-grow border-t border-slate-200"></div>
+                  <span className="flex-shrink mx-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                    Or Sign In with Credentials
+                  </span>
+                  <div className="flex-grow border-t border-slate-200"></div>
+                </div>
+              </>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-3.5">
               <div>

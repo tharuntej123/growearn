@@ -172,9 +172,9 @@ export class JobRepository implements IJobProvider {
   static async createJob(companyId: string, data: {
     title: string;
     description: string;
-    country?: string;
-    state?: string;
-    city?: string;
+    country?: string | null;
+    state?: string | null;
+    city?: string | null;
     locationType: string;
     jobType: string;
     minSalary: number;
@@ -191,8 +191,8 @@ export class JobRepository implements IJobProvider {
         title: data.title,
         description: data.description,
         country: data.country || 'India',
-        state: data.state || 'Tamil Nadu',
-        city: data.city || 'Chennai',
+        state: data.state ?? 'Tamil Nadu',
+        city: data.city ?? 'Chennai',
         locationType: data.locationType,
         jobType: data.jobType,
         minSalary: data.minSalary,
@@ -202,19 +202,22 @@ export class JobRepository implements IJobProvider {
         isLocal: data.isLocal,
         deadline: data.deadline,
         skills: {
-          create: await Promise.all(
-            data.skillNames.map(async (name) => {
+          create: await (async () => {
+            const uniqueSkillNames = Array.from(new Set(data.skillNames.map((n) => n.trim()))).filter(Boolean);
+            const createdSkills = [];
+            for (const name of uniqueSkillNames) {
               const skill = await prisma.skill.upsert({
-                where: { name: name.trim() },
+                where: { name },
                 update: {},
-                create: { name: name.trim() },
+                create: { name },
               });
-              return {
+              createdSkills.push({
                 skillId: skill.id,
                 isRequired: true,
-              };
-            })
-          ),
+              });
+            }
+            return createdSkills;
+          })(),
         },
       },
       include: {
