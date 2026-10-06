@@ -3,10 +3,13 @@
  * @description Official Cashfree Payment Provider Implementation (v2023-08-01).
  * 
  * Supports:
- * - Sandbox (`https://sandbox.cashfree.com/pg`) & Production (`https://api.cashfree.com/pg`)
+ * - Strict Environment Separation: Sandbox (`https://sandbox.cashfree.com/pg`) & Production (`https://api.cashfree.com/pg`)
+ * - Fail-closed production assertion & configuration validation
  * - Cryptographic Webhook HMAC-SHA256 Signature Verification (`x-webhook-signature`, `x-webhook-timestamp`)
+ * - 5-minute strict replay attack prevention window
+ * - Constant-time signature comparison (`crypto.timingSafeEqual`)
  * - Order Creation, Status Polling, Payment Verification, and Refunds
- * - Strict IDOR, Replay, and Secret Safety
+ * - Zero Secret Leakage (sanitized logging, no credentials in client bundles)
  */
 
 import crypto from 'crypto';
@@ -38,29 +41,78 @@ export class CashfreePaymentProvider implements IPaymentProvider {
     const rawEnv = (process.env.CASHFREE_ENVIRONMENT || 'sandbox').toLowerCase().trim();
     this.environment = rawEnv === 'production' ? 'production' : 'sandbox';
     this.apiVersion = (process.env.CASHFREE_API_VERSION || '2023-08-01').trim();
-    this.baseUrl = this.environment === 'production'
-      ? 'https://api.cashfree.com/pg'
-      : 'https://sandbox.cashfree.com/pg';
+    
+    // Strict environment-to-endpoint resolution
+    if (this.environment === 'production') {
+      this.baseUrl = 'https://api.cashfree.com/pg';
+    } else {
+      this.baseUrl = 'https://sandbox.cashfree.com/pg';
+    }
+
+    // Critical Startup / Configuration Invariant Assertions
+    if (this.environment === 'production' && !this.baseUrl.startsWith('https://api.cashfree.com')) {
+      throw new Error(
+        'FATAL CONFIGURATION ERROR: Cashfree production environment MUST use official production endpoint https://api.cashfree.com/pg'
+      );
+    }
+
+    if (this.environment === 'sandbox' && !this.baseUrl.startsWith('https://sandbox.cashfree.com')) {
+      throw new Error(
+        'FATAL CONFIGURATION ERROR: Cashfree sandbox environment MUST use official sandbox endpoint https://sandbox.cashfree.com/pg'
+      );
+    }
   }
 
   public isConfigured(): boolean {
-    return Boolean(this.clientId.length > 0 && this.clientSecret.length > 0);
+    const isDummy =
+      this.clientId.includes('your_cashfree') ||
+      this.clientSecret.includes('your_cashfree') ||
+      this.clientId.length === 0 ||
+      this.clientSecret.length === 0;
+    return !isDummy;
+  }
+
+  public isProduction(): boolean {
+    return this.environment === 'production';
   }
 
   public getEnvironment(): 'sandbox' | 'production' {
     return this.environment;
   }
 
+  public getBaseUrl(): string {
+    return this.baseUrl;
+  }
+
+  public getApiVersion(): string {
+    return this.apiVersion;
+  }
+
   public getClientId(): string {
     return this.clientId;
   }
 
-  private getHeaders(): Record<string, string> {
-    if (!this.isConfigured()) {
-      throw new Error(
-        'CASHFREE_CREDENTIALS_MISSING: Cashfree credentials (CASHFREE_CLIENT_ID / CASHFREE_CLIENT_SECRET) are not configured.'
-      );
+  /**
+   * Validate configuration and enforce fail-closed production readiness.
+   */
+  public validateConfiguration(): void {
+    if (this.environment === 'production') {
+      if (!this.isConfigured()) {
+        throw new Error(
+          'CASHFREE_PRODUCTION_BLOCKED: Cashfree production credentials (CASHFREE_CLIENT_ID / CASHFREE_CLIENT_SECRET) are missing or invalid for live production mode.'
+        );
+      }
+    } else {
+      if (!this.clientId || !this.clientSecret) {
+        throw new Error(
+          'CASHFREE_CREDENTIALS_MISSING: Cashfree credentials (CASHFREE_CLIENT_ID / CASHFREE_CLIENT_SECRET) are not configured.'
+        );
+      }
     }
+  }
+
+  private getHeaders(): Record<string, string> {
+    this.validateConfiguration();
     return {
       'x-client-id': this.clientId,
       'x-client-secret': this.clientSecret,
@@ -74,11 +126,7 @@ export class CashfreePaymentProvider implements IPaymentProvider {
    * Create an authentic order on Cashfree Payments API.
    */
   public async createOrder(params: CreateOrderParams): Promise<ProviderOrderResponse> {
-    if (!this.isConfigured()) {
-      throw new Error(
-        `PAYMENT_GATEWAY_NOT_CONFIGURED: Cashfree ${this.environment} credentials are required for order creation.`
-      );
-    }
+    this.validateConfiguration();
 
     const customerPhone = (params.customer.phone || '9999999999').replace(/[^0-9]/g, '').slice(-10) || '9999999999';
 
@@ -138,9 +186,7 @@ export class CashfreePaymentProvider implements IPaymentProvider {
    * Verify an order and payment attempt server-side against Cashfree API.
    */
   public async verifyPayment(params: VerifyPaymentParams): Promise<VerifyPaymentResult> {
-    if (!this.isConfigured()) {
-      throw new Error('Cashfree credentials are not configured.');
-    }
+    this.validateConfiguration();
 
     const orderStatus = await this.getOrderStatus(params.providerOrderId);
 
@@ -202,13 +248,13 @@ export class CashfreePaymentProvider implements IPaymentProvider {
       throw new Error('Missing Cashfree webhook verification headers (x-webhook-signature or x-webhook-timestamp)');
     }
 
-    // Verify timestamp to prevent replay attacks (tolerance 10 minutes)
+    // Verify timestamp to prevent replay attacks (strict 5-minute tolerance)
     const timestampMs = parseInt(timestamp, 10) * (timestamp.length === 10 ? 1000 : 1);
     if (!isNaN(timestampMs)) {
       const now = Date.now();
       const diffMs = Math.abs(now - timestampMs);
-      if (diffMs > 10 * 60 * 1000) {
-        throw new Error('Cashfree webhook timestamp expired or drifted (replay protection)');
+      if (diffMs > 5 * 60 * 1000) {
+        throw new Error('Cashfree webhook timestamp expired or drifted (5-minute replay tolerance)');
       }
     }
 
@@ -279,14 +325,13 @@ export class CashfreePaymentProvider implements IPaymentProvider {
    * Process refund via Cashfree Refund API.
    */
   public async refundPayment(params: RefundParams): Promise<RefundResult> {
-    if (!this.isConfigured()) {
-      throw new Error('Cashfree credentials are not configured.');
-    }
+    this.validateConfiguration();
 
     const refundPayload = {
       refund_amount: Number(params.refundAmount.toFixed(2)),
       refund_id: params.refundId,
       refund_note: params.refundNote || 'GroEarn Course/Mentorship Refund',
+      refund_speed: 'STANDARD',
     };
 
     const response = await fetch(`${this.baseUrl}/orders/${params.providerOrderId}/refunds`, {
@@ -315,9 +360,7 @@ export class CashfreePaymentProvider implements IPaymentProvider {
    * Fetch current order status and payment history from Cashfree API.
    */
   public async getOrderStatus(providerOrderId: string): Promise<PaymentStatusResult> {
-    if (!this.isConfigured()) {
-      throw new Error('Cashfree credentials are not configured.');
-    }
+    this.validateConfiguration();
 
     const [orderRes, paymentsRes] = await Promise.all([
       fetch(`${this.baseUrl}/orders/${providerOrderId}`, {
@@ -368,3 +411,4 @@ export class CashfreePaymentProvider implements IPaymentProvider {
     };
   }
 }
+

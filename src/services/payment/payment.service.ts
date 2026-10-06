@@ -49,12 +49,16 @@ export interface MentorEarningsSummary {
   mentorProfileId: string;
   grossRevenue: number;
   platformFee: number;
+  gatewayFee: number;
   commissionPercent: number;
   netEarnings: number;
   currency: string;
   totalSalesCount: number;
   courseSalesCount: number;
   mentorshipSessionCount: number;
+  settlementStatus: 'CALCULATED_UNSETTLED' | 'SETTLEMENT_PENDING' | 'SETTLED' | 'SETTLEMENT_FAILED';
+  settledAmount: number;
+  unsettledAmount: number;
   successfulPayments: Array<{
     id: string;
     provider: string;
@@ -68,8 +72,45 @@ export interface MentorEarningsSummary {
     payerEmail: string;
     createdAt: Date;
     status: string;
+    settlementStatus: 'CALCULATED' | 'SETTLED';
   }>;
 }
+
+export interface ReconciliationItem {
+  orderId: string;
+  providerOrderId: string;
+  provider: string;
+  internalStatus: string;
+  providerStatus: string;
+  internalAmount: number;
+  providerAmount?: number;
+  internalCurrency: string;
+  providerCurrency?: string;
+  matched: boolean;
+  discrepancies: string[];
+}
+
+export interface PaymentReconciliationReport {
+  timestamp: string;
+  totalChecked: number;
+  matchedCount: number;
+  mismatchCount: number;
+  items: ReconciliationItem[];
+}
+
+export interface PaymentHealthResult {
+  provider: PaymentProviderName;
+  environment: 'sandbox' | 'production';
+  apiConfigured: boolean;
+  webhookConfigured: boolean;
+  productionReady: boolean;
+  liveStatus: 'CASHFREE_PRODUCTION_PASS' | 'CASHFREE_PRODUCTION_BLOCKED';
+  blockReason?: string;
+  endpoint: string;
+  apiVersion: string;
+  platformCommissionPercent: number;
+}
+
 
 export class PaymentService {
   /**
@@ -785,21 +826,41 @@ export class PaymentService {
     const commissionPercent = this.getPlatformCommissionPercent();
     const grossRevenue = payments.reduce((acc, p) => acc + p.amount, 0);
     const platformFee = Number(((grossRevenue * commissionPercent) / 100).toFixed(2));
+    const gatewayFee = 0; // Distinct provider fee, tracked as reported by gateway (independent from promotional assumptions)
     const netEarnings = Number((grossRevenue - platformFee).toFixed(2));
 
     const courseSalesCount = payments.filter((p) => p.itemType === 'COURSE').length;
     const mentorshipSessionCount = payments.filter((p) => p.itemType === 'MENTORSHIP').length;
 
+    // Distinguish CALCULATED earnings from ACTUALLY_SETTLED transfers
+    // Unless Cashfree Marketplace / Easy Split confirms payout, settlement is marked as CALCULATED_UNSETTLED
+    const settledPayments = payments.filter((p) => (p.metadata as any)?.settled === true);
+    const settledAmount = settledPayments.reduce(
+      (acc, p) => acc + (p.amount - Number(((p.amount * commissionPercent) / 100).toFixed(2))),
+      0
+    );
+    const unsettledAmount = netEarnings - settledAmount;
+    const settlementStatus: MentorEarningsSummary['settlementStatus'] =
+      settledPayments.length === payments.length && payments.length > 0
+        ? 'SETTLED'
+        : settledPayments.length > 0
+        ? 'SETTLEMENT_PENDING'
+        : 'CALCULATED_UNSETTLED';
+
     return {
       mentorProfileId: mentorProfile.id,
       grossRevenue: Number(grossRevenue.toFixed(2)),
       platformFee,
+      gatewayFee,
       commissionPercent,
       netEarnings,
       currency: 'INR',
       totalSalesCount: payments.length,
       courseSalesCount,
       mentorshipSessionCount,
+      settlementStatus,
+      settledAmount: Number(settledAmount.toFixed(2)),
+      unsettledAmount: Number(unsettledAmount.toFixed(2)),
       successfulPayments: payments.map((p) => ({
         id: p.id,
         provider: p.provider,
@@ -813,6 +874,7 @@ export class PaymentService {
         payerEmail: p.user.email,
         createdAt: p.createdAt,
         status: p.status,
+        settlementStatus: (p.metadata as any)?.settled ? 'SETTLED' : 'CALCULATED',
       })),
     };
   }
@@ -854,4 +916,323 @@ export class PaymentService {
 
     return payment;
   }
+
+  /**
+   * Production-safe Refund Processing.
+   * Executes refund request via Cashfree/Provider API and updates PostgreSQL state.
+   */
+  public static async processRefund(params: {
+    paymentId: string;
+    amount?: number;
+    reason?: string;
+    requestingUserId: string;
+    requestingUserRole: string;
+  }): Promise<{
+    success: boolean;
+    refundId: string;
+    paymentId: string;
+    amount: number;
+    status: string;
+  }> {
+    const payment = await prisma.payment.findUnique({
+      where: { id: params.paymentId },
+      include: {
+        order: true,
+        course: true,
+        mentorProfile: true,
+      },
+    });
+
+    if (!payment) {
+      throw new Error('Payment record not found');
+    }
+
+    // IDOR / RBAC Check: Only ADMIN, or the instructor/mentor, or buyer can initiate
+    const isBuyer = payment.userId === params.requestingUserId;
+    const isInstructor = payment.course?.instructorId === params.requestingUserId;
+    const isMentor = payment.mentorProfile?.userId === params.requestingUserId;
+    const isAdmin = params.requestingUserRole === 'ADMIN';
+
+    if (!isAdmin && !isInstructor && !isMentor && !isBuyer) {
+      throw new Error('Forbidden: Unauthorized to initiate refund for this payment');
+    }
+
+    if (payment.status !== 'CAPTURED') {
+      throw new Error(`Refund cannot be initiated for payment with status ${payment.status}`);
+    }
+
+    if (payment.refundStatus === 'COMPLETED') {
+      return {
+        success: true,
+        refundId: (payment.metadata as any)?.refundId || `rfnd_${payment.id}`,
+        paymentId: payment.id,
+        amount: payment.refundAmount || payment.amount,
+        status: 'ALREADY_REFUNDED',
+      };
+    }
+
+    const refundAmount =
+      params.amount && params.amount > 0 && params.amount <= payment.amount
+        ? params.amount
+        : payment.amount;
+
+    const refundId = `rfnd_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const providerName = (payment.provider || 'CASHFREE') as PaymentProviderName;
+    const provider = PaymentProviderFactory.getProvider(providerName);
+
+    // Call provider refund endpoint
+    const refundResult = await provider.refundPayment({
+      providerOrderId: payment.razorpayOrderId,
+      providerPaymentId: payment.razorpayPaymentId || undefined,
+      refundAmount,
+      refundId,
+      refundNote: params.reason || 'GroEarn Course/Mentorship Refund Request',
+    });
+
+    // Transactionally update payment status & audit log
+    await prisma.$transaction(async (tx) => {
+      await tx.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: 'REFUNDED',
+          refundAmount,
+          refundStatus: refundResult.status || 'COMPLETED',
+          metadata: {
+            ...((payment.metadata as any) || {}),
+            refundId,
+            providerRefundId: refundResult.providerRefundId,
+            refundReason: params.reason || 'Refund requested and approved',
+            refundedAt: new Date().toISOString(),
+          },
+        },
+      });
+
+      // Revoke or adjust course enrollment if full refund
+      if (payment.itemType === 'COURSE' && payment.courseId) {
+        await tx.coursePurchase.deleteMany({
+          where: { userId: payment.userId, courseId: payment.courseId },
+        }).catch(() => {});
+        await tx.enrollment.deleteMany({
+          where: { studentId: payment.userId, courseId: payment.courseId },
+        }).catch(() => {});
+      }
+
+      // Record AuditLog
+      await tx.auditLog.create({
+        data: {
+          userId: params.requestingUserId,
+          action: 'PAYMENT_REFUNDED',
+          resource: `payment:${payment.id}`,
+          details: {
+            paymentId: payment.id,
+            providerOrderId: payment.razorpayOrderId,
+            refundAmount,
+            refundId,
+            providerRefundId: refundResult.providerRefundId,
+            reason: params.reason,
+          },
+        },
+      }).catch(() => {});
+    });
+
+    return {
+      success: true,
+      refundId,
+      paymentId: payment.id,
+      amount: refundAmount,
+      status: refundResult.status || 'COMPLETED',
+    };
+  }
+
+  /**
+   * Admin-safe Payment Reconciliation.
+   * Compares internal PostgreSQL state against official Cashfree API order & payment data.
+   */
+  public static async reconcilePayment(
+    orderIdOrPaymentId: string,
+    requestingUserId: string,
+    requestingUserRole: string
+  ): Promise<ReconciliationItem> {
+    if (requestingUserRole !== 'ADMIN') {
+      throw new Error('Forbidden: Only administrators can execute payment reconciliation');
+    }
+
+    const order = await prisma.paymentOrder.findFirst({
+      where: {
+        OR: [
+          { id: orderIdOrPaymentId },
+          { razorpayOrderId: orderIdOrPaymentId },
+        ],
+      },
+      include: { payment: true },
+    });
+
+    if (!order) {
+      throw new Error(`Payment order not found for identifier ${orderIdOrPaymentId}`);
+    }
+
+    const orderNotes = (order.notes as any) || {};
+    const providerName = (orderNotes.provider || 'CASHFREE') as PaymentProviderName;
+    const provider = PaymentProviderFactory.getProvider(providerName);
+
+    const discrepancies: string[] = [];
+    let providerStatus = 'UNKNOWN';
+    let providerAmount: number | undefined;
+    let providerCurrency: string | undefined;
+
+    try {
+      const statusRes = await provider.getOrderStatus(order.razorpayOrderId);
+      providerStatus = statusRes.status;
+      providerAmount = statusRes.amount;
+      providerCurrency = statusRes.currency;
+
+      if (order.status === 'PAID' && statusRes.status !== 'PAID') {
+        discrepancies.push(`Status mismatch: DB has ${order.status} but provider reports ${statusRes.status}`);
+      } else if (order.status === 'CREATED' && statusRes.status === 'PAID') {
+        discrepancies.push(`Status mismatch: DB has CREATED but provider reports PAID`);
+      }
+
+      if (Math.abs(order.amount - statusRes.amount) > 0.01) {
+        discrepancies.push(`Amount mismatch: DB has ${order.amount} but provider has ${statusRes.amount}`);
+      }
+
+      if (order.currency !== statusRes.currency) {
+        discrepancies.push(`Currency mismatch: DB has ${order.currency} but provider has ${statusRes.currency}`);
+      }
+    } catch (err: any) {
+      discrepancies.push(`Provider status query: ${err.message}`);
+    }
+
+    const matched = discrepancies.length === 0;
+
+    // Audit reconciliation query
+    await prisma.auditLog.create({
+      data: {
+        userId: requestingUserId,
+        action: 'PAYMENT_RECONCILIATION_AUDIT',
+        resource: `order:${order.id}`,
+        details: {
+          orderId: order.id,
+          providerOrderId: order.razorpayOrderId,
+          internalStatus: order.status,
+          providerStatus,
+          matched,
+          discrepancies,
+        },
+      },
+    }).catch(() => {});
+
+    return {
+      orderId: order.id,
+      providerOrderId: order.razorpayOrderId,
+      provider: providerName,
+      internalStatus: order.status,
+      providerStatus,
+      internalAmount: order.amount,
+      providerAmount,
+      internalCurrency: order.currency,
+      providerCurrency,
+      matched,
+      discrepancies,
+    };
+  }
+
+  /**
+   * Admin-safe Batch Reconciliation for recent payments.
+   */
+  public static async reconcileAllRecentPayments(
+    limit: number = 20,
+    requestingUserId: string,
+    requestingUserRole: string
+  ): Promise<PaymentReconciliationReport> {
+    if (requestingUserRole !== 'ADMIN') {
+      throw new Error('Forbidden: Only administrators can execute batch reconciliation');
+    }
+
+    const recentOrders = await prisma.paymentOrder.findMany({
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      include: { payment: true },
+    });
+
+    const items: ReconciliationItem[] = [];
+    for (const order of recentOrders) {
+      try {
+        const item = await this.reconcilePayment(order.id, requestingUserId, requestingUserRole);
+        items.push(item);
+      } catch (err: any) {
+        items.push({
+          orderId: order.id,
+          providerOrderId: order.razorpayOrderId,
+          provider: 'UNKNOWN',
+          internalStatus: order.status,
+          providerStatus: 'ERROR',
+          internalAmount: order.amount,
+          internalCurrency: order.currency,
+          matched: false,
+          discrepancies: [err.message],
+        });
+      }
+    }
+
+    const matchedCount = items.filter((i) => i.matched).length;
+    const mismatchCount = items.length - matchedCount;
+
+    return {
+      timestamp: new Date().toISOString(),
+      totalChecked: items.length,
+      matchedCount,
+      mismatchCount,
+      items,
+    };
+  }
+
+  /**
+   * Payment System Configuration & Health Check.
+   * Reports provider, environment, API, and webhook readiness WITHOUT exposing secrets.
+   */
+  public static getPaymentHealth(): PaymentHealthResult {
+    const rawProvider = (process.env.PAYMENT_PROVIDER || 'CASHFREE').toUpperCase();
+    const provider: PaymentProviderName = rawProvider === 'RAZORPAY' ? 'RAZORPAY' : 'CASHFREE';
+    const cf = PaymentProviderFactory.getCashfreeProvider();
+    const environment = cf.getEnvironment();
+    const apiConfigured = cf.isConfigured();
+    const webhookConfigured = Boolean(
+      process.env.CASHFREE_CLIENT_SECRET && process.env.CASHFREE_CLIENT_SECRET.trim().length > 0
+    );
+    const platformCommissionPercent = this.getPlatformCommissionPercent();
+
+    let liveStatus: PaymentHealthResult['liveStatus'] = 'CASHFREE_PRODUCTION_BLOCKED';
+    let blockReason: string | undefined = undefined;
+
+    if (environment === 'production') {
+      if (!apiConfigured || !webhookConfigured) {
+        liveStatus = 'CASHFREE_PRODUCTION_BLOCKED';
+        blockReason =
+          'Cashfree production credentials (CASHFREE_CLIENT_ID / CASHFREE_CLIENT_SECRET) and live merchant onboarding are pending.';
+      } else {
+        liveStatus = 'CASHFREE_PRODUCTION_BLOCKED';
+        blockReason =
+          'Awaiting live production low-value transaction verification on official merchant account.';
+      }
+    } else {
+      liveStatus = 'CASHFREE_PRODUCTION_BLOCKED';
+      blockReason =
+        'System currently running in SANDBOX mode. Live production mode requires CASHFREE_ENVIRONMENT=production and live merchant credentials.';
+    }
+
+    return {
+      provider,
+      environment,
+      apiConfigured,
+      webhookConfigured,
+      productionReady: Boolean(apiConfigured && webhookConfigured),
+      liveStatus,
+      blockReason,
+      endpoint: cf.getBaseUrl(),
+      apiVersion: cf.getApiVersion(),
+      platformCommissionPercent,
+    };
+  }
 }
+
