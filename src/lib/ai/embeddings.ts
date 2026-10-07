@@ -1,14 +1,4 @@
-/**
- * @file embeddings.ts
- * @description Local BGE-M3 (1024 dimensions) embedding service via Ollama / local model serving.
- * 
- * Strict Production Rules:
- * - Real inference via BGE-M3 model (1024-dimensional vector).
- * - Exact dimension verification (runtime check: vector.length === 1024).
- * - NO synthetic, random, Math.sin/cos, or pseudo-hash embeddings.
- * - If embedding service is offline or fails, throws explicit descriptive error (SEMANTIC_RAG_UNAVAILABLE).
- * - NEVER silently falls back to fake embeddings.
- */
+// Local BGE-M3 (1024 dimensions) embedding service via Ollama / local model serving.
 
 export const EMBEDDING_DIMENSION = 1024;
 
@@ -63,9 +53,7 @@ export class LocalBGE3EmbeddingProvider implements EmbeddingProvider {
     }
   }
 
-  /**
-   * Generate real 1024-dimensional vector embedding for single text.
-   */
+  // Generate real 1024-dimensional vector embedding for single text.
   public async generateEmbedding(text: string): Promise<number[]> {
     if (!text || text.trim().length === 0) {
       throw new Error('Embedding input text cannot be empty');
@@ -127,9 +115,7 @@ export class LocalBGE3EmbeddingProvider implements EmbeddingProvider {
     }
   }
 
-  /**
-   * Generate real 1024-dimensional vector embeddings for multiple texts.
-   */
+  // Generate real 1024-dimensional vector embeddings for multiple texts.
   public async generateEmbeddings(texts: string[]): Promise<number[][]> {
     if (!texts || texts.length === 0) return [];
 

@@ -10,10 +10,8 @@ const refundSchema = z.object({
   reason: z.string().max(500).optional(),
 });
 
-/**
- * Payment Refund Request Endpoint.
- * Authenticated refund processing via provider API with audit logging.
- */
+// Payment Refund Request Endpoint.
+// Authenticated refund processing via provider API with audit logging.
 export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser(req);

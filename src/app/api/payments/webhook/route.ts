@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PaymentService } from '@/services/payment/payment.service';
 
-/**
- * Real Multi-Provider Webhook Verification & Idempotent Event Processing
- * 
- * Supports:
- * - Cashfree Webhooks (`x-webhook-signature`, `x-webhook-timestamp`)
- * - Razorpay Webhooks (`x-razorpay-signature`)
- */
+// Real Multi-Provider Webhook Verification & Idempotent Event Processing
+// Supports:
 export async function POST(req: NextRequest) {
   const headersObj: Record<string, string | string[] | undefined> = {};
   req.headers.forEach((val, key) => {

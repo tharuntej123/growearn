@@ -1,7 +1,4 @@
-/**
- * @file razorpay.provider.ts
- * @description Razorpay Payment Provider implementing IPaymentProvider.
- */
+// Razorpay Payment Provider implementing IPaymentProvider.
 
 import {
   IPaymentProvider,

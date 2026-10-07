@@ -1,16 +1,4 @@
-/**
- * @file skill-rag.service.ts
- * @description Real RAG and multi-signal ranking service for skills, roadmaps, courses, and mentors.
- * 
- * Pipeline:
- * 1. Normalize Skill Query
- * 2. Retrieve Database-Backed Roadmap from PostgreSQL
- * 3. Retrieve Candidate Courses & Mentors from Database
- * 4. Apply Real pgvector Cosine Retrieval (if embeddings enabled) or Transparent Keyword/Skill Overlap Ranking
- * 5. Apply Business Level & Quality Filters
- * 6. Exclude already displayed IDs (Pagination / No duplicates)
- * 7. Return Top N Structured Results
- */
+// Real RAG and multi-signal ranking service for skills, roadmaps, courses, and mentors.
 
 import { prisma } from '@/lib/prisma';
 import { RoadmapRepository } from '@/repositories/roadmap.repository';
@@ -100,9 +88,7 @@ export interface RAGSkillSearchResult {
 }
 
 export class SkillRAGService {
-  /**
-   * Search for top courses matching a skill with pagination and duplicate exclusion.
-   */
+  // Search for top courses matching a skill with pagination and duplicate exclusion.
   static async searchCourses(params: {
     skill: string;
     level?: string;
@@ -236,9 +222,7 @@ export class SkillRAGService {
     };
   }
 
-  /**
-   * Search for top mentors matching a skill with pagination and duplicate exclusion.
-   */
+  // Search for top mentors matching a skill with pagination and duplicate exclusion.
   static async searchMentors(params: {
     skill: string;
     offset?: number;
@@ -364,9 +348,7 @@ export class SkillRAGService {
     };
   }
 
-  /**
-   * Main Skill RAG entrypoint: Returns database roadmap + top 5 courses + top 5 mentors.
-   */
+  // Main Skill RAG entrypoint: Returns database roadmap + top 5 courses + top 5 mentors.
   static async querySkillRAG(
     skillQuery: string,
     userLevel = 'Intermediate'

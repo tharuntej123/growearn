@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server';
 import { PaymentService } from '@/services/payment/payment.service';
 
-/**
- * Payment System Health Check Endpoint.
- * Reports environment, provider, and readiness telemetry WITHOUT exposing secrets.
- */
+// Payment System Health Check Endpoint.
+// Reports environment, provider, and readiness telemetry WITHOUT exposing secrets.
 export async function GET() {
   try {
     const health = PaymentService.getPaymentHealth();

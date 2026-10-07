@@ -1,15 +1,4 @@
-/**
- * @file payment.service.ts
- * @description Production Marketplace Payment Orchestration Service.
- * 
- * Supports:
- * - Cashfree Payments API (Production / Sandbox Marketplace Provider)
- * - Razorpay Payments API (Alternative Provider)
- * - Server-side cryptographic signature & webhook verification
- * - Idempotent event processing & transactional entitlement grants
- * - Deterministic platform commission & mentor payout aggregation
- * - Strict IDOR prevention & replay protection
- */
+// Production Marketplace Payment Orchestration Service.
 
 import { prisma } from '@/lib/prisma';
 import { MessagingRepository } from '@/repositories/messaging.repository';
@@ -113,9 +102,7 @@ export interface PaymentHealthResult {
 
 
 export class PaymentService {
-  /**
-   * Get configured platform commission rate (defaults to 10%).
-   */
+  // Get configured platform commission rate (defaults to 10%).
   public static getPlatformCommissionPercent(): number {
     const raw = process.env.PLATFORM_COMMISSION_PERCENT;
     if (raw && !isNaN(Number(raw))) {
@@ -124,10 +111,8 @@ export class PaymentService {
     return 10;
   }
 
-  /**
-   * Create an order for a paid course purchase.
-   * Authoritative price is queried strictly from PostgreSQL.
-   */
+  // Create an order for a paid course purchase.
+  // Authoritative price is queried strictly from PostgreSQL.
   public static async createCoursePaymentOrder(
     userId: string,
     courseId: string,
@@ -263,10 +248,8 @@ export class PaymentService {
     };
   }
 
-  /**
-   * Create an order for a paid 1-on-1 mentorship session.
-   * Hourly rate is queried strictly from MentorProfile in PostgreSQL.
-   */
+  // Create an order for a paid 1-on-1 mentorship session.
+  // Hourly rate is queried strictly from MentorProfile in PostgreSQL.
   public static async createMentorshipPaymentOrder(
     userId: string,
     mentorProfileId: string,
@@ -401,9 +384,7 @@ export class PaymentService {
     };
   }
 
-  /**
-   * Cryptographically verify payment signature and execute entitlement / booking transaction.
-   */
+  // Cryptographically verify payment signature and execute entitlement / booking transaction.
   public static async verifyAndProcessPayment(
     userId: string,
     input: VerifyPaymentInput
@@ -624,9 +605,7 @@ export class PaymentService {
     return transactionResult;
   }
 
-  /**
-   * Process Provider Webhook Event with strict idempotency and cryptographic signature validation.
-   */
+  // Process Provider Webhook Event with strict idempotency and cryptographic signature validation.
   public static async processWebhook(
     rawBody: string,
     headers: Record<string, string | string[] | undefined> | string,
@@ -788,10 +767,8 @@ export class PaymentService {
     }
   }
 
-  /**
-   * Aggregate authentic mentor revenue and payments from PostgreSQL records.
-   * Calculates gross amount, configurable platform fee (default 10%), and net mentor earnings.
-   */
+  // Aggregate authentic mentor revenue and payments from PostgreSQL records.
+  // Calculates gross amount, configurable platform fee (default 10%), and net mentor earnings.
   public static async getMentorEarnings(mentorUserId: string): Promise<MentorEarningsSummary> {
     const mentorProfile = await prisma.mentorProfile.findUnique({
       where: { userId: mentorUserId },
@@ -879,9 +856,7 @@ export class PaymentService {
     };
   }
 
-  /**
-   * Secure payment record lookup with strict IDOR verification.
-   */
+  // Secure payment record lookup with strict IDOR verification.
   public static async getPaymentById(
     paymentId: string,
     requestingUserId: string,
@@ -917,10 +892,8 @@ export class PaymentService {
     return payment;
   }
 
-  /**
-   * Production-safe Refund Processing.
-   * Executes refund request via Cashfree/Provider API and updates PostgreSQL state.
-   */
+  // Production-safe Refund Processing.
+  // Executes refund request via Cashfree/Provider API and updates PostgreSQL state.
   public static async processRefund(params: {
     paymentId: string;
     amount?: number;
@@ -1044,10 +1017,8 @@ export class PaymentService {
     };
   }
 
-  /**
-   * Admin-safe Payment Reconciliation.
-   * Compares internal PostgreSQL state against official Cashfree API order & payment data.
-   */
+  // Admin-safe Payment Reconciliation.
+  // Compares internal PostgreSQL state against official Cashfree API order & payment data.
   public static async reconcilePayment(
     orderIdOrPaymentId: string,
     requestingUserId: string,
@@ -1137,9 +1108,7 @@ export class PaymentService {
     };
   }
 
-  /**
-   * Admin-safe Batch Reconciliation for recent payments.
-   */
+  // Admin-safe Batch Reconciliation for recent payments.
   public static async reconcileAllRecentPayments(
     limit: number = 20,
     requestingUserId: string,
@@ -1187,10 +1156,8 @@ export class PaymentService {
     };
   }
 
-  /**
-   * Payment System Configuration & Health Check.
-   * Reports provider, environment, API, and webhook readiness WITHOUT exposing secrets.
-   */
+  // Payment System Configuration & Health Check.
+  // Reports provider, environment, API, and webhook readiness WITHOUT exposing secrets.
   public static getPaymentHealth(): PaymentHealthResult {
     const rawProvider = (process.env.PAYMENT_PROVIDER || 'CASHFREE').toUpperCase();
     const provider: PaymentProviderName = rawProvider === 'RAZORPAY' ? 'RAZORPAY' : 'CASHFREE';

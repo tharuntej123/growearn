@@ -1,27 +1,4 @@
-/**
- * @file rag-chain.ts
- * @description Real LangChain Production RAG Chain using RunnableSequence, pgvector Cosine Search, and LLM Grounding.
- * 
- * Pipeline:
- * User Query
- *   ↓
- * Intent Classifier (course | mentor | jobs | roadmap | profile | general)
- *   ↓
- * Embedding Model: Local BGE-M3 (1024 dim)
- *   ↓
- * Vector Database (PostgreSQL pgvector Cosine Search)
- *   ↓
- * Top-K Retrieved Context (Top 5 Documents)
- *   ↓
- * Grounded PromptTemplate (<15 lines System Prompt)
- *   ↓
- * LLM Generation (Groq / OpenAI)
- *   ↓
- * Structured Grounded Response with Real Similarity Scores & Sources
- * 
- * Input: question: string, userContext?: UserAIContext | null
- * Output: Grounded RAG Result { answer, intent, retrievedDocuments, similarity, sources, recommendedActions }
- */
+// Real LangChain Production RAG Chain using RunnableSequence, pgvector Cosine Search, and LLM Grounding.
 
 import { ragPromptTemplate } from './prompt';
 import { PgVectorRetriever } from './retriever';
@@ -48,9 +25,7 @@ export interface GroundedRAGResult {
 }
 
 export class ProductionRAGChain {
-  /**
-   * Executes the full production RAG pipeline.
-   */
+  // Executes the full production RAG pipeline.
   static async execute(
     question: string,
     userContext?: UserAIContext | null

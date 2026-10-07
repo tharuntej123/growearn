@@ -1,15 +1,4 @@
-/**
- * @file seed.ts
- * @description Production Database Seed Script for GrowEarn Platform.
- * 
- * Generates:
- * - 12 Mentors (Realistic Indian Professionals with bio, skills, experience, LinkedIn, hourly rate)
- * - 10 Companies (Realistic fictional tech companies)
- * - 20 Technical Courses (Real curriculum with modules and lessons)
- * - 25 Industry Job Postings (Realistic salaries, locations, skill requirements)
- * - Active Learner and Professional demo accounts
- * - Ingests all platform knowledge, mentors, courses, and jobs into PostgreSQL pgvector (document_chunks)
- */
+// Production Database Seed Script for GrowEarn Platform.
 
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';

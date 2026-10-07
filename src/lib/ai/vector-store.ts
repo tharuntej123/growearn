@@ -1,16 +1,4 @@
-/**
- * @file vector-store.ts
- * @description PostgreSQL + pgvector vector storage and Cosine Similarity retrieval service.
- * 
- * Architecture:
- * - Database: PostgreSQL with pgvector extension
- * - Table: document_chunks (content, source, source_type, metadata, embedding vector(1024), created_at)
- * - Index: HNSW with vector_cosine_ops
- * - Metric: Cosine Distance (<=> operator), Cosine Similarity = 1 - distance
- * 
- * Input: 1024-dimensional query embedding vector, top-k limit (default 5), optional source filtering
- * Output: Grounded chunks sorted by cosine similarity with real similarity scores [0.0 - 1.0]
- */
+// PostgreSQL + pgvector vector storage and Cosine Similarity retrieval service.
 
 import { prisma } from '@/lib/prisma';
 import { generateEmbedding, generateEmbeddings } from './embeddings';
@@ -34,17 +22,13 @@ export interface IngestChunkInput {
   embedding?: number[];
 }
 
-/**
- * Format a JavaScript number array into a pgvector string literal format: "[0.123,0.456,...]"
- */
+// Format a JavaScript number array into a pgvector string literal format: "[0.123,0.456,...]"
 export function formatVectorForPg(vector: number[]): string {
   return `[${vector.join(',')}]`;
 }
 
 export class PgVectorStore {
-  /**
-   * Insert a single document chunk into PostgreSQL with vector embedding.
-   */
+  // Insert a single document chunk into PostgreSQL with vector embedding.
   static async insertChunk(input: IngestChunkInput): Promise<string> {
     const embedding = input.embedding || (await generateEmbedding(input.content));
     const vectorStr = formatVectorForPg(embedding);
@@ -67,9 +51,7 @@ export class PgVectorStore {
     return rows[0]?.id;
   }
 
-  /**
-   * Batch insert multiple document chunks with pgvector embeddings.
-   */
+  // Batch insert multiple document chunks with pgvector embeddings.
   static async insertChunks(inputs: IngestChunkInput[]): Promise<number> {
     if (!inputs || inputs.length === 0) return 0;
 
@@ -105,12 +87,9 @@ export class PgVectorStore {
     return insertedCount;
   }
 
-  /**
-   * Performs Cosine Similarity vector search on document_chunks using pgvector <=> operator.
-   * 
-   * Cosine Similarity = 1 - (embedding <=> query_vector)
-   * Top-K: Returns top K matches strictly sorted by similarity.
-   */
+  // Performs Cosine Similarity vector search on document_chunks using pgvector <=> operator.
+  // Cosine Similarity = 1 - (embedding <=> query_vector)
+  // Top-K: Returns top K matches strictly sorted by similarity.
   static async similaritySearch(
     queryEmbedding: number[],
     topK: number = 5,
@@ -175,9 +154,7 @@ export class PgVectorStore {
     }));
   }
 
-  /**
-   * Delete chunks for a specific source name (e.g. before re-indexing an updated file).
-   */
+  // Delete chunks for a specific source name (e.g. before re-indexing an updated file).
   static async deleteChunksBySource(source: string): Promise<number> {
     const count = await prisma.$executeRawUnsafe(
       `DELETE FROM document_chunks WHERE source = $1`,
@@ -186,9 +163,7 @@ export class PgVectorStore {
     return count;
   }
 
-  /**
-   * Count total indexed chunks in the vector database.
-   */
+  // Count total indexed chunks in the vector database.
   static async countChunks(): Promise<number> {
     const result = await prisma.$queryRawUnsafe<Array<{ count: bigint | number }>>(
       `SELECT COUNT(*)::int as count FROM document_chunks`

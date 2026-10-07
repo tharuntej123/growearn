@@ -9,14 +9,8 @@ export interface RateLimitResult {
 }
 
 export class DatabaseRateLimiter {
-  /**
-   * Consume rate limit points for a given key.
-   * Backed by PostgreSQL RateLimit table for multi-instance high-availability.
-   *
-   * @param key Unique key (e.g. `auth:login:127.0.0.1` or `ai:chat:user_123`)
-   * @param limit Maximum allowed points within the window
-   * @param windowSeconds Time window in seconds
-   */
+  // Consume rate limit points for a given key.
+  // Backed by PostgreSQL RateLimit table for multi-instance high-availability.
   static async consume(key: string, limit: number, windowSeconds: number): Promise<RateLimitResult> {
     const now = new Date();
     const expiresAt = new Date(now.getTime() + windowSeconds * 1000);
@@ -88,9 +82,7 @@ export class DatabaseRateLimiter {
     }
   }
 
-  /**
-   * Clean up expired rate limits (can be called periodically or in background tasks).
-   */
+  // Clean up expired rate limits (can be called periodically or in background tasks).
   static async cleanupExpired(): Promise<number> {
     try {
       const result = await prisma.rateLimit.deleteMany({
@@ -105,9 +97,7 @@ export class DatabaseRateLimiter {
   }
 }
 
-/**
- * Extract client IP or identifier from request headers
- */
+// Extract client IP or identifier from request headers
 export function getClientIp(req: NextRequest): string {
   const forwarded = req.headers.get('x-forwarded-for');
   if (forwarded) {
@@ -120,9 +110,7 @@ export function getClientIp(req: NextRequest): string {
   return '127.0.0.1';
 }
 
-/**
- * Middleware helper for API routes: checks rate limit and returns 429 response if exceeded.
- */
+// Middleware helper for API routes: checks rate limit and returns 429 response if exceeded.
 export async function enforceRateLimit(
   req: NextRequest,
   prefix: string,

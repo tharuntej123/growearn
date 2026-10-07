@@ -1,9 +1,7 @@
 import { prisma } from '@/lib/prisma';
 
 export class NotificationRepository {
-  /**
-   * Get user notifications with unread count.
-   */
+  // Get user notifications with unread count.
   static async getUserNotifications(userId: string, limit = 20, offset = 0) {
     const [notifications, unreadCount] = await Promise.all([
       prisma.notification.findMany({
@@ -20,9 +18,7 @@ export class NotificationRepository {
     return { notifications, unreadCount };
   }
 
-  /**
-   * Create a new persistent notification.
-   */
+  // Create a new persistent notification.
   static async createNotification(data: {
     userId: string;
     title: string;
@@ -41,9 +37,7 @@ export class NotificationRepository {
     });
   }
 
-  /**
-   * Mark a notification as read.
-   */
+  // Mark a notification as read.
   static async markAsRead(notificationId: string, userId: string) {
     return prisma.notification.updateMany({
       where: { id: notificationId, userId },
@@ -51,9 +45,7 @@ export class NotificationRepository {
     });
   }
 
-  /**
-   * Mark all notifications as read for a user.
-   */
+  // Mark all notifications as read for a user.
   static async markAllAsRead(userId: string) {
     return prisma.notification.updateMany({
       where: { userId, isRead: false },

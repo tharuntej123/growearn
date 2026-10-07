@@ -1,7 +1,4 @@
-/**
- * @file index.ts
- * @description Central barrel export for GrowEarn AI and LangChain RAG architecture.
- */
+// Central barrel export for GrowEarn AI and LangChain RAG architecture.
 
 export * from './embeddings';
 export * from './vector-store';

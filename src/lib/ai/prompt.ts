@@ -1,13 +1,4 @@
-/**
- * @file prompt.ts
- * @description Production RAG Prompts and LangChain PromptTemplates for GrowEarn.
- * 
- * Rules:
- * - System prompt under 15 lines.
- * - Strictly grounded: answers only from retrieved context or states lack of data.
- * - Never invents mentors, jobs, or companies.
- * - Cites retrieved source names cleanly.
- */
+// Production RAG Prompts and LangChain PromptTemplates for GrowEarn.
 
 import { PromptTemplate, ChatPromptTemplate } from '@langchain/core/prompts';
 

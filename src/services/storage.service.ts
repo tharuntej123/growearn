@@ -30,10 +30,8 @@ export interface IStorageProvider {
   download(key: string): Promise<{ buffer: Buffer; mimeType: string }>;
 }
 
-/**
- * Local File System Storage Provider (Secure Dev Fallback)
- * Stores private files in secure non-public directory.
- */
+// Local File System Storage Provider (Secure Dev Fallback)
+// Stores private files in secure non-public directory.
 export class LocalStorageProvider implements IStorageProvider {
   readonly providerType: StorageProviderType = 'local';
   private privateBaseDir = path.join(process.cwd(), 'storage', 'private');
@@ -120,9 +118,7 @@ export class LocalStorageProvider implements IStorageProvider {
   }
 }
 
-/**
- * AWS S3 Storage Provider
- */
+// AWS S3 Storage Provider
 export class S3StorageProvider implements IStorageProvider {
   readonly providerType: StorageProviderType = 's3';
   private bucket: string;
@@ -232,9 +228,7 @@ export class S3StorageProvider implements IStorageProvider {
   }
 }
 
-/**
- * Cloudflare R2 Storage Provider (S3 Compatible)
- */
+// Cloudflare R2 Storage Provider (S3 Compatible)
 export class R2StorageProvider implements IStorageProvider {
   readonly providerType: StorageProviderType = 'r2';
   private accountId: string;
@@ -343,9 +337,7 @@ export class R2StorageProvider implements IStorageProvider {
   }
 }
 
-/**
- * Google Cloud Storage Provider (GCS)
- */
+// Google Cloud Storage Provider (GCS)
 export class GCSStorageProvider implements IStorageProvider {
   readonly providerType: StorageProviderType = 'gcs';
   private bucket: string;
@@ -418,19 +410,15 @@ export class GCSStorageProvider implements IStorageProvider {
   }
 }
 
-/**
- * Master Storage Service
- * Unified multi-provider storage abstraction for S3, Cloudflare R2, GCS, and Local Secure Fallback.
- */
+// Master Storage Service
+// Unified multi-provider storage abstraction for S3, Cloudflare R2, GCS, and Local Secure Fallback.
 export class StorageService {
   private static localProvider = new LocalStorageProvider();
   private static s3Provider = new S3StorageProvider();
   private static r2Provider = new R2StorageProvider();
   private static gcsProvider = new GCSStorageProvider();
 
-  /**
-   * Determine the active storage provider from environment.
-   */
+  // Determine the active storage provider from environment.
   public static getActiveProviderType(): StorageProviderType {
     const provider = (process.env.STORAGE_PROVIDER || 'local').toLowerCase() as StorageProviderType;
     if (['s3', 'r2', 'gcs', 'local'].includes(provider)) {
@@ -454,9 +442,7 @@ export class StorageService {
     }
   }
 
-  /**
-   * Upload an arbitrary buffer to active storage provider.
-   */
+  // Upload an arbitrary buffer to active storage provider.
   public static async upload(
     fileBuffer: Buffer,
     originalName: string,
@@ -511,33 +497,25 @@ export class StorageService {
     }
   }
 
-  /**
-   * Delete an object from storage.
-   */
+  // Delete an object from storage.
   public static async delete(key: string, providerType?: StorageProviderType): Promise<boolean> {
     const provider = this.getProvider(providerType);
     return provider.delete(key);
   }
 
-  /**
-   * Generate signed/temporal access URL for private objects.
-   */
+  // Generate signed/temporal access URL for private objects.
   public static async getSignedUrl(key: string, expiresInSeconds = 3600, providerType?: StorageProviderType): Promise<string> {
     const provider = this.getProvider(providerType);
     return provider.getSignedUrl(key, expiresInSeconds);
   }
 
-  /**
-   * Download or stream stored object.
-   */
+  // Download or stream stored object.
   public static async download(key: string, providerType?: StorageProviderType): Promise<{ buffer: Buffer; mimeType: string }> {
     const provider = this.getProvider(providerType);
     return provider.download(key);
   }
 
-  /**
-   * Helper specifically for resume uploads (backwards compatible).
-   */
+  // Helper specifically for resume uploads (backwards compatible).
   public static async saveResumeFile(
     fileBuffer: Buffer,
     originalName: string,

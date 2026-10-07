@@ -1,7 +1,4 @@
-/**
- * @file ai-assistant.test.ts
- * @description Production AI Assistant Test Suite validating RAG responses, intent classification, and vector search.
- */
+// Production AI Assistant Test Suite validating RAG responses, intent classification, and vector search.
 
 import { AIAssistantService } from '../ai/ai-assistant.service';
 import { IntentClassifier } from '../ai/intent-classifier';

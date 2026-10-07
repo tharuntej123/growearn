@@ -1,26 +1,4 @@
-/**
- * @file ingest.ts
- * @description Production Document and Entity Ingestion Pipeline using BGE-M3 (1024 dims).
- * 
- * Pipeline:
- * Upload / Entity Content
- *   ↓
- * Extract Text (PDF parser / Markdown / Text / Structured Metadata)
- *   ↓
- * RecursiveCharacterTextSplitter (chunkSize: 800, chunkOverlap: 120)
- *   ↓
- * Embedding Model (Local BGE-M3, 1024 dim)
- *   ↓
- * Store in PostgreSQL pgvector (document_chunks table) with HNSW Index
- * 
- * Unified Metadata Standards:
- * - Course -> courseId
- * - Mentor -> mentorProfileId
- * - Job -> jobId
- * - Candidate / User -> userId
- * - Project -> projectId
- * - Roadmap -> roadmapId
- */
+// Production Document and Entity Ingestion Pipeline using BGE-M3 (1024 dims).
 
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 import { PDFParse } from 'pdf-parse';
@@ -50,9 +28,7 @@ export class DocumentIngestionService {
     separators: ['\n\n', '\n', '. ', ' ', ''],
   });
 
-  /**
-   * Extract raw text from buffer or string based on file type.
-   */
+  // Extract raw text from buffer or string based on file type.
   static async extractText(input: IngestFileInput): Promise<string> {
     if (input.content && input.content.trim().length > 0) {
       return input.content;
@@ -72,9 +48,7 @@ export class DocumentIngestionService {
     return input.buffer.toString('utf-8');
   }
 
-  /**
-   * Ingest a document file or content payload into PostgreSQL pgvector.
-   */
+  // Ingest a document file or content payload into PostgreSQL pgvector.
   static async ingestDocument(input: IngestFileInput): Promise<IngestResult> {
     if (!isEmbeddingConfigured()) {
       return {
@@ -148,9 +122,7 @@ export class DocumentIngestionService {
     }
   }
 
-  /**
-   * Ingest a Course entity with authoritative metadata (courseId).
-   */
+  // Ingest a Course entity with authoritative metadata (courseId).
   static async ingestCourse(course: {
     id: string;
     title: string;
@@ -174,9 +146,7 @@ export class DocumentIngestionService {
     });
   }
 
-  /**
-   * Ingest a Mentor entity with authoritative metadata (mentorProfileId).
-   */
+  // Ingest a Mentor entity with authoritative metadata (mentorProfileId).
   static async ingestMentor(mentor: {
     id: string;
     userId: string;
@@ -203,9 +173,7 @@ export class DocumentIngestionService {
     });
   }
 
-  /**
-   * Ingest a Job entity with authoritative metadata (jobId).
-   */
+  // Ingest a Job entity with authoritative metadata (jobId).
   static async ingestJob(job: {
     id: string;
     title: string;
@@ -231,9 +199,7 @@ export class DocumentIngestionService {
     });
   }
 
-  /**
-   * Ingest a Candidate entity with authoritative metadata (userId).
-   */
+  // Ingest a Candidate entity with authoritative metadata (userId).
   static async ingestCandidate(candidate: {
     id: string;
     name: string;
@@ -260,9 +226,7 @@ export class DocumentIngestionService {
     });
   }
 
-  /**
-   * Delete vector index chunks when an entity is deleted.
-   */
+  // Delete vector index chunks when an entity is deleted.
   static async deleteEntityVector(sourceType: string, entityId: string): Promise<number> {
     const sourceName = `${sourceType}_${entityId}`;
     return PgVectorStore.deleteChunksBySource(sourceName);

@@ -1,22 +1,4 @@
-/**
- * @file run-all-tests.ts
- * @description Master End-to-End Automated Test Suite for GroEarn (Second Deep Verification Pass).
- * 
- * Verifies:
- * 1. Security, Auth, RBAC & IDOR Isolation (Cross-user access, admin block, token security)
- * 2. Rate Limiting (Multi-instance PostgreSQL DatabaseRateLimiter)
- * 3. StorageService (Multi-provider abstraction, signed URLs, private resumes)
- * 4. AuditLog Immutability (Enforced append-only restriction)
- * 5. Learner Lifecycle & RAG (Skill -> Roadmap -> Top 5 Courses/Mentors -> Pagination w/ zero duplicates -> Enrollment -> Mentorship Request)
- * 6. Professional Lifecycle (Job Discovery -> Hybrid Match -> Application Persistence)
- * 7. Mentor Lifecycle (Course Creation -> Mentorship Request Accept -> Conversation Genesis)
- * 8. Employer Hiring Pipeline (Company / Job Creation -> Application Status Persistence)
- * 9. Community Feed (Post -> Comment -> Like -> Persistence)
- * 10. Notifications Lifecycle (Creation on events -> Mark Read -> Unread Count)
- * 11. Admin Platform Telemetry & Moderation
- * 12. RAG & Vector Engine (Model: BGE-M3, 1024-dim, pgvector HNSW cosine index)
- * 13. Marketplace Payment System (Cashfree & Razorpay Provider Abstraction)
- */
+// Master End-to-End Automated Test Suite for GroEarn (Second Deep Verification Pass).
 
 import { prisma } from '../prisma';
 import { AuthService } from '../../services/auth.service';
@@ -73,9 +55,7 @@ async function runMasterTestSuite() {
     }
   }
 
-  // ============================================================================
   // SUITE 1: SECURITY, AUTHENTICATION & IDOR ISOLATION
-  // ============================================================================
   console.log('🔒 SUITE 1: Security, Auth & IDOR Isolation...');
   try {
     // 1.1: ADMIN registration attack test via Zod schema
@@ -198,9 +178,7 @@ async function runMasterTestSuite() {
     console.error('Suite 1 Error:', err);
   }
 
-  // ============================================================================
   // SUITE 2: RATE LIMITING ENGINE
-  // ============================================================================
   console.log('\n⏱️ SUITE 2: PostgreSQL Multi-Instance Database Rate Limiter...');
   try {
     const rateKey = `test-ratelimit-${Date.now()}`;
@@ -222,9 +200,7 @@ async function runMasterTestSuite() {
     console.error('Suite 2 Error:', err);
   }
 
-  // ============================================================================
   // SUITE 3: OBJECT STORAGE SERVICE & SIGNED URLS
-  // ============================================================================
   console.log('\n📦 SUITE 3: Object Storage Service & Secure Access...');
   try {
     const testFileBuffer = Buffer.from('%PDF-1.4 Mock resume content for automated testing');
@@ -260,9 +236,7 @@ async function runMasterTestSuite() {
     console.error('Suite 3 Error:', err);
   }
 
-  // ============================================================================
   // SUITE 4: AUDIT LOG IMMUTABILITY
-  // ============================================================================
   console.log('\n📜 SUITE 4: Audit Log Immutability & Append-Only Restrictions...');
   try {
     const testAudit = await prisma.auditLog.create({
@@ -300,9 +274,7 @@ async function runMasterTestSuite() {
     console.error('Suite 4 Error:', err);
   }
 
-  // ============================================================================
   // SUITE 5: LEARNER LIFECYCLE & RAG ENGINE
-  // ============================================================================
   console.log('\n🎓 SUITE 5: Learner Lifecycle & Real RAG Retrieval...');
   try {
     // 5.1: Vector dimension check
@@ -390,9 +362,7 @@ async function runMasterTestSuite() {
     console.error('Suite 5 Error:', err);
   }
 
-  // ============================================================================
   // SUITE 6: PROFESSIONAL & JOB MATCHING
-  // ============================================================================
   console.log('\n💼 SUITE 6: Professional Job Matching & Application Flow...');
   try {
     const professional = await prisma.user.findFirst({
@@ -419,9 +389,7 @@ async function runMasterTestSuite() {
     console.error('Suite 6 Error:', err);
   }
 
-  // ============================================================================
   // SUITE 7: MENTOR & DIRECT MESSAGING FLOW
-  // ============================================================================
   console.log('\n👨‍🏫 SUITE 7: Mentor Course Publishing & Mentorship Genesis...');
   try {
     const mentor = await prisma.user.findFirst({
@@ -473,9 +441,7 @@ async function runMasterTestSuite() {
     console.error('Suite 7 Error:', err);
   }
 
-  // ============================================================================
   // SUITE 8: EMPLOYER PIPELINE & STATUS PERSISTENCE
-  // ============================================================================
   console.log('\n🏢 SUITE 8: Employer Hiring Pipeline & Status Persistence...');
   try {
     const employer = await prisma.user.findFirst({
@@ -505,9 +471,7 @@ async function runMasterTestSuite() {
     console.error('Suite 8 Error:', err);
   }
 
-  // ============================================================================
   // SUITE 9: COMMUNITY FEED (POSTS, COMMENTS, LIKES)
-  // ============================================================================
   console.log('\n💬 SUITE 9: Community Feed Persistence & Interactions...');
   try {
     const author = await prisma.user.findFirst();
@@ -531,9 +495,7 @@ async function runMasterTestSuite() {
     console.error('Suite 9 Error:', err);
   }
 
-  // ============================================================================
   // SUITE 10: NOTIFICATIONS LIFECYCLE
-  // ============================================================================
   console.log('\n🔔 SUITE 10: Notifications Lifecycle & Unread Tracking...');
   try {
     const user = await prisma.user.findFirst();
@@ -561,9 +523,7 @@ async function runMasterTestSuite() {
     console.error('Suite 10 Error:', err);
   }
 
-  // ============================================================================
   // SUITE 11: ADMIN PLATFORM TELEMETRY & AUDIT LOGS
-  // ============================================================================
   console.log('\n🛡️ SUITE 11: Admin Moderation & Platform Telemetry...');
   try {
     const platformStats = await AdminRepository.getPlatformStats();
@@ -580,9 +540,7 @@ async function runMasterTestSuite() {
     console.error('Suite 11 Error:', err);
   }
 
-  // ============================================================================
   // SUITE 12: REAL RAZORPAY PAYMENT SYSTEM & WEBHOOKS
-  // ============================================================================
   console.log('\n💳 SUITE 12: Real Razorpay Payment System, Entitlements & Webhooks...');
   try {
     const student = await prisma.user.findFirst({ where: { role: 'LEARNER' } });
@@ -712,9 +670,7 @@ async function runMasterTestSuite() {
     console.error('Suite 12 Error:', err);
   }
 
-  // ============================================================================
   // SUMMARY
-  // ============================================================================
   console.log('\n================================================================================');
   const total = testResults.length;
   const passed = testResults.filter((r) => r.passed).length;

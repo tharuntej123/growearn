@@ -4,9 +4,7 @@ import { PRODUCTION_ROADMAPS_CATALOG } from '@/lib/ai/roadmaps-catalog';
 let isRoadmapsSeededInMemory = false;
 
 export class RoadmapRepository {
-  /**
-   * Seed / Ensure all 10 production roadmaps exist in PostgreSQL database.
-   */
+  // Seed / Ensure all 10 production roadmaps exist in PostgreSQL database.
   static async ensureRoadmapsSeeded() {
     if (isRoadmapsSeededInMemory) return;
 
@@ -60,9 +58,7 @@ export class RoadmapRepository {
     isRoadmapsSeededInMemory = true;
   }
 
-  /**
-   * Find a database roadmap matching a skill query.
-   */
+  // Find a database roadmap matching a skill query.
   static async findRoadmapBySkill(skillQuery: string) {
     await this.ensureRoadmapsSeeded();
 
@@ -108,9 +104,7 @@ export class RoadmapRepository {
     return bestRoadmap;
   }
 
-  /**
-   * Get a roadmap by slug.
-   */
+  // Get a roadmap by slug.
   static async getRoadmapBySlug(slug: string) {
     await this.ensureRoadmapsSeeded();
     return prisma.careerRoadmap.findUnique({
@@ -123,9 +117,7 @@ export class RoadmapRepository {
     });
   }
 
-  /**
-   * Get or create a personalized roadmap for a user.
-   */
+  // Get or create a personalized roadmap for a user.
   static async getUserRoadmap(userId: string) {
     return prisma.careerRoadmap.findUnique({
       where: { userId },

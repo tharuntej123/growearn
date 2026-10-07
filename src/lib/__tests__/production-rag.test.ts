@@ -1,7 +1,4 @@
-/**
- * @file production-rag.test.ts
- * @description Comprehensive verification test for GrowEarn Production RAG, LangChain pipeline, pgvector similarity, and intent detection.
- */
+// Comprehensive verification test for GrowEarn Production RAG, LangChain pipeline, pgvector similarity, and intent detection.
 
 import { ProductionRAGChain } from '../ai/rag-chain';
 import { IntentClassifier } from '../ai/intent-classifier';

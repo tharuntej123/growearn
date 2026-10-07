@@ -1,11 +1,4 @@
-/**
- * @file provider.interface.ts
- * @description Standard PaymentProvider interface for GroEarn live marketplace payments.
- * 
- * Supports:
- * - Cashfree (Production / Sandbox Marketplace Provider)
- * - Razorpay (Alternate Gateway)
- */
+// Standard PaymentProvider interface for GroEarn live marketplace payments.
 
 export type PaymentProviderName = 'CASHFREE' | 'RAZORPAY';
 

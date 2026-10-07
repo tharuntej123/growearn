@@ -53,9 +53,7 @@ export class RazorpayService {
     return this.instance;
   }
 
-  /**
-   * Create an authentic Razorpay order via Razorpay API.
-   */
+  // Create an authentic Razorpay order via Razorpay API.
   public static async createOrder(params: CreateOrderParams): Promise<RazorpayOrderResponse> {
     if (!this.isConfigured()) {
       throw new Error('LIVE PAYMENT VERIFICATION BLOCKED — RAZORPAY TEST OR PRODUCTION CREDENTIALS NOT CONFIGURED');
@@ -78,10 +76,8 @@ export class RazorpayService {
     };
   }
 
-  /**
-   * Cryptographically verify checkout response signature:
-   * HMAC_SHA256(order_id + "|" + payment_id, secret) == signature
-   */
+  // Cryptographically verify checkout response signature:
+  // HMAC_SHA256(order_id + "|" + payment_id, secret) == signature
   public static verifyPaymentSignature(params: {
     orderId: string;
     paymentId: string;
@@ -108,10 +104,8 @@ export class RazorpayService {
     }
   }
 
-  /**
-   * Cryptographically verify incoming Razorpay webhook signature header (X-Razorpay-Signature)
-   * HMAC_SHA256(raw_request_body, webhook_secret) == signature
-   */
+  // Cryptographically verify incoming Razorpay webhook signature header (X-Razorpay-Signature)
+  // HMAC_SHA256(raw_request_body, webhook_secret) == signature
   public static verifyWebhookSignature(rawBody: string, signature: string): boolean {
     const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
     if (!webhookSecret || webhookSecret.trim().length === 0) {

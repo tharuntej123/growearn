@@ -1,18 +1,4 @@
-/**
- * @file cashfree-payment.test.ts
- * @description Comprehensive Integration and Security Test Suite for Cashfree Marketplace Payments.
- * 
- * Verifies:
- * 1. Cashfree Payment Provider Abstraction & Sandbox Configuration
- * 2. Live API Endpoint Reachability & Authentication Verification
- * 3. Cryptographic HMAC-SHA256 Webhook Verification (`x-webhook-signature`, `x-webhook-timestamp`)
- * 4. Replay Attack Protection (Timestamp window validation)
- * 5. Webhook Idempotency & Replay Prevention in PostgreSQL
- * 6. Entitlement Activation (CoursePurchase & Enrollment)
- * 7. Zero Duplicate Entitlement on Repeated Webhook Delivery
- * 8. Configurable Platform Commission & Mentor Settlement Telemetry
- * 9. Strict IDOR Payment Record Access Controls
- */
+// Comprehensive Integration and Security Test Suite for Cashfree Marketplace Payments.
 
 import crypto from 'crypto';
 import { prisma } from '../prisma';

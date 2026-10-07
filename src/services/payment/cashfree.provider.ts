@@ -1,16 +1,4 @@
-/**
- * @file cashfree.provider.ts
- * @description Official Cashfree Payment Provider Implementation (v2023-08-01).
- * 
- * Supports:
- * - Strict Environment Separation: Sandbox (`https://sandbox.cashfree.com/pg`) & Production (`https://api.cashfree.com/pg`)
- * - Fail-closed production assertion & configuration validation
- * - Cryptographic Webhook HMAC-SHA256 Signature Verification (`x-webhook-signature`, `x-webhook-timestamp`)
- * - 5-minute strict replay attack prevention window
- * - Constant-time signature comparison (`crypto.timingSafeEqual`)
- * - Order Creation, Status Polling, Payment Verification, and Refunds
- * - Zero Secret Leakage (sanitized logging, no credentials in client bundles)
- */
+// Official Cashfree Payment Provider Implementation (v2023-08-01).
 
 import crypto from 'crypto';
 import {
@@ -92,9 +80,7 @@ export class CashfreePaymentProvider implements IPaymentProvider {
     return this.clientId;
   }
 
-  /**
-   * Validate configuration and enforce fail-closed production readiness.
-   */
+  // Validate configuration and enforce fail-closed production readiness.
   public validateConfiguration(): void {
     if (this.environment === 'production') {
       if (!this.isConfigured()) {
@@ -122,9 +108,7 @@ export class CashfreePaymentProvider implements IPaymentProvider {
     };
   }
 
-  /**
-   * Create an authentic order on Cashfree Payments API.
-   */
+  // Create an authentic order on Cashfree Payments API.
   public async createOrder(params: CreateOrderParams): Promise<ProviderOrderResponse> {
     this.validateConfiguration();
 
@@ -182,9 +166,7 @@ export class CashfreePaymentProvider implements IPaymentProvider {
     };
   }
 
-  /**
-   * Verify an order and payment attempt server-side against Cashfree API.
-   */
+  // Verify an order and payment attempt server-side against Cashfree API.
   public async verifyPayment(params: VerifyPaymentParams): Promise<VerifyPaymentResult> {
     this.validateConfiguration();
 
@@ -219,12 +201,9 @@ export class CashfreePaymentProvider implements IPaymentProvider {
     };
   }
 
-  /**
-   * Cryptographically verify Cashfree Webhook Signature.
-   * 
-   * Cashfree computes signature as:
-   * Base64( HMAC_SHA256( timestamp + raw_body, client_secret ) )
-   */
+  // Cryptographically verify Cashfree Webhook Signature.
+  // Cashfree computes signature as:
+  // Base64( HMAC_SHA256( timestamp + raw_body, client_secret ) )
   public async verifyWebhook(
     rawBody: string,
     headers: Record<string, string | string[] | undefined>
@@ -321,9 +300,7 @@ export class CashfreePaymentProvider implements IPaymentProvider {
     };
   }
 
-  /**
-   * Process refund via Cashfree Refund API.
-   */
+  // Process refund via Cashfree Refund API.
   public async refundPayment(params: RefundParams): Promise<RefundResult> {
     this.validateConfiguration();
 
@@ -356,9 +333,7 @@ export class CashfreePaymentProvider implements IPaymentProvider {
     };
   }
 
-  /**
-   * Fetch current order status and payment history from Cashfree API.
-   */
+  // Fetch current order status and payment history from Cashfree API.
   public async getOrderStatus(providerOrderId: string): Promise<PaymentStatusResult> {
     this.validateConfiguration();
 

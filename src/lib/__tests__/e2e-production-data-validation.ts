@@ -1,8 +1,4 @@
-/**
- * @file e2e-production-data-validation.ts
- * @description Exhaustive End-to-End Production Data, PostgreSQL, pgvector Embeddings, RAG Pipeline,
- * and Multi-Dashboard Data Generation Verification Test Suite.
- */
+// Exhaustive End-to-End Production Data, PostgreSQL, pgvector Embeddings, RAG Pipeline,
 
 import { prisma } from '../prisma';
 import { PgVectorStore } from '../ai/vector-store';
@@ -31,9 +27,7 @@ async function runEndToEndProductionValidation() {
 
   const results: TestSectionResult[] = [];
 
-  // ============================================================================
   // SECTION 1: PostgreSQL Real Database Entities & Schema Integrity
-  // ============================================================================
   console.log('📦 SECTION 1: Verifying Real PostgreSQL Database Tables & Relations...');
   try {
     const [
@@ -93,9 +87,7 @@ async function runEndToEndProductionValidation() {
     results.push({ section: 'PostgreSQL Database & Personas Integrity', passed: false, details: [err.message] });
   }
 
-  // ============================================================================
   // SECTION 2: Vector Database (pgvector), 1024-dim BGE-M3 Embeddings & Cosine Search
-  // ============================================================================
   console.log('📐 SECTION 2: Verifying 1024-dim Vector Embeddings & pgvector Cosine Similarity Search...');
   try {
     const testQueries = [
@@ -132,9 +124,7 @@ async function runEndToEndProductionValidation() {
     results.push({ section: 'pgvector Cosine Similarity & Vector Matching', passed: false, details: [err.message] });
   }
 
-  // ============================================================================
   // SECTION 3: RAG Pipeline -> Vector Retrieval -> LLM Grounding
-  // ============================================================================
   console.log('🧠 SECTION 3: Verifying RAG Pipeline -> Context Retrieval -> LLM Grounding...');
   try {
     const ragQueries = [
@@ -165,9 +155,7 @@ async function runEndToEndProductionValidation() {
     results.push({ section: 'RAG Pipeline & LLM Grounding Chain', passed: false, details: [err.message] });
   }
 
-  // ============================================================================
   // SECTION 4: Student Dashboard RAG Flow (Roadmap + Top 5 Mentors + Top 5 Courses)
-  // ============================================================================
   console.log('🎓 SECTION 4: Verifying Student Skill RAG (10 Roadmaps Catalog + Top 5 Courses/Mentors)...');
   try {
     const studentSkills = ['Next.js', 'Java', 'Python AI', 'Cloud DevOps', 'Golang', 'UI/UX Design'];
@@ -205,9 +193,7 @@ async function runEndToEndProductionValidation() {
     results.push({ section: 'Student Dashboard RAG & Roadmaps Flow', passed: false, details: [err.message] });
   }
 
-  // ============================================================================
   // SECTION 5: Freelancer Job Recommendations Flow (Skills, Experience, Certs, Projects Match)
-  // ============================================================================
   console.log('💼 SECTION 5: Verifying Freelancer Job Matching Flow (Skills + Exp + Projects + Certs)...');
   try {
     const freelancerUser = await prisma.user.findFirst({
@@ -253,9 +239,7 @@ async function runEndToEndProductionValidation() {
     results.push({ section: 'Freelancer Weighted Job Recommendations Flow', passed: false, details: [err.message] });
   }
 
-  // ============================================================================
   // SECTION 6: Company Dashboard Flow (Job Postings, Applications, Candidate Matching)
-  // ============================================================================
   console.log('🏢 SECTION 6: Verifying Company Dashboard Flow (Job Postings & Candidate Retrieval)...');
   try {
     const companyUser = await prisma.user.findFirst({
@@ -329,9 +313,7 @@ async function runEndToEndProductionValidation() {
     results.push({ section: 'Company Dashboard & Candidate Match Flow', passed: false, details: [err.message] });
   }
 
-  // ============================================================================
   // SECTION 7: Mentor Dashboard Flow (Mentorship Requests, Sessions, Published Courses)
-  // ============================================================================
   console.log('👨‍🏫 SECTION 7: Verifying Mentor Dashboard Flow (Sessions, Requests & Courses)...');
   try {
     const mentorUser = await prisma.user.findFirst({
@@ -368,9 +350,7 @@ async function runEndToEndProductionValidation() {
     results.push({ section: 'Mentor Dashboard Data Flow', passed: false, details: [err.message] });
   }
 
-  // ============================================================================
   // FINAL SUMMARY & ASSERTION
-  // ============================================================================
   console.log('================================================================================');
   console.log('📊 FINAL END-TO-END PRODUCTION DATA VALIDATION REPORT');
   console.log('================================================================================');

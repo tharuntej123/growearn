@@ -1,22 +1,4 @@
-/**
- * @file intent-classifier.ts
- * @description Production Intent Classifier for user queries on GrowEarn.
- * 
- * Architecture:
- * - Replaces keyword if-else heuristics with structured zero-shot embedding similarity
- *   and semantic classification into 6 canonical categories.
- * 
- * Categories:
- * - course: Course discovery, syllabus, learning resources
- * - mentor: 1-on-1 mentorship, expert advice, coaching sessions
- * - jobs: Job listings, freelancing, proposals, hiring
- * - roadmap: Step-by-step career path, learning plan, skill progression
- * - profile: Resume parsing, portfolio analysis, profile enhancement
- * - general: Technical Q&A, conceptual questions, platform assistance
- * 
- * Input: Query string
- * Output: { intent: IntentCategory, confidence: number, rationale: string }
- */
+// Production Intent Classifier for user queries on GrowEarn.
 
 import { generateEmbedding, isEmbeddingConfigured } from './embeddings';
 
@@ -163,10 +145,8 @@ function classifyHeuristically(query: string): {
 }
 
 export class IntentClassifier {
-  /**
-   * Classify user query using vector similarity against category semantic prototypes.
-   * Gracefully falls back to structured rule-based classification if embeddings provider is unavailable.
-   */
+  // Classify user query using vector similarity against category semantic prototypes.
+  // Gracefully falls back to structured rule-based classification if embeddings provider is unavailable.
   static async classify(query: string): Promise<{
     intent: IntentCategory;
     confidence: number;

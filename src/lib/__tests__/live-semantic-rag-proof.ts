@@ -1,16 +1,4 @@
-/**
- * @file live-semantic-rag-proof.ts
- * @description Real Live Semantic RAG & pgvector HNSW Verification Proof with Local BGE-M3 (1024-dim).
- * 
- * Rules:
- * - NO Math.sin, Math.cos, or synthetic vectors.
- * - NO hardcoded scores (0.94, 0.92, 0.42, etc.).
- * - Calls the actual local BGE-M3 model.
- * - Receives real 1024-dimensional vector.
- * - Queries PostgreSQL pgvector using HNSW cosine index (<=>).
- * - Verifies real database records and metadata integrity.
- * - Mode is ONLY reported as 'SEMANTIC_RAG' if real BGE-M3 model was used.
- */
+// Real Live Semantic RAG & pgvector HNSW Verification Proof with Local BGE-M3 (1024-dim).
 
 import { prisma } from '../prisma';
 import { PgVectorStore } from '../ai/vector-store';

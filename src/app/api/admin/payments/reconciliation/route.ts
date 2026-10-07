@@ -3,10 +3,8 @@ import { getCurrentUser } from '@/lib/auth';
 import { PaymentService } from '@/services/payment/payment.service';
 import { apiSuccess, apiError } from '@/lib/utils';
 
-/**
- * Admin Payment Reconciliation Endpoint.
- * Compares PostgreSQL database records with authoritative Cashfree provider API state.
- */
+// Admin Payment Reconciliation Endpoint.
+// Compares PostgreSQL database records with authoritative Cashfree provider API state.
 export async function GET(req: NextRequest) {
   try {
     const user = await getCurrentUser(req);

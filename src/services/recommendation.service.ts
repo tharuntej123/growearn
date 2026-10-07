@@ -33,11 +33,9 @@ export interface ScoredJob {
 }
 
 export class RecommendationService {
-  /**
-   * Professional/Freelancer RAG job recommendation pipeline.
-   * Uses real OpenAI embeddings + pgvector cosine similarity <=> when enabled,
-   * combined with deterministic skill overlap, experience, and location scoring.
-   */
+  // Professional/Freelancer RAG job recommendation pipeline.
+  // Uses real OpenAI embeddings + pgvector cosine similarity <=> when enabled,
+  // combined with deterministic skill overlap, experience, and location scoring.
   static async getJobs(
     userContext: UserAIContext | null,
     limit = 10,

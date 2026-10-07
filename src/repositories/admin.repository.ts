@@ -2,9 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 
 export class AdminRepository {
-  /**
-   * Get real-time platform metrics.
-   */
+  // Get real-time platform metrics.
   static async getPlatformStats() {
     const totalUsers = await prisma.user.count();
     const learnersCount = await prisma.user.count({ where: { role: { in: ['LEARNER', 'STUDENT'] } } });
@@ -45,9 +43,7 @@ export class AdminRepository {
     };
   }
 
-  /**
-   * List users with pagination and search.
-   */
+  // List users with pagination and search.
   static async listUsers(params: {
     query?: string;
     role?: string;
@@ -103,9 +99,7 @@ export class AdminRepository {
     return { users, total };
   }
 
-  /**
-   * Update user role by administrator.
-   */
+  // Update user role by administrator.
   static async updateUserRole(adminUserId: string, targetUserId: string, newRole: string) {
     const user = await prisma.user.update({
       where: { id: targetUserId },
@@ -124,9 +118,7 @@ export class AdminRepository {
     return user;
   }
 
-  /**
-   * Verify or unverify user by administrator.
-   */
+  // Verify or unverify user by administrator.
   static async verifyUser(adminUserId: string, targetUserId: string, isVerified: boolean) {
     const user = await prisma.user.update({
       where: { id: targetUserId },
@@ -145,9 +137,7 @@ export class AdminRepository {
     return user;
   }
 
-  /**
-   * Moderate course (publish / unpublish / delete).
-   */
+  // Moderate course (publish / unpublish / delete).
   static async moderateCourse(adminUserId: string, courseId: string, isPublished: boolean) {
     const course = await prisma.course.update({
       where: { id: courseId },
@@ -166,9 +156,7 @@ export class AdminRepository {
     return course;
   }
 
-  /**
-   * Moderate job posting.
-   */
+  // Moderate job posting.
   static async moderateJob(adminUserId: string, jobId: string, status: string) {
     const job = await prisma.job.update({
       where: { id: jobId },
@@ -187,9 +175,7 @@ export class AdminRepository {
     return job;
   }
 
-  /**
-   * Retrieve platform audit logs.
-   */
+  // Retrieve platform audit logs.
   static async getAuditLogs(params: { limit?: number; offset?: number; action?: string }) {
     const where: Prisma.AuditLogWhereInput = {};
     if (params.action) {
@@ -214,16 +200,12 @@ export class AdminRepository {
     return { logs, total };
   }
 
-  /**
-   * Enforce AuditLog immutability: UPDATE is strictly forbidden.
-   */
+  // Enforce AuditLog immutability: UPDATE is strictly forbidden.
   static async updateAuditLog(): Promise<never> {
     throw new Error('Audit logs are strictly immutable and append-only. UPDATE operations are forbidden.');
   }
 
-  /**
-   * Enforce AuditLog immutability: DELETE is strictly forbidden.
-   */
+  // Enforce AuditLog immutability: DELETE is strictly forbidden.
   static async deleteAuditLog(): Promise<never> {
     throw new Error('Audit logs are strictly immutable and append-only. DELETE operations are forbidden.');
   }

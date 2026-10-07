@@ -1,7 +1,4 @@
-/**
- * @file payment-provider.factory.ts
- * @description Factory for resolving the active and alternate PaymentProviders.
- */
+// Factory for resolving the active and alternate PaymentProviders.
 
 import { IPaymentProvider, PaymentProviderName } from './provider.interface';
 import { CashfreePaymentProvider } from './cashfree.provider';

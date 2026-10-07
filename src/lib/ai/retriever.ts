@@ -1,14 +1,4 @@
-/**
- * @file retriever.ts
- * @description LangChain Vector Retriever for PostgreSQL pgvector.
- * 
- * Architecture:
- * - Query -> Local BGE-M3 Embedding (1024 dim) -> Cosine Search via PgVectorStore -> Top-5 Grounded Chunks
- * - No keyword-matching hacks or artificial semantic scores.
- * 
- * Input: User search query string, optional filter and topK limit (default 5)
- * Output: Grounded document chunks with exact vector similarity scores and source citations
- */
+// LangChain Vector Retriever for PostgreSQL pgvector.
 
 import { BaseRetriever, BaseRetrieverInput } from '@langchain/core/retrievers';
 import { Document } from '@langchain/core/documents';
@@ -35,10 +25,8 @@ export class PgVectorRetriever extends BaseRetriever {
     this.minSimilarity = options.minSimilarity ?? 0.0;
   }
 
-  /**
-   * Core LangChain retrieval method.
-   * Embeds the user query and retrieves top K matching chunks from PostgreSQL pgvector.
-   */
+  // Core LangChain retrieval method.
+  // Embeds the user query and retrieves top K matching chunks from PostgreSQL pgvector.
   async _getRelevantDocuments(query: string): Promise<Document[]> {
     const records = await this.retrieveRecords(query);
 
@@ -57,9 +45,7 @@ export class PgVectorRetriever extends BaseRetriever {
     );
   }
 
-  /**
-   * Retrieves raw document chunk records with exact cosine similarity scores.
-   */
+  // Retrieves raw document chunk records with exact cosine similarity scores.
   async retrieveRecords(query: string): Promise<DocumentChunkRecord[]> {
     if (!query || query.trim().length === 0) {
       return [];
@@ -79,9 +65,7 @@ export class PgVectorRetriever extends BaseRetriever {
     return results;
   }
 
-  /**
-   * Helper to format retrieved documents into a clean context string for LLM prompting.
-   */
+  // Helper to format retrieved documents into a clean context string for LLM prompting.
   static formatDocsForPrompt(docs: DocumentChunkRecord[] | Document[]): string {
     if (!docs || docs.length === 0) {
       return 'No relevant context documents found in the database.';

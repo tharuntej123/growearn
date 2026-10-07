@@ -5,10 +5,8 @@ import { getUserAIContext } from '@/services/user-context.service';
 import { AIAssistantService } from '@/lib/ai/ai-assistant.service';
 import { enforceRateLimit } from '@/lib/rate-limiter';
 
-/**
- * POST /api/ai/chat
- * Production RAG Chat Endpoint powered by LangChain and PostgreSQL pgvector.
- */
+// POST /api/ai/chat
+// Production RAG Chat Endpoint powered by LangChain and PostgreSQL pgvector.
 export async function POST(req: NextRequest) {
   try {
     const authUser = await getCurrentUser(req);

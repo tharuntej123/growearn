@@ -1,9 +1,4 @@
-/**
- * @file roadmaps-catalog.ts
- * @description 10 Production-Grade Technical Career Roadmaps (Strictly Structured from Basic to Advanced).
- * Each roadmap starts from Phase 1: Core Fundamentals/Basics (Beginner) -> Phase 2: Applied Development (Intermediate) ->
- * Phase 3: Advanced Architecture/Security (Advanced) -> Phase 4: Production Capstone & Mock Interview (Job-Ready).
- */
+// 10 Production-Grade Technical Career Roadmaps (Strictly Structured from Basic to Advanced).
 
 export interface RoadmapPhaseCatalogItem {
   phaseNumber: number;
