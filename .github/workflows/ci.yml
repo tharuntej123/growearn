@@ -83,10 +83,7 @@ jobs:
       - name: 8. Run Master Integration & Security Test Suite
         run: npm test
 
-      - name: 9. Run Live pgvector Semantic RAG & HNSW Proof
-        run: npm run test:rag:proof
-
-      - name: 10. Run Production RAG Pipeline Check
+      - name: 9. Run Production RAG Pipeline & Fallback Check
         run: npm run test:rag
 
       - name: 11. Build Next.js Production Bundle

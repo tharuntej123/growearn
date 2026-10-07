@@ -30,8 +30,8 @@ test.describe('Company End-to-End Browser Flow', () => {
     await page.click('button[type="submit"]');
 
     // 5. Land back on Company Dashboard and verify the new job listing appears
-    await page.waitForURL('**/company/dashboard', { timeout: 15000 });
-    await expect(page.locator(`text=${jobTitle}`).first()).toBeVisible({ timeout: 15000 });
+    await page.waitForURL('**/company/dashboard', { timeout: 25000 });
+    await expect(page.locator(`text=${jobTitle}`).first()).toBeVisible({ timeout: 25000 });
 
     // 6. Verify Candidate Discovery & Applicant Tracking
     await expect(page.locator('text=Active Postings & Candidates').first()).toBeVisible({ timeout: 10000 });

@@ -87,6 +87,12 @@ services:
       - PLATFORM_COMMISSION_PERCENT=${PLATFORM_COMMISSION_PERCENT:-10}
       - DEMO_MODE=false
       - NEXT_PUBLIC_DEMO_MODE=false
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
     networks:
       - groearn-internal
 

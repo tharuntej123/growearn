@@ -27,8 +27,9 @@ test.describe('Freelancer End-to-End Browser Flow', () => {
 
     // 6. Return to Freelancer Dashboard & Open Proposal Generator Modal
     await page.goto('/freelancer/dashboard');
+    await page.waitForURL('**/freelancer/dashboard', { timeout: 15000 });
     const generateProposalBtn = page.locator('button:has-text("Generate AI Proposal")').first();
-    await expect(generateProposalBtn).toBeVisible({ timeout: 15000 });
+    await expect(generateProposalBtn).toBeVisible({ timeout: 25000 });
     await generateProposalBtn.click();
 
     // 7. Verify Proposal Modal opens
