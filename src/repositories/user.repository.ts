@@ -153,11 +153,68 @@ export class UserRepository {
 
     return prisma.user.findMany({
       where,
-      include: {
-        profile: true,
-        skills: { include: { skill: true } },
-        experiences: true,
-        receivedReviews: true,
+      select: {
+        id: true,
+        name: true,
+        role: true,
+        headline: true,
+        bio: true,
+        location: true,
+        city: true,
+        state: true,
+        country: true,
+        avatarUrl: true,
+        isVerified: true,
+        createdAt: true,
+        profile: {
+          select: {
+            id: true,
+            title: true,
+            hourlyRate: true,
+            yearsOfExperience: true,
+            availability: true,
+            aiScore: true,
+            careerGoal: true,
+            experienceLevel: true,
+            githubUrl: true,
+            linkedinUrl: true,
+            portfolioUrl: true,
+            resumeUrl: true,
+            resumeName: true,
+          },
+        },
+        skills: {
+          select: {
+            id: true,
+            proficiencyLevel: true,
+            isVerified: true,
+            skill: {
+              select: {
+                id: true,
+                name: true,
+                category: true,
+              },
+            },
+          },
+        },
+        experiences: {
+          select: {
+            id: true,
+            title: true,
+            company: true,
+            startDate: true,
+            endDate: true,
+            isCurrent: true,
+            description: true,
+          },
+        },
+        receivedReviews: {
+          select: {
+            id: true,
+            rating: true,
+            comment: true,
+          },
+        },
       },
       take: 50,
       orderBy: { createdAt: 'desc' },

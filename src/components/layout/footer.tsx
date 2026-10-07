@@ -67,7 +67,7 @@ export function Footer() {
               <div className="p-3 rounded-xl border border-slate-200 bg-white text-xs space-y-1.5 text-slate-600 shadow-xs">
                 <p className="font-semibold text-slate-800">Verified Platform</p>
                 <p className="text-[11px] leading-relaxed">
-                  Enterprise-grade authentication, RBAC, Razorpay payments, and pgvector RAG.
+                  Role-based access control, secure payment verification, and pgvector semantic search.
                 </p>
               </div>
             </>

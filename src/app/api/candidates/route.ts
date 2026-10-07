@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { getCurrentUser, isRoleAllowed } from '@/lib/auth';
 import { UserRepository } from '@/repositories/user.repository';
 import { apiSuccess, apiError } from '@/lib/utils';
 import { HybridMatcher } from '@/lib/ai/hybrid-matcher';
@@ -8,6 +9,15 @@ import prisma from '@/lib/prisma';
 
 export async function GET(req: NextRequest) {
   try {
+    const authUser = await getCurrentUser(req);
+    if (!authUser) {
+      return apiError('Authentication required to access candidate directory', 'UNAUTHORIZED', 401);
+    }
+
+    if (!isRoleAllowed(authUser.role, ['COMPANY', 'EMPLOYER', 'ADMIN'])) {
+      return apiError('Forbidden: Candidate discovery is restricted to verified company and admin accounts', 'FORBIDDEN', 403);
+    }
+
     const searchParams = req.nextUrl.searchParams;
     const search = searchParams.get('search') || undefined;
     const skill = searchParams.get('skill') || undefined;

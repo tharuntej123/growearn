@@ -1,5 +1,5 @@
 import { AIAssistantService } from '../ai/ai-assistant.service';
-import { GrokLLMClient } from '../ai/grok-client';
+import { LLMClient } from '../ai/llm-client';
 import { prisma } from '../prisma';
 
 async function testLiveGroq() {
@@ -7,11 +7,11 @@ async function testLiveGroq() {
   console.log('🚀 TESTING LIVE GROQ AI LLM INTEGRATION');
   console.log('==============================================\n');
 
-  console.log('Provider detected:', GrokLLMClient.getActiveProvider());
-  console.log('Is LLM Available:', GrokLLMClient.isAvailable());
+  console.log('Provider detected:', LLMClient.getActiveProvider());
+  console.log('Is LLM Available:', LLMClient.isAvailable());
 
   console.log('\n--- 1. Testing Direct Groq API Completion ---');
-  const directResult = await GrokLLMClient.complete({
+  const directResult = await LLMClient.complete({
     messages: [
       { role: 'system', content: 'You are Growearn AI Assistant.' },
       { role: 'user', content: 'In 2 sentences, explain what Python is.' },

@@ -15,7 +15,7 @@ export interface LLMCompletionResult {
   model: string;
 }
 
-export class GrokLLMClient {
+export class LLMClient {
   static isAvailable(): boolean {
     return this.getActiveProvider() !== 'none';
   }
@@ -303,8 +303,11 @@ export class GrokLLMClient {
       }
       return null;
     } catch (err) {
-      console.warn('[GrokLLMClient] Gemini fetch error:', err);
+      console.warn('[LLMClient] Gemini fetch error:', err);
       return null;
     }
   }
 }
+
+export const GrokLLMClient = LLMClient;
+

@@ -1,8 +1,8 @@
 # AI & RAG Engine Architecture
 
-## 1. Real Vector Search & Embedding Engine
+## 1. Vector Search & Embedding Architecture
 
-GroEarn uses a genuine pgvector retrieval-augmented generation (RAG) architecture running against PostgreSQL with HNSW vector indexes:
+GroEarn uses a pgvector retrieval-augmented generation (RAG) architecture running against PostgreSQL with HNSW vector indexes:
 
 ```text
 User Query / Profile
@@ -12,35 +12,35 @@ Query Normalization
        │
        ▼
 generateEmbedding(query)
-  (OpenAI text-embedding-3-small, 1536 dims)
+  (Local BGE-M3, 1024 dimensions via Ollama / local model serving)
        │
        ▼
-PostgreSQL pgvector Cosine Query (<=> operator)
-  (HNSW Index on document_chunks.embedding)
+PostgreSQL pgvector Cosine Distance (<=> operator)
+  (HNSW Index on document_chunks.embedding, vector(1024))
        │
        ▼
-Semantic Result Retrieval (Top K Entities)
+Semantic Result Retrieval (Top K Matching Entities)
        │
        ▼
 Deterministic Multi-Signal Hybrid Ranking
-  (Skill Overlap 50% + Experience 20% + Semantic 10% + Goal 10% + Location 10%)
+  (Vector Similarity 35% + Skill Overlap 35% + Rating 15% + Level Match 15%)
        │
        ▼
-Grounded Personalization & Result Delivery
+Groq LLM Grounded Explanation & User Delivery
 ```
 
 ---
 
 ## 2. Document Chunks & Metadata Standards
 
-All indexed platform entities in the `document_chunks` table adhere to canonical entity ID mappings in their `metadata` column:
-- **Courses**: `metadata.courseId` -> maps directly to `Course.id`.
-- **Mentors**: `metadata.mentorProfileId` & `metadata.mentorId` -> maps directly to `MentorProfile.id` and `User.id`.
-- **Jobs / Opportunities**: `metadata.jobId` -> maps directly to `Job.id`.
-- **Candidates / Professionals**: `metadata.userId` -> maps directly to `User.id`.
+Indexed platform entities in the `document_chunks` table adhere to canonical entity ID mappings in their `metadata` column:
+- **Courses**: `metadata.courseId` -> maps to `Course.id`.
+- **Mentors**: `metadata.mentorProfileId` & `metadata.mentorId` -> maps to `MentorProfile.id` and `User.id`.
+- **Jobs / Opportunities**: `metadata.jobId` -> maps to `Job.id`.
+- **Candidates**: `metadata.userId` -> maps to `User.id`.
 
-### HNSW Indexing Strategy
-The pgvector index is created using Hierarchical Navigable Small World (HNSW) graphs on cosine distance:
+### HNSW Indexing Configuration
+The pgvector index uses Hierarchical Navigable Small World (HNSW) graphs on cosine distance:
 ```sql
 CREATE INDEX IF NOT EXISTS document_chunks_embedding_hnsw_idx 
 ON document_chunks 
@@ -53,23 +53,27 @@ WITH (m = 16, ef_construction = 64);
 ## 3. Dedicated RAG Pipelines
 
 ### 3.1 Learner Skill-First RAG Pipeline
-- **Entry**: Skill or goal query (e.g. `Java`, `React`, `Machine Learning`).
-- **Retrieval**: Real 1536-dimensional embeddings retrieve matching career roadmaps, top 5 courses, and top 5 expert mentors without duplicate IDs.
-- **Constraints**: Learners never see job postings directly in this learning pipeline.
+- **Entry**: Skill query (e.g. `Java`, `Next.js`, `Machine Learning`, `PostgreSQL`).
+- **Retrieval**: 1024-dimensional embeddings query `document_chunks` for matching career roadmaps, top 5 courses, and top 5 expert mentors without duplicate IDs.
+- **Output**: 4-phase structured roadmap milestones with direct links to enroll in courses or book mentors.
 
-### 3.2 Professional Job Opportunity RAG Pipeline
-- **Entry**: Professional portfolio, verified skills, years of experience, and career goals.
-- **Retrieval**: Cosine similarity query against job postings + multi-factor ranking.
-- **Ranking Signals**: Verified skill overlap (50%), experience level (20%), location/work mode (10%), career goal (10%), semantic vector relevance (10%).
+### 3.2 Freelancer Job Opportunity Matching
+- **Entry**: User portfolio, verified skills, experience years, and career goals.
+- **Retrieval**: 5-factor hybrid scoring combining:
+  - Verified Skill Overlap: **50%**
+  - Experience Level Match: **20%**
+  - Location Alignment: **10%**
+  - Career Goal Fit: **10%**
+  - pgvector Cosine Match: **10%**
 
-### 3.3 Employer Candidate Matching RAG Pipeline
-- **Entry**: Employer job description, required technical competencies, seniority.
-- **Retrieval**: Queries candidate profiles and project evidence chunks.
-- **Authorization**: Respects candidate privacy; contact details only unlocked upon applicant consent.
+### 3.3 Candidate Discovery for Companies
+- **Entry**: Company job requirements, required competencies, and seniority.
+- **Retrieval**: Queries candidate profile chunks using vector embeddings and skill overlap.
+- **Authorization**: Access restricted to authenticated `COMPANY` and `ADMIN` users.
 
 ---
 
-## 4. Credential Requirements & Strict Reporting
-- **Embedding Model**: OpenAI `text-embedding-3-small` (1536 dimensions).
-- **Environment Flag**: `OPENAI_API_KEY`.
-- **Blocked State Policy**: When `OPENAI_API_KEY` is not present, automated verification suites report `BLOCKED: LIVE SEMANTIC RAG REQUIRES OPENAI_API_KEY`. The system does **not** fabricate synthetic vectors (e.g. `Math.sin`, `Math.cos`, `new Array(1536)`) or hardcoded similarity scores.
+## 4. LLM Orchestration & Fallback
+
+- **LLM Client (`src/lib/ai/llm-client.ts`)**: Supports high-speed inference via Groq API (Llama 3.3 70B & GPT-OSS 120B) with OpenAI API compatibility.
+- **Zero-Shot Intent Classifier Fallback**: If the local embedding server is unconfigured or offline, the `IntentClassifier` seamlessly falls back to keyword-token classification to ensure platform uptime.

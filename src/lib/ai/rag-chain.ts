@@ -23,12 +23,10 @@
  * Output: Grounded RAG Result { answer, intent, retrievedDocuments, similarity, sources, recommendedActions }
  */
 
-import { RunnableSequence } from '@langchain/core/runnables';
-import { StringOutputParser } from '@langchain/core/output_parsers';
 import { ragPromptTemplate } from './prompt';
 import { PgVectorRetriever } from './retriever';
 import { IntentClassifier, IntentCategory } from './intent-classifier';
-import { GrokLLMClient } from './grok-client';
+import { LLMClient } from './llm-client';
 import { isEmbeddingConfigured } from './embeddings';
 import { UserAIContext } from '@/services/user-context.service';
 
@@ -116,7 +114,7 @@ export class ProductionRAGChain {
 
     // 4. Grounded LLM Generation
     let answer = '';
-    const isLLMAvailable = GrokLLMClient.isAvailable();
+    const isLLMAvailable = LLMClient.isAvailable();
 
     if (isLLMAvailable) {
       try {
@@ -128,7 +126,7 @@ export class ProductionRAGChain {
         const systemMessage = formattedPrompt[0]?.content as string;
         const userMessage = formattedPrompt[1]?.content as string;
 
-        const completion = await GrokLLMClient.complete({
+        const completion = await LLMClient.complete({
           messages: [
             { role: 'system', content: systemMessage },
             { role: 'user', content: userMessage },

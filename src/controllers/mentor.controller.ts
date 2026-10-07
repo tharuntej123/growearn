@@ -1,8 +1,7 @@
 import { NextRequest } from 'next/server';
-import { getCurrentUser, isRoleAllowed } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/auth';
 import { apiSuccess, apiError } from '@/lib/utils';
 import { prisma } from '@/lib/prisma';
-import { MentorRepository } from '@/repositories/mentor.repository';
 import { MessagingRepository } from '@/repositories/messaging.repository';
 import { enforceRateLimit } from '@/lib/rate-limiter';
 import { z } from 'zod';

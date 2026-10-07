@@ -1,5 +1,5 @@
 import { AIAssistantService } from '../ai/ai-assistant.service';
-import { GrokLLMClient } from '../ai/grok-client';
+import { LLMClient } from '../ai/llm-client';
 import { prisma } from '../prisma';
 
 async function runTests() {

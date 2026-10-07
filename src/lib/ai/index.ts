@@ -11,7 +11,7 @@ export * from './prompt';
 export * from './ingest';
 export * from './intent-classifier';
 export * from './skill-rag.service';
-export * from './grok-client';
+export * from './llm-client';
 export * from './ai-assistant.service';
 export * from './ai-service';
 export * from './roadmap.service';

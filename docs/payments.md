@@ -1,100 +1,73 @@
-# Razorpay Payment Architecture & Integration
+# Multi-Provider Payment Architecture
 
 ## 1. Overview
-GroEarn implements a robust, server-side verified payment processing system designed for Indian Rupee (INR) transactions via Razorpay. It handles paid technical courses and 1-on-1 mentorship bookings with strict transactional entitlements, cryptographic signature verification, idempotent webhook handling, and deterministic mentor revenue allocation.
+
+GroEarn implements a pluggable multi-provider payment architecture via the `IPaymentProvider` interface and `PaymentProviderFactory`.
+
+Supported Gateways:
+- **Cashfree Payments (Primary Marketplace Provider)**: Official PG API (v2023-08-01) with sandbox and production environments.
+- **Razorpay SDK (Alternate Gateway)**: Server-side order creation and HMAC-SHA256 signature verification.
 
 ---
 
-## 2. Payment Models & State Transitions
+## 2. Payment Models & State Machine
 
-### Database Schema Models
-- `PaymentOrder`: Represents the server-initiated order tied to a user and target entity (Course or MentorProfile).
-- `Payment`: Represents the verified captured or failed transaction.
-- `WebhookEvent`: Stores incoming Razorpay webhook event IDs for idempotency deduplication.
-- `CoursePurchase`: Grants permanent entitlement to a paid course.
-- `MentorshipBooking`: Grants confirmed booking and unlocks direct chat between student and mentor.
+### Prisma Database Models
+- `PaymentOrder`: Server-initiated order record tied to a user and target entity (`Course` or `MentorProfile`).
+- `Payment`: Verified captured or failed transaction.
+- `WebhookEvent`: Recorded incoming webhook event IDs for idempotent deduplication.
+- `CoursePurchase`: Grants permanent entitlement to a paid technical course.
+- `MentorshipBooking`: Grants confirmed booking and unlocks real-time 1-on-1 direct messaging.
 
-### State Machine
+### Transaction Lifecycle
 ```text
 [CREATED] (Order created with server-computed price)
     │
     ▼
-[PENDING] (Awaiting Razorpay checkout response)
-    ├──► [CAPTURED / COMPLETED] (Signature or Webhook verified -> Transactional Entitlement)
+[PENDING] (Awaiting user checkout completion)
+    ├──► [CAPTURED] (Signature or Webhook verified -> Transactional Entitlement Unlocked)
     ├──► [FAILED] (Declined or checkout expired)
-    └──► [REFUNDED] (Refund processed by admin/mentor)
+    └──► [REFUNDED] (Refund processed via /api/payments/refund)
 ```
 
 ---
 
 ## 3. Server-Authoritative Order Creation
-The client never controls product pricing or payment amount.
+
+The client never provides or controls the monetary price:
 - **Endpoint**: `POST /api/payments/orders`
-- **Payload**:
-  ```json
-  {
-    "type": "COURSE" | "MENTORSHIP",
-    "courseId": "string (optional)",
-    "mentorProfileId": "string (optional)",
-    "topic": "string (optional)",
-    "sessionDate": "string (optional)",
-    "sessionDuration": 60
-  }
-  ```
 - **Server Execution**:
-  1. Authenticates requesting user from JWT session.
-  2. Queries PostgreSQL database for authoritative price (e.g. `course.price` or `mentorProfile.hourlyRate`).
-  3. Validates that course or mentor offering is active.
-  4. Generates internal order (`ORD_...`) and calls Razorpay Orders API with amount in paise (`price * 100`).
-  5. Returns only public key ID, order ID, amount, and currency to client.
+  1. Authenticates requesting user from session cookie.
+  2. Queries PostgreSQL database for authoritative price (`course.price` or `mentorProfile.hourlyRate`).
+  3. Creates internal `PaymentOrder` record.
+  4. Calls Cashfree / Razorpay to generate `payment_session_id` or provider order ID.
+  5. Returns session credentials to frontend for checkout initialization.
 
 ---
 
-## 4. Cryptographic Signature Verification
-Both checkout return callbacks and webhook events are validated using HMAC-SHA256:
+## 4. Cryptographic Verification & Replay Protection
 
-### Checkout Verification:
-```ts
-const generatedSignature = crypto
-  .createHmac('sha256', razorpayKeySecret)
-  .update(`${razorpayOrderId}|${razorpayPaymentId}`)
-  .digest('hex');
+### Cashfree Webhook Verification:
+- Validates `x-webhook-signature` (HMAC-SHA256 base64) against raw request body and `CASHFREE_CLIENT_SECRET`.
+- **Replay Attack Window**: Rejects webhooks with timestamps older than 5 minutes ($300\text{s}$).
+- **Constant-Time Comparison**: Employs `crypto.timingSafeEqual` to eliminate timing side-channel attacks.
 
-const isValid = crypto.timingSafeEqual(
-  Buffer.from(generatedSignature, 'utf-8'),
-  Buffer.from(razorpaySignature, 'utf-8')
-);
-```
-
-### Webhook Verification:
-- Verifies `x-razorpay-signature` against raw request payload and `RAZORPAY_WEBHOOK_SECRET`.
-- Non-matching signatures return `400 Invalid signature` immediately.
+### Razorpay Verification:
+- Validates `x-razorpay-signature` against raw payload and `RAZORPAY_WEBHOOK_SECRET`.
 
 ---
 
 ## 5. Idempotent Webhook Processing
-- **Endpoint**: `POST /api/payments/webhook`
-- Webhook events (`order.paid`, `payment.captured`, `payment.failed`) carry unique `event.id`.
-- Duplicate event IDs are recorded in `WebhookEvent` table with unique constraint.
-- If an event is received multiple times, the transaction returns `{ success: true, duplicate: true }` without re-executing entitlement logic.
+
+- Duplicate webhook events are detected via unique database constraints on `WebhookEvent.eventId`.
+- If an event is re-delivered, the handler returns immediately without re-granting duplicate entitlements or re-crediting balances.
 
 ---
 
-## 6. Mentor Revenue Calculation
-Platform fees are calculated deterministically on the server:
-- **Gross Amount**: Amount paid by student.
-- **Platform Fee (10%)**: Deducted for infrastructure, payment processing, and hosting.
-- **Net Mentor Earning (90%)**: Credited to mentor's available balance upon successful capture.
-- **Mentor Analytics Endpoint**: `GET /api/payments/mentor/earnings` (Protected, requires MENTOR role).
+## 6. Mentor Revenue Calculation & Refunds
 
----
-
-## 7. Configuration & Environment Variables
-```env
-# Razorpay Credentials
-RAZORPAY_KEY_ID="rzp_test_..."
-RAZORPAY_KEY_SECRET="your_razorpay_secret"
-RAZORPAY_WEBHOOK_SECRET="your_webhook_secret"
-NEXT_PUBLIC_RAZORPAY_KEY_ID="rzp_test_..."
-```
-If credentials are not configured, test runners and live endpoints fail gracefully with explicit blocked status rather than fabricating success.
+- **Platform Commission (10%)**: Deducted for platform maintenance and hosting.
+- **Mentor Settlement (90%)**: Credited to the instructor or mentor's net earnings ledger.
+- **Mentor Earnings Endpoint**: `GET /api/payments/mentor/earnings` (Protected, requires `MENTOR` role).
+- **Refunds Endpoint**: `POST /api/payments/refund` (Protected, supports full or partial refunds with role validation and audit logs).
+- **Health Check Endpoint**: `GET /api/health/payment` (Reports gateway configuration readiness without exposing credentials).

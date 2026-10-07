@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import { GrokLLMClient } from '../ai/grok-client';
+import { LLMClient } from '../ai/llm-client';
 import { AIService } from '../ai/ai-service';
 import { ProductionRAGChain } from '../ai/rag-chain';
 
@@ -11,14 +11,14 @@ async function runGroqSuite() {
   console.log('====================================================\n');
 
   console.log('1. Checking Groq Provider Detection...');
-  const provider = GrokLLMClient.getActiveProvider();
+  const provider = LLMClient.getActiveProvider();
   console.log(`Active Provider: ${provider}`);
   if (provider !== 'groq') {
     throw new Error(`Expected provider 'groq', but got '${provider}'`);
   }
 
   console.log('\n2. Testing Live Groq Chat Completion...');
-  const directChat = await GrokLLMClient.complete({
+  const directChat = await LLMClient.complete({
     messages: [
       { role: 'system', content: 'You are an AI assistant on Growearn. Answer concisely.' },
       { role: 'user', content: 'What is Python in 1 sentence?' },

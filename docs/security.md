@@ -2,46 +2,46 @@
 
 ## 1. Authentication & JWT Security
 
-### Fail-Closed Secret Enforcement
-GroEarn enforces strict runtime secret validation without insecure fallbacks:
-- `JWT_SECRET` is required in all environments.
-- Missing `JWT_SECRET` or secret length $< 32$ characters throws a fatal startup exception (`FATAL SECURITY ERROR`).
-- Client-side bundles never contain `JWT_SECRET`.
+### Runtime Secret Validation
+- `JWT_SECRET` is required for production operation.
+- Minimum secret length of 32 characters is enforced during startup.
+- Tokens are signed and verified using `jsonwebtoken` and `jose` (Edge runtime compatible).
 
-### Cookie Policy
-- **HttpOnly**: `true` (Prevents XSS token exfiltration).
-- **Secure**: `true` in production (`NODE_ENV === 'production'`).
-- **SameSite**: `lax` (Guards against CSRF while allowing seamless cross-site navigation).
-- **Expiration**: Standard 7-day token lifespan with automatic validation on each request.
-
----
-
-## 2. Role-Based Access Control (RBAC) & IDOR Protection
-
-### Ecosystem Roles
-1. **LEARNER / STUDENT**: Career roadmaps, technical courses, mentorship booking, personal dashboard.
-2. **PROFESSIONAL / FREELANCER**: Verified portfolio, job recommendations, proposal submissions, applications.
-3. **MENTOR**: Course authoring, 1-on-1 session requests, earnings analytics.
-4. **EMPLOYER / COMPANY**: Job postings, applicant pipeline management, candidate matching.
-5. **ADMIN**: Platform oversight, moderation, analytics.
-
-### In-Depth IDOR Checks in Handlers
-All controllers verify resource ownership explicitly:
-- `MentorController.updateRequestStatus`: Verifies `mentorshipRequest.mentor.userId === authUser.id`.
-- `JobController.getJobApplications`: Verifies `job.companyId === authUser.id`.
-- `JobController.updateApplicationStatus`: Verifies `application.job.companyId === authUser.id`.
-- `PaymentService.getPaymentById`: Verifies `payment.userId === authUser.id` (or mentor/admin ownership).
-- `CourseController.enroll`: Blocks direct access to paid courses unless an approved `CoursePurchase` exists.
+### Cookie Configuration
+- **HttpOnly**: `true` (Protects authentication tokens from client-side script access).
+- **Secure**: `true` in production or HTTPS environments.
+- **SameSite**: `lax` (Mitigates CSRF vulnerabilities while enabling navigation).
+- **Expiration**: 7-day default validity period.
 
 ---
 
-## 3. Storage Security & Zero Silent Fallback
+## 2. Role-Based Access Control (RBAC) & Authorization
 
-- Storage uploads utilize pre-signed URLs or S3/R2/GCS cloud backends.
-- In production (`NODE_ENV === 'production'`), if cloud storage credentials fail, the operation throws an explicit error rather than silently writing sensitive documents to local disk.
+### System Roles
+1. **LEARNER / STUDENT**: Roadmaps, course enrollments, mentorship bookings.
+2. **FREELANCER / PROFESSIONAL**: Job discovery, proposal builder, application tracker.
+3. **MENTOR**: Course publishing, mentorship requests, revenue telemetry.
+4. **COMPANY / EMPLOYER**: Job posting, ATS applicant pipeline, candidate search.
+5. **ADMIN**: Platform analytics, user moderation, immutable audit log inspector.
+
+### Server-Side Ownership & IDOR Verification
+- **Jobs**: Only the creating company or an admin can edit, close, or view applicants for a job.
+- **Applications**: Applicants can only view their own applications; companies can only view applications for their posted jobs.
+- **Candidates**: The `/api/candidates` endpoint is restricted to authenticated `COMPANY` and `ADMIN` users.
+- **Mentorship Requests**: Only the target mentor can accept or decline a mentorship booking request.
+- **Messaging**: Users can only access conversation threads in which they are an active participant.
+- **Payments**: Users can only inspect their own payment records; mentors can only view transactions relating to their offerings.
 
 ---
 
-## 4. Rate Limiting & Abuse Prevention
-- Critical endpoints (`/api/auth/login`, `/api/auth/register`, `/api/payments/orders`, `/api/mentor/requests`) enforce sliding-window rate limiting backed by PostgreSQL `RateLimit` storage.
-- High-volume brute-force attacks are throttled with HTTP 429 Too Many Requests.
+## 3. Data Exposure Prevention
+
+- **Password Hashes**: `passwordHash` is never selected by repositories for public or candidate responses.
+- **Explicit Prisma Selections**: All candidate, applicant, and user endpoints use explicit `select` blocks to prevent leaking private credentials or internal metadata.
+
+---
+
+## 4. Rate Limiting & Audit Logging
+
+- **Distributed Database Rate Limiting**: Multi-instance rate limiter backed by the PostgreSQL `RateLimit` table (`DatabaseRateLimiter`).
+- **Immutable Security Audit Log**: All authentication attempts, administrative mutations, and payment lifecycle events are written to the `AuditLog` table with append-only enforcement.

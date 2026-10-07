@@ -332,13 +332,79 @@ export class JobController {
 
       const applications = await prisma.application.findMany({
         where: { jobId },
-        include: {
+        select: {
+          id: true,
+          jobId: true,
+          applicantId: true,
+          status: true,
+          coverLetter: true,
+          resumeUrl: true,
+          matchScore: true,
+          matchExplanation: true,
+          appliedAt: true,
+          updatedAt: true,
           applicant: {
-            include: {
-              profile: true,
-              skills: { include: { skill: true } },
-              experiences: { orderBy: { startDate: 'desc' } },
-              educations: true,
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              avatarUrl: true,
+              headline: true,
+              location: true,
+              city: true,
+              state: true,
+              country: true,
+              isVerified: true,
+              profile: {
+                select: {
+                  id: true,
+                  title: true,
+                  portfolioUrl: true,
+                  githubUrl: true,
+                  linkedinUrl: true,
+                  yearsOfExperience: true,
+                  availability: true,
+                  aiScore: true,
+                  resumeUrl: true,
+                  resumeName: true,
+                },
+              },
+              skills: {
+                select: {
+                  id: true,
+                  proficiencyLevel: true,
+                  isVerified: true,
+                  skill: {
+                    select: {
+                      id: true,
+                      name: true,
+                      category: true,
+                    },
+                  },
+                },
+              },
+              experiences: {
+                select: {
+                  id: true,
+                  title: true,
+                  company: true,
+                  startDate: true,
+                  endDate: true,
+                  isCurrent: true,
+                  description: true,
+                },
+                orderBy: { startDate: 'desc' },
+              },
+              educations: {
+                select: {
+                  id: true,
+                  degree: true,
+                  school: true,
+                  startDate: true,
+                  endDate: true,
+                  fieldOfStudy: true,
+                },
+              },
             },
           },
         },

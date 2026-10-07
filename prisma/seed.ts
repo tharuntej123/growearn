@@ -580,8 +580,8 @@ async function main() {
       industry: 'Enterprise Large Language Models & Vector Search',
       size: '50-100 Employees',
       website: 'https://synthetix-ai.org',
-      headline: 'Production RAG Architectures, Vector Databases & LLM Agents',
-      bio: 'Pioneering production-grade AI search, vector embeddings, and LangChain orchestration for enterprise software.',
+      headline: 'RAG Architectures, Vector Databases & LLM Tooling',
+      bio: 'Developing search systems, vector embeddings, and LangChain orchestration for data-intensive applications.',
       avatarUrl: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=150&auto=format&fit=crop&q=80',
     },
     {
@@ -1839,7 +1839,7 @@ async function main() {
   // 8b. Ingest Platform Ecosystem Overview into pgvector
   await insertChunk(
     `GrowEarn Platform Overview & Capabilities:
-GrowEarn is a production-grade talent ecosystem, mentorship marketplace, and career development platform connecting 4 key user roles:
+GrowEarn is a career development and talent platform connecting 4 key user roles:
 1. Learner: Discovers market-aligned courses, requests structured 4-phase AI career roadmaps, tracks verified skills, and books 1-on-1 mentorship sessions.
 2. Mentor: Senior industry architects providing 1-on-1 coaching, code reviews, system design interview prep, and authoring courses with lesson materials.
 3. Professional: Freelance and full-time job marketplace with 1-Click AI Proposal Generator, smart contract escrow, and project bidding.

@@ -4,7 +4,7 @@ import {
   GeneratedProposalResult,
   ImprovedMessageResult,
 } from './types';
-import { GrokLLMClient } from './grok-client';
+import { LLMClient } from './llm-client';
 
 export class AIService {
   static async analyzeSkills(
@@ -14,9 +14,9 @@ export class AIService {
     const cleanSkills = skills.map((s) => s.trim()).filter(Boolean);
     const goal = (careerGoal || 'Full Stack Developer').trim();
 
-    if (GrokLLMClient.isAvailable()) {
+    if (LLMClient.isAvailable()) {
       try {
-        const completion = await GrokLLMClient.completeJSON<SkillGapAnalysisResult>({
+        const completion = await LLMClient.completeJSON<SkillGapAnalysisResult>({
           messages: [
             {
               role: 'system',
@@ -111,9 +111,9 @@ Rules:
     const cleanSkills = skills.map((s) => s.trim()).filter(Boolean);
     const goal = (targetRole || 'Full Stack AI Developer').trim();
 
-    if (GrokLLMClient.isAvailable()) {
+    if (LLMClient.isAvailable()) {
       try {
-        const completion = await GrokLLMClient.completeJSON<CareerRoadmapResult>({
+        const completion = await LLMClient.completeJSON<CareerRoadmapResult>({
           messages: [
             {
               role: 'system',
@@ -225,9 +225,9 @@ Return ONLY valid JSON matching this schema:
   ): Promise<GeneratedProposalResult> {
     const cleanSkills = professionalSkills.map((s) => s.trim()).filter(Boolean);
 
-    if (GrokLLMClient.isAvailable()) {
+    if (LLMClient.isAvailable()) {
       try {
-        const completion = await GrokLLMClient.completeJSON<GeneratedProposalResult>({
+        const completion = await LLMClient.completeJSON<GeneratedProposalResult>({
           messages: [
             {
               role: 'system',
@@ -291,9 +291,9 @@ Generate a concise, high-converting client proposal in JSON.`,
   ): Promise<ImprovedMessageResult> {
     const trimmed = message.trim();
 
-    if (GrokLLMClient.isAvailable()) {
+    if (LLMClient.isAvailable()) {
       try {
-        const completion = await GrokLLMClient.completeJSON<ImprovedMessageResult>({
+        const completion = await LLMClient.completeJSON<ImprovedMessageResult>({
           messages: [
             {
               role: 'system',
@@ -367,9 +367,9 @@ Return ONLY valid JSON matching:
     const skillsList = userContext.skills.join(', ') || 'programming fundamentals';
     const goal = userContext.careerGoal || 'Software Engineer';
 
-    if (GrokLLMClient.isAvailable()) {
+    if (LLMClient.isAvailable()) {
       try {
-        const completion = await GrokLLMClient.completeJSON<{ response: string; recommendedActions: string[] }>({
+        const completion = await LLMClient.completeJSON<{ response: string; recommendedActions: string[] }>({
           messages: [
             {
               role: 'system',
@@ -430,9 +430,9 @@ User Question: "${question}"`,
     yearsExperience: number;
     summary: string;
   }> {
-    if (GrokLLMClient.isAvailable()) {
+    if (LLMClient.isAvailable()) {
       try {
-        const completion = await GrokLLMClient.completeJSON<{
+        const completion = await LLMClient.completeJSON<{
           detectedSkills: string[];
           suggestedTitle: string;
           yearsExperience: number;
