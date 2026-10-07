@@ -1,7 +1,7 @@
 # GroEarn — Production Architecture & Engineering Specification
 
 > **Enterprise Multi-Role Career Platform: Learner • Professional • Mentor • Employer • Admin**  
-> *End-to-end full-stack platform built with Next.js 16 App Router, PostgreSQL + pgvector, OpenAI RAG, Razorpay Payments, Prisma ORM, and Zero-Trust RBAC.*
+> *End-to-end full-stack platform built with Next.js 16 App Router, React 19, PostgreSQL + pgvector (1024-dim), Local BGE-M3 RAG, Cashfree & Razorpay Payments, Prisma ORM v6, and Zero-Trust RBAC.*
 
 ---
 
@@ -48,19 +48,19 @@ graph TD
     end
 
     subgraph AI_RAG_Layer["4. AI & pgvector RAG Engine"]
-        Embeddings["Embedding Provider (OpenAI text-embedding-3-small, 1536 dims)"]
+        Embeddings["Local BGE-M3 (1024 dims) / Ollama Serving Layer"]
         VectorStore["PgVectorStore (PostgreSQL pgvector Cosine <=> Distance)"]
         HNSW["HNSW Graph Vector Index (document_chunks.embedding)"]
         Skill_RAG["SkillRAGService (Multi-Signal Weighted Scorer)"]
         RAG_Chain["ProductionRAGChain (Grounded Context Composition)"]
-        LLM_Client["Groq LLM Client (Llama 3.3 70B)"]
+        LLM_Client["Groq LLM Client (Llama 3.3 70B & GPT-OSS 120B)"]
     end
 
-    subgraph Payments_Layer["5. Razorpay Payments Engine"]
-        RZP_SDK["Razorpay Official SDK"]
-        RZP_Orders["Order Creation & Price Verification"]
-        RZP_Webhook["HMAC-SHA256 Idempotent Webhook Engine"]
-        RZP_Entitlements["Transactional Course & Mentorship Entitlements"]
+    subgraph Payments_Layer["5. Multi-Provider Marketplace Payments Engine"]
+        Payment_Providers["Cashfree PG (v2023-08-01) & Razorpay SDK"]
+        Payment_Orders["Order Creation & Price Verification"]
+        Payment_Webhook["HMAC-SHA256 Idempotent Webhook Engine"]
+        Payment_Entitlements["Transactional Course & Mentorship Entitlements"]
     end
 
     subgraph Persistence_Layer["6. Database Persistence Layer (PostgreSQL & Prisma ORM)"]
@@ -70,7 +70,7 @@ graph TD
         DB_Payments["PaymentOrder, Payment, WebhookEvent & CoursePurchase"]
         DB_Jobs["Job & Application Records"]
         DB_Msg["Conversation & Message Records"]
-        DB_PgVector["pgvector document_chunks Table (vector(1536))"]
+        DB_PgVector["pgvector document_chunks Table (vector(1024))"]
     end
 
     UI_Learner --> MW
@@ -95,11 +95,11 @@ graph TD
     Ctrl_Msg --> Repo_Msg
     Ctrl_Admin --> Repo_Admin
 
-    Svc_Payment --> RZP_Orders
-    RZP_Orders --> RZP_SDK
-    Ctrl_Payment --> RZP_Webhook
-    RZP_Webhook --> RZP_Entitlements
-    RZP_Entitlements --> DB_Payments
+    Svc_Payment --> Payment_Orders
+    Payment_Orders --> Payment_Providers
+    Ctrl_Payment --> Payment_Webhook
+    Payment_Webhook --> Payment_Entitlements
+    Payment_Entitlements --> DB_Payments
 
     Svc_SkillRAG --> VectorStore
     VectorStore --> HNSW

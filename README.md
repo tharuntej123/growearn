@@ -2,24 +2,24 @@
 
 > **“Learn. Build Skills. Get Guidance. Earn. Grow. Mentor — All in One.”**
 
-[![Next.js](https://img.shields.io/badge/Next.js-16.3-black?style=flat-square&logo=next.js)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-19.2-61DAFB?style=flat-square&logo=react)](https://react.dev/)
+[![Next.js](https://img.shields.io/badge/Next.js-16.3.4-black?style=flat-square&logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.2.8-61DAFB?style=flat-square&logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-4169E1?style=flat-square&logo=postgresql)](https://www.postgresql.org/)
-[![pgvector](https://img.shields.io/badge/pgvector-1024--dim-blue?style=flat-square)](https://github.com/pgvector/pgvector)
-[![Prisma ORM](https://img.shields.io/badge/Prisma-6.4-2D3748?style=flat-square&logo=prisma)](https://www.prisma.io/)
+[![pgvector](https://img.shields.io/badge/pgvector-1024--dim%20HNSW-blue?style=flat-square)](https://github.com/pgvector/pgvector)
+[![Prisma ORM](https://img.shields.io/badge/Prisma-6.4.1-2D3748?style=flat-square&logo=prisma)](https://www.prisma.io/)
 [![Cashfree](https://img.shields.io/badge/Cashfree-v2023--08--01-green?style=flat-square)](https://www.cashfree.com/)
-[![Razorpay](https://img.shields.io/badge/Razorpay-v2.9-0C2340?style=flat-square&logo=razorpay)](https://razorpay.com/)
+[![Razorpay](https://img.shields.io/badge/Razorpay-v2.9.8-0C2340?style=flat-square&logo=razorpay)](https://razorpay.com/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-38B2AC?style=flat-square&logo=tailwind-css)](https://tailwindcss.com/)
-[![Playwright](https://img.shields.io/badge/Playwright-E2E-45ba4b?style=flat-square&logo=playwright)](https://playwright.dev/)
+[![Playwright](https://img.shields.io/badge/Playwright-v1.63-45ba4b?style=flat-square&logo=playwright)](https://playwright.dev/)
 
 ---
 
 ## 📖 Table of Contents
 
 - [Overview](#-overview)
-- [Technology Stack Matrix](#️-technology-stack-matrix)
-- [Role Workflows & Capabilities](#-role-workflows--capabilities)
+- [Active Technology Stack Matrix](#️-active-technology-stack-matrix)
+- [Role Workflows & System Modules](#-role-workflows--system-modules)
   - [1. 🎓 Learner / Student Experience](#1--learner--student-experience-flow)
   - [2. 💼 Freelancer / Professional Experience](#2--freelancer--professional-experience-flow)
   - [3. 👨‍🏫 Expert Mentor Experience](#3--expert-mentor-experience-flow)
@@ -31,11 +31,11 @@
   - [Razorpay Alternate Gateway](#razorpay-alternate-gateway)
   - [Refunds, Health Telemetry & Payout Settlements](#refunds-health-telemetry--payout-settlements)
 - [AI, Semantic Search & pgvector RAG Engine](#-ai-semantic-search--pgvector-rag-engine)
-  - [Local BGE-M3 (1024-dim) Embedding Inference](#local-bge-m3-1024-dim-embedding-inference)
+  - [Local BGE-M3 (1024-dim) Vector Inference](#local-bge-m3-1024-dim-vector-inference)
   - [Deterministic Multi-Signal Hybrid Scoring](#deterministic-multi-signal-hybrid-scoring)
   - [Zero-Shot Intent Classifier Fallback](#zero-shot-intent-classifier-fallback)
 - [Security, Governance & Fail-Closed Policies](#-security-governance--fail-closed-policies)
-- [API Route Reference](#-api-route-reference)
+- [Complete API Route Reference](#-complete-api-route-reference)
 - [Environment Configuration (.env)](#-environment-configuration-env)
 - [Getting Started Locally](#-getting-started-locally)
 - [Automated Verification & Test Suites](#-automated-verification--test-suites)
@@ -45,41 +45,88 @@
 
 ## 🌟 Overview
 
-**GroEarn** is a production-grade, full-stack talent marketplace and career ecosystem designed to unify the end-to-end professional lifecycle:
+**GroEarn** is an enterprise-ready, full-stack talent marketplace and career ecosystem designed to unify the end-to-end professional lifecycle:
 1. **Learn:** Discover structured career roadmaps generated from database-backed knowledge.
 2. **Build Skills:** Complete interactive courses and track milestone progress.
-3. **Get Guidance:** Book 1-on-1 coaching sessions with industry mentors.
+3. **Get Guidance:** Book 1-on-1 coaching sessions with verified industry mentors.
 4. **Earn:** Discover freelance contracts and full-time jobs with multi-signal semantic matching.
-5. **Grow:** Share industry updates, write articles, and network in the community feed.
-6. **Mentor & Hire:** Publish technical courses, coach students, post job requisitions, and review candidates via an ATS pipeline.
+5. **Grow:** Share industry updates, write technical posts, and network in the community feed.
+6. **Mentor & Hire:** Publish technical courses, coach students, post job requisitions, and manage candidate pipelines via an ATS.
 
-The platform is engineered with **Next.js 16 (App Router)**, **PostgreSQL + pgvector (`vector(1024)`)**, **Prisma ORM v6**, **Local BGE-M3 vector inference**, **Cashfree Marketplace PG (v2023-08-01)**, **Razorpay alternate payments**, **Groq High-Speed LLM inference**, **multi-instance PostgreSQL rate limiting**, and **zero-trust RBAC**.
+The platform is engineered with **Next.js 16 (App Router)**, **React 19**, **PostgreSQL + pgvector (`vector(1024)`)**, **Prisma ORM v6**, **Local BGE-M3 vector inference**, **Cashfree Marketplace PG (v2023-08-01)**, **Razorpay alternate payments**, **Groq High-Speed LLM inference**, **multi-instance PostgreSQL rate limiting**, and **zero-trust RBAC**.
 
 ---
 
-## 🛠️ Technology Stack Matrix
+## 🛠️ Active Technology Stack Matrix
 
-| Layer | Technology | Implementation & Operational Details |
+### 1. Core Framework & Frontend
+| Technology | Version | Purpose & Implementation Details |
 | :--- | :--- | :--- |
-| **Frontend Framework** | **Next.js 16 (App Router)** | React 19 Server & Client Components, Turbopack, canonical role-based routing |
-| **Styling** | **Tailwind CSS v4** | Modern CSS tokens, emerald/teal design system, fully responsive layouts |
-| **UI Primitives** | **Radix UI / Sonner / Lucide** | Accessible UI primitives, Sonner toast notifications, Lucide vector icons |
-| **Database** | **PostgreSQL (pg15+)** | Relational integrity, foreign keys, unique constraints, and B-tree indexes |
-| **Vector Search Engine** | **pgvector (`vector(1024)`)** | HNSW graph cosine distance indexing on `document_chunks` for grounded semantic retrieval |
-| **Vector Embeddings** | **Local BGE-M3 (1024-dim)** | Real 1024-dimensional vector embedding inference via Ollama / local serving layer |
-| **LLM Inference** | **Groq API / LangChain** | High-speed LLM inference (Llama 3.3 70B / GPT-OSS 120B) for grounding and AI chat |
-| **ORM & Migrations** | **Prisma ORM v6** | Type-safe migrations (`prisma migrate deploy`), transactional queries, preview features |
-| **Primary Payment Gateway** | **Cashfree Payments** | Official v2023-08-01 PG API, sandbox/production environments, payment sessions, HMAC-SHA256 signatures, replay attack prevention |
-| **Alternate Payment Gateway** | **Razorpay SDK** | Server-side order creation, HMAC-SHA256 signature verification, idempotent webhooks |
-| **Authentication & RBAC** | **Stateless JWT & Bcrypt** | Fail-closed runtime validation, HttpOnly Secure SameSite cookies, Zero-Trust RBAC |
-| **Rate Limiting** | **PostgreSQL DatabaseRateLimiter** | Multi-instance distributed rate limiting backed by PostgreSQL `RateLimit` table |
-| **Object Storage** | **Multi-Provider Storage Engine** | Unified local disk storage and S3 / Cloudflare R2 cloud storage with signed URLs |
-| **Schema Validation** | **Zod v3** | Strict runtime schema validation across all API endpoints, controllers, and models |
-| **Testing & Verification** | **Master TSX Suite & Playwright** | 13 test suites (47/47 assertions), Cashfree suite (21/21), RAG proof, load benchmarks, E2E specs |
+| **Next.js (App Router)** | `16.3.4` | Canonical role-based routing, React 19 Server/Client Components, Turbopack, Streaming SSR |
+| **React & React DOM** | `19.2.8` | Server Actions, concurrent transitions (`useTransition`), and modern React 19 action states |
+| **TypeScript** | `5.x` | Strict end-to-end static typing across all models, API handlers, repositories, and services |
+
+### 2. Styling, UI Primitives & Visuals
+| Technology | Version | Purpose & Implementation Details |
+| :--- | :--- | :--- |
+| **Tailwind CSS** | `v4.0` | Modern CSS variable tokens, emerald/teal palette design system, responsive UI layouts |
+| **Lucide React** | `^1.16.0` | Unified vector icon library across all dashboard views, navigation, and badges |
+| **Sonner** | `^2.0.1` | High-performance, customizable toast notification system for action feedback |
+| **Radix UI Primitives** | Latest | Accessible unstyled primitives for modals, dropdowns, tooltips, and dialogues |
+| **Recharts** | `^2.15.1` | Interactive data visualizations for Admin platform telemetry and Mentor earnings |
+| **Canvas Confetti** | `^1.9.4` | Micro-animations for course milestone completion and student achievements |
+| **Class Variance Authority & Tailwind Merge** | `^0.7.1` / `^3.0.1` | Type-safe variant management and conflict-free CSS utility merging |
+
+### 3. Database, Vector Engine & ORM
+| Technology | Version | Purpose & Implementation Details |
+| :--- | :--- | :--- |
+| **PostgreSQL** | `15+` | Relational source of truth, foreign key constraints, unique indexes, and ACID transactions |
+| **pgvector Extension** | `vector(1024)` | High-dimensional vector indexing using HNSW graph cosine distance (`<=>`) on `document_chunks` |
+| **Prisma ORM** | `^6.4.1` | Type-safe schema migrations (`prisma migrate deploy`), transactional queries, and extensions |
+
+### 4. AI, Semantic Embeddings & LLM Orchestration
+| Technology | Version | Purpose & Implementation Details |
+| :--- | :--- | :--- |
+| **Local BGE-M3 Embeddings** | `1024-dim` | Real 1024-dimensional dense vector embeddings via local model server (`http://127.0.0.1:11434`) |
+| **Groq LLM Inference** | `v1` API | Ultra-fast grounded LLM responses using Llama 3.3 70B Versatile and GPT-OSS 120B |
+| **LangChain Core & Splitters** | `^1.2.9` / `^1.0.1` | `RunnableSequence`, `StringOutputParser`, document chunking, and text splitting |
+| **Hybrid Intent Classifier** | Custom | Zero-shot intent classification with automated keyword fallback during server maintenance |
+
+### 5. Payments & Marketplace Monetization Engine
+| Technology | Version | Purpose & Implementation Details |
+| :--- | :--- | :--- |
+| **Cashfree Payments (Primary)** | `v2023-08-01` PG API | Marketplace payment engine with sandbox & production support, `payment_session_id`, HMAC-SHA256 signature verification, 5-minute replay attack window, constant-time comparison, refunds, and health telemetry |
+| **Razorpay SDK (Alternate)** | `^2.9.8` | Fallback gateway with server-side order creation, HMAC-SHA256 verification, and webhooks |
+| **Commission Split Engine** | Custom | Authoritative platform revenue split (10% platform commission, 90% mentor net payout) |
+
+### 6. Authentication, Security & Rate Limiting
+| Technology | Version | Purpose & Implementation Details |
+| :--- | :--- | :--- |
+| **Stateless JWT (`jsonwebtoken` / `jose`)** | `^9.0.2` / `^5.9.6` | Fail-closed runtime validation, HttpOnly Secure SameSite cookies, 64-char secret enforcement |
+| **Bcrypt.js** | `^2.4.3` | Salted cryptographic password hashing |
+| **Database Rate Limiter** | Custom | Multi-instance PostgreSQL-backed rate limiter using the `RateLimit` table |
+| **Zero-Trust RBAC & IDOR Guards** | Custom | Strict role boundary isolation and granular ownership checks on all private resources |
+| **Immutable Audit Logging** | Custom | Append-only security audit log recording auth, payments, and admin mutations |
+
+### 7. Storage, Document Parsing & Forms
+| Technology | Version | Purpose & Implementation Details |
+| :--- | :--- | :--- |
+| **Multi-Provider Storage Engine** | Custom | Unified storage abstraction supporting local disk storage and AWS S3 / Cloudflare R2 |
+| **PDF Parse** | `^2.4.5` | Server-side resume parsing for automated skill extraction and profile populating |
+| **React Hook Form & Zod** | `^7.54.2` / `^3.24.2` | Robust client/server form validation with declarative schema enforcement |
+| **TanStack React Query** | `^5.66.0` | Client-side async state caching, mutation handling, and optimistic UI updates |
+| **Date-fns** | `^4.1.0` | Modern, immutable date utility library for scheduling, durations, and timestamps |
+
+### 8. Testing & Quality Assurance
+| Technology | Version | Purpose & Implementation Details |
+| :--- | :--- | :--- |
+| **TSX Test Runner** | `^4.19.3` | Master verification test suite (13 suites, 47/47 passing) & Cashfree integration suite (21/21 passing) |
+| **Playwright Test** | `^1.63.0` | End-to-end browser automation covering Learner, Freelancer, Mentor, Company, and Admin flows |
+| **ESLint & TypeScript** | `v9` / `v5` | Code quality enforcement and strict typechecking (`tsc --noEmit`) |
 
 ---
 
-## 🚀 Role Workflows & Capabilities
+## 🚀 Role Workflows & System Modules
 
 ```
                   ┌───────────────────────────────────────────────────────────┐
@@ -99,8 +146,8 @@ The platform is engineered with **Next.js 16 (App Router)**, **PostgreSQL + pgve
 ### 1. 🎓 Learner / Student Experience Flow
 - **Skill-First RAG Discovery:** Input any technical skill (e.g., `Java`, `Next.js`, `Machine Learning`, `PostgreSQL`) to instantly retrieve database-backed career roadmaps with structured phase breakdowns and milestones.
 - **Top 5 Courses & Expert Mentors:** Multi-signal ranked courses and verified mentors with duplicate-free pagination.
-- **Marketplace Course Checkout:** Seamlessly purchase paid courses via Cashfree or Razorpay with instantaneous transactional entitlement unlocking.
-- **1-on-1 Mentorship Booking:** Book personalized coaching sessions with industry mentors and unlock direct real-time messaging upon confirmation.
+- **Marketplace Course Checkout:** Purchase paid courses via Cashfree or Razorpay with instantaneous transactional entitlement unlocking (`CoursePurchase` and `Enrollment`).
+- **1-on-1 Mentorship Booking:** Book coaching sessions with industry mentors and unlock direct real-time messaging upon confirmation.
 - **Interactive Roadmaps:** Track completed milestones and progress through comprehensive career learning paths.
 
 ### 2. 💼 Freelancer / Professional Experience Flow
@@ -200,7 +247,7 @@ Groq LLM Grounded Personalization & Explanation
 Structured User Response
 ```
 
-### Local BGE-M3 (1024-dim) Embedding Inference
+### Local BGE-M3 (1024-dim) Vector Inference
 - Generates real 1024-dimensional embeddings via local model serving (`http://127.0.0.1:11434`, model: `bge-m3`).
 - Runtime assertion validates vector dimensions: `vector.length === 1024`.
 - PostgreSQL HNSW graph index on `document_chunks.embedding` (`vector(1024)`).
@@ -233,7 +280,7 @@ If the embedding server is offline or undergoing maintenance, the `IntentClassif
 
 ---
 
-## 📡 API Route Reference
+## 📡 Complete API Route Reference
 
 ### Authentication & Profiles
 | Method | Endpoint | Description |
