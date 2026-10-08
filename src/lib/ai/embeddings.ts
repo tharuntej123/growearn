@@ -183,8 +183,11 @@ export function getEmbeddingProvider(): LocalBGE3EmbeddingProvider {
 }
 
 export function isEmbeddingConfigured(): boolean {
-  const url = process.env.EMBEDDING_BASE_URL || 'http://127.0.0.1:11434';
-  return Boolean(url && url.trim().length > 0);
+  if (process.env.MOCK_AI === 'true' || process.env.DISABLE_EMBEDDINGS === 'true') {
+    return false;
+  }
+  const url = process.env.EMBEDDING_BASE_URL;
+  return Boolean(url && url.trim().length > 0 && url !== 'disabled' && url !== 'none');
 }
 
 export async function generateEmbedding(text: string): Promise<number[]> {

@@ -1,10 +1,8 @@
-// Comprehensive verification test for GrowEarn Production RAG, LangChain pipeline, pgvector similarity, and intent detection.
-
 import { ProductionRAGChain } from '../ai/rag-chain';
 import { IntentClassifier } from '../ai/intent-classifier';
 import { PgVectorRetriever } from '../ai/retriever';
 import { PgVectorStore } from '../ai/vector-store';
-import { isEmbeddingConfigured } from '../ai/embeddings';
+import { isEmbeddingConfigured, getEmbeddingProvider } from '../ai/embeddings';
 import { prisma } from '../prisma';
 
 async function runProductionRAGVerification() {
@@ -12,9 +10,19 @@ async function runProductionRAGVerification() {
   console.log('🧪 VERIFYING PRODUCTION GROWEARN RAG & VECTOR SEARCH PIPELINE');
   console.log('================================================================\n');
 
-  if (!isEmbeddingConfigured()) {
+  let serviceAvailable = false;
+  if (isEmbeddingConfigured()) {
+    try {
+      const health = await getEmbeddingProvider().checkHealth();
+      serviceAvailable = health.healthy;
+    } catch {
+      serviceAvailable = false;
+    }
+  }
+
+  if (!serviceAvailable) {
     console.log('BLOCKED: LIVE SEMANTIC RAG REQUIRES LOCAL BGE-M3 EMBEDDING SERVICE');
-    console.log('ℹ️ [RAG Service Notice]: Local BGE-M3 embedding service is not configured.');
+    console.log('ℹ️ [RAG Service Notice]: Local BGE-M3 embedding service is not configured or offline.');
     console.log('   Testing Structured Intent Classifier (Deterministic Component)...');
     
     const testIntents = [

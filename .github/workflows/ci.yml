@@ -83,18 +83,18 @@ jobs:
       - name: 8. Run Master Integration & Security Test Suite
         run: npm test
 
-      - name: 9. Run Production RAG Pipeline & Fallback Check
+      - name: 9. Run Production RAG Pipeline & Intent Classifier Verification
         run: npm run test:rag
 
-      - name: 11. Build Next.js Production Bundle
+      - name: 10. Build Next.js Production Bundle
         run: npm run build
         env:
           NODE_ENV: "production"
 
-      - name: 12. Install Playwright Browsers & OS Dependencies
+      - name: 11. Install Playwright Browsers & OS Dependencies
         run: npx playwright install --with-deps chromium
 
-      - name: 13. Run Playwright End-to-End Browser Tests
+      - name: 12. Run Playwright End-to-End Browser Tests
         run: npx playwright test --reporter=list,github
         env:
           CI: "true"
