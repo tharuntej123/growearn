@@ -1,6 +1,6 @@
-// Standard PaymentProvider interface for GroEarn live marketplace payments.
+// Official PaymentProvider interface for GroEarn live Cashfree marketplace payments.
 
-export type PaymentProviderName = 'CASHFREE' | 'RAZORPAY';
+export type PaymentProviderName = 'CASHFREE';
 
 export interface CreateOrderParams {
   orderId: string;

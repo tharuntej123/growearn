@@ -18,7 +18,12 @@
     "test:rag": "tsx src/lib/__tests__/production-rag.test.ts",
     "test:rag:proof": "tsx src/lib/__tests__/live-semantic-rag-proof.ts",
     "test:benchmark": "tsx src/lib/__tests__/load-performance-benchmark.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "bgem3:check": "tsx scripts/check-bgem3.ts",
+    "reembed": "tsx scripts/reembed-all-documents.ts",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:build": "docker compose build"
   },
   "dependencies": {
     "@langchain/core": "^1.2.9",
@@ -33,7 +38,6 @@
     "lucide-react": "^1.16.0",
     "next": "16.3.4",
     "pdf-parse": "^2.4.5",
-    "razorpay": "^2.9.8",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "sonner": "^2.0.1",

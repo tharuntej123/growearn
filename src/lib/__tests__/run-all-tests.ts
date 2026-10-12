@@ -16,7 +16,7 @@ import { DatabaseRateLimiter } from '../rate-limiter';
 import { registerSchema } from '../../validators/auth.schema';
 import { EMBEDDING_DIMENSION } from '../ai/embeddings';
 import { PaymentService } from '../../services/payment/payment.service';
-import { RazorpayService } from '../../services/payment/razorpay.service';
+import { PaymentProviderFactory } from '../../services/payment/payment-provider.factory';
 import { getJwtSecret } from '../auth';
 import crypto from 'crypto';
 
@@ -540,8 +540,8 @@ async function runMasterTestSuite() {
     console.error('Suite 11 Error:', err);
   }
 
-  // SUITE 12: REAL RAZORPAY PAYMENT SYSTEM & WEBHOOKS
-  console.log('\n💳 SUITE 12: Real Razorpay Payment System, Entitlements & Webhooks...');
+  // SUITE 12: REAL CASHFREE PAYMENT SYSTEM & WEBHOOKS
+  console.log('\n💳 SUITE 12: Real Cashfree Payment System, Entitlements & Webhooks...');
   try {
     const student = await prisma.user.findFirst({ where: { role: 'LEARNER' } });
     const paidCourse = await prisma.course.findFirst({ where: { price: { gt: 0 } } });
@@ -550,29 +550,43 @@ async function runMasterTestSuite() {
       include: { user: true },
     });
 
-    // 12.1: Payment Gateway Configuration & Fail-Safe Notice Check
-    const isGatewayConfigured = RazorpayService.isConfigured();
-    if (!isGatewayConfigured) {
-      console.log('   ℹ️ [Notice] Razorpay test/production credentials not configured in environment.');
-      console.log('   Testing Server-Side Cryptographic Signature Verifier & Rejection Flow...');
-    }
+    const cashfreeProvider = PaymentProviderFactory.getCashfreeProvider();
+    const isGatewayConfigured = cashfreeProvider.isConfigured();
+    console.log(`   📡 Provider: ${cashfreeProvider.name}`);
+    console.log(`   🌐 Environment: ${cashfreeProvider.getEnvironment()}`);
+    console.log(`   🔑 Configured: ${isGatewayConfigured ? 'YES' : 'NO'}`);
 
-    // 12.2: Cryptographic Signature Verification Logic Test
-    const dummyOrderId = `order_test_${Date.now()}`;
-    const dummyPaymentId = `pay_test_${Date.now()}`;
-    const testSecret = 'ci-test-razorpay-webhook-secret-2026-key';
-    const validSig = crypto.createHmac('sha256', testSecret).update(`${dummyOrderId}|${dummyPaymentId}`).digest('hex');
-    const invalidSig = 'invalid_forged_cryptographic_signature_value';
-
-    // Verify invalid signature rejection
-    const isForgedSigRejected = !RazorpayService.verifyPaymentSignature({
-      orderId: dummyOrderId,
-      paymentId: dummyPaymentId,
-      signature: invalidSig,
+    // 12.1: Cryptographic Webhook Signature Verification Logic Test
+    const dummyTimestamp = Math.floor(Date.now() / 1000).toString();
+    const dummyRawBody = JSON.stringify({
+      type: 'PAYMENT_SUCCESS_WEBHOOK',
+      event_time: new Date().toISOString(),
+      data: {
+        order: { order_id: `ord_cf_${Date.now()}`, order_amount: 499 },
+        payment: { cf_payment_id: 12345678, payment_status: 'SUCCESS', payment_amount: 499 },
+      },
     });
-    assert(isForgedSigRejected, 'Razorpay HMAC-SHA256 Rejects Forged / Invalid Signatures');
 
-    // 12.3: Database Payment Models Integrity & Unique Constraints
+    const secret = process.env.CASHFREE_CLIENT_SECRET || 'test_secret_for_cryptographic_verification_key';
+    const validSig = crypto
+      .createHmac('sha256', secret)
+      .update(`${dummyTimestamp}${dummyRawBody}`)
+      .digest('base64');
+    const invalidSig = 'invalid_forged_cryptographic_signature_base64==';
+
+    // Verify invalid signature rejection via cashfreeProvider
+    let forgedRejected = false;
+    try {
+      await cashfreeProvider.verifyWebhook(dummyRawBody, {
+        'x-webhook-signature': invalidSig,
+        'x-webhook-timestamp': dummyTimestamp,
+      });
+    } catch {
+      forgedRejected = true;
+    }
+    assert(forgedRejected, 'Cashfree HMAC-SHA256 Rejects Forged / Invalid Signatures');
+
+    // 12.2: Database Payment Models Integrity & Unique Constraints
     const testOrderId = `order_db_test_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const testReceipt = `rcpt_test_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     if (student && paidCourse) {
@@ -580,7 +594,7 @@ async function runMasterTestSuite() {
       const testOrder = await prisma.paymentOrder.create({
         data: {
           userId: student.id,
-          razorpayOrderId: testOrderId,
+          providerOrderId: testOrderId,
           amount: paidCourse.price,
           amountInPaise: Math.round(paidCourse.price * 100),
           currency: 'INR',
@@ -590,29 +604,29 @@ async function runMasterTestSuite() {
           receipt: testReceipt,
         },
       });
-      assert(Boolean(testOrder && testOrder.id), 'PaymentOrder Persisted in PostgreSQL Database');
+      assert(Boolean(testOrder && testOrder.id), 'PaymentOrder Persisted in PostgreSQL Database (providerOrderId)');
 
-      // 12.4: Payment Record & Transition to CAPTURED
+      // 12.3: Payment Record & Transition to CAPTURED
       const testPayment = await prisma.payment.create({
         data: {
           orderId: testOrder.id,
           userId: student.id,
-          razorpayOrderId: testOrderId,
-          razorpayPaymentId: `pay_${Date.now()}`,
-          razorpaySignature: validSig,
+          providerOrderId: testOrderId,
+          providerPaymentId: `cf_pay_${Date.now()}`,
+          providerSignature: validSig,
           amount: paidCourse.price,
           amountInPaise: Math.round(paidCourse.price * 100),
           currency: 'INR',
           status: 'CAPTURED',
-          provider: 'RAZORPAY',
+          provider: 'CASHFREE',
           itemType: 'COURSE',
           itemId: paidCourse.id,
           courseId: paidCourse.id,
         },
       });
-      assert(Boolean(testPayment && testPayment.status === 'CAPTURED'), 'Payment Record Transactional Persistence (CAPTURED)');
+      assert(Boolean(testPayment && testPayment.status === 'CAPTURED'), 'Payment Record Transactional Persistence (CASHFREE CAPTURED)');
 
-      // 12.5: CoursePurchase Record & Entitlement Activation
+      // 12.4: CoursePurchase Record & Entitlement Activation
       const coursePurchase = await prisma.coursePurchase.upsert({
         where: { userId_courseId: { userId: student.id, courseId: paidCourse.id } },
         update: { paymentId: testPayment.id, orderId: testOrder.id },
@@ -627,17 +641,17 @@ async function runMasterTestSuite() {
       });
       assert(Boolean(coursePurchase && coursePurchase.id), 'CoursePurchase Entitlement Record Verified');
 
-      // 12.6: Webhook Idempotency Verification
-      const testEventId = `evt_test_${Date.now()}`;
+      // 12.5: Webhook Idempotency Verification
+      const testEventId = `cf_evt_test_${Date.now()}`;
       const firstWebhookRecord = await prisma.webhookEvent.create({
         data: {
           eventId: testEventId,
-          eventType: 'payment.captured',
-          payload: { id: testEventId, event: 'payment.captured', test: true },
+          eventType: 'PAYMENT_SUCCESS_WEBHOOK',
+          payload: { id: testEventId, event: 'PAYMENT_SUCCESS_WEBHOOK', test: true },
           status: 'PROCESSED',
         },
       });
-      assert(Boolean(firstWebhookRecord && firstWebhookRecord.status === 'PROCESSED'), 'Webhook Event Recorded in PostgreSQL');
+      assert(Boolean(firstWebhookRecord && firstWebhookRecord.status === 'PROCESSED'), 'Cashfree Webhook Event Recorded in PostgreSQL');
 
       // Duplicate delivery check: duplicate event with same ID is detected
       const duplicateEvent = await prisma.webhookEvent.findUnique({
@@ -655,7 +669,7 @@ async function runMasterTestSuite() {
       await prisma.paymentOrder.deleteMany({ where: { id: testOrder.id } });
     }
 
-    // 12.7: Mentor Earnings Telemetry Calculation
+    // 12.6: Mentor Earnings Telemetry Calculation
     if (mentor) {
       const mentorEarnings = await PaymentService.getMentorEarnings(mentor.userId);
       assert(

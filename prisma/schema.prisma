@@ -619,7 +619,7 @@ model PaymentOrder {
   id              String          @id @default(cuid())
   userId          String
   user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  razorpayOrderId String          @unique
+  providerOrderId String          @unique
   amount          Float
   amountInPaise   Int
   currency        String          @default("INR")
@@ -637,7 +637,7 @@ model PaymentOrder {
 
   @@index([userId])
   @@index([status])
-  @@index([razorpayOrderId])
+  @@index([providerOrderId])
 }
 
 model Payment {
@@ -646,14 +646,14 @@ model Payment {
   order             PaymentOrder?       @relation(fields: [orderId], references: [id], onDelete: SetNull)
   userId            String
   user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  razorpayOrderId   String              @unique
-  razorpayPaymentId String?             @unique
-  razorpaySignature String?
+  providerOrderId   String              @unique
+  providerPaymentId String?             @unique
+  providerSignature String?
   amount            Float
   amountInPaise     Int
   currency          String              @default("INR")
   status            String              @default("PENDING") // CREATED, PENDING, AUTHORIZED, CAPTURED, FAILED, REFUNDED, PARTIALLY_REFUNDED, CANCELLED
-  provider          String              @default("RAZORPAY")
+  provider          String              @default("CASHFREE")
   itemType          String              // COURSE, MENTORSHIP
   itemId            String
   courseId          String?
@@ -675,8 +675,8 @@ model Payment {
 
   @@index([userId])
   @@index([status])
-  @@index([razorpayOrderId])
-  @@index([razorpayPaymentId])
+  @@index([providerOrderId])
+  @@index([providerPaymentId])
   @@index([courseId])
   @@index([mentorProfileId])
 }

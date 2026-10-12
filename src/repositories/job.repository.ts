@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import { RAGSyncService } from '@/lib/ai/rag-sync.service';
 
 export interface JobFilterParams {
   query?: string;
@@ -185,7 +186,7 @@ export class JobRepository implements IJobProvider {
     deadline?: Date;
     skillNames: string[];
   }) {
-    return prisma.job.create({
+    const job = await prisma.job.create({
       data: {
         companyId,
         title: data.title,
@@ -224,6 +225,19 @@ export class JobRepository implements IJobProvider {
         skills: { include: { skill: true } },
       },
     });
+
+    // Auto-ingest into PostgreSQL pgvector using BGE-M3 (1024 dims)
+    RAGSyncService.triggerSyncJob(job.id);
+
+    return job;
+  }
+
+  static async deleteJob(jobId: string) {
+    const deleted = await prisma.job.delete({
+      where: { id: jobId },
+    });
+    RAGSyncService.triggerRemoveEntity('job', jobId);
+    return deleted;
   }
 
   static async applyForJob(jobId: string, applicantId: string, data: {

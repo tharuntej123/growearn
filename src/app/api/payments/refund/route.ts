@@ -19,6 +19,10 @@ export async function POST(req: NextRequest) {
       return apiError('Authentication required to request a refund', 'UNAUTHORIZED', 401);
     }
 
+    if (user.role !== 'ADMIN' && user.role !== 'MENTOR') {
+      return apiError('Forbidden: Only administrators or instructors are authorized to issue refunds', 'FORBIDDEN', 403);
+    }
+
     const body = await req.json();
     const parsed = refundSchema.safeParse(body);
     if (!parsed.success) {

@@ -188,7 +188,7 @@ export default function MentorDetailPage() {
             <Card className="w-full lg:w-72 p-5 bg-slate-50 border border-slate-200 rounded-xl space-y-4 shrink-0">
               <div className="flex items-baseline justify-between">
                 <span className="text-xs font-semibold text-slate-500">Mentorship Rate</span>
-                <span className="text-2xl font-extrabold text-slate-900">${mentor.hourlyRate}/hr</span>
+                <span className="text-2xl font-extrabold text-slate-900">₹{mentor.hourlyRate}/hr</span>
               </div>
 
               {mentor.availability && (

@@ -1,4 +1,4 @@
-// Official Cashfree Payment Provider Implementation (v2023-08-01).
+// Official Production Cashfree Payment Provider Implementation (v2023-08-01).
 
 import crypto from 'crypto';
 import {
@@ -29,7 +29,7 @@ export class CashfreePaymentProvider implements IPaymentProvider {
     const rawEnv = (process.env.CASHFREE_ENVIRONMENT || 'sandbox').toLowerCase().trim();
     this.environment = rawEnv === 'production' ? 'production' : 'sandbox';
     this.apiVersion = (process.env.CASHFREE_API_VERSION || '2023-08-01').trim();
-    
+
     // Strict environment-to-endpoint resolution
     if (this.environment === 'production') {
       this.baseUrl = 'https://api.cashfree.com/pg';
@@ -88,6 +88,12 @@ export class CashfreePaymentProvider implements IPaymentProvider {
           'CASHFREE_PRODUCTION_BLOCKED: Cashfree production credentials (CASHFREE_CLIENT_ID / CASHFREE_CLIENT_SECRET) are missing or invalid for live production mode.'
         );
       }
+      const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').trim();
+      if (!appUrl.startsWith('https://')) {
+        throw new Error(
+          'CASHFREE_PRODUCTION_SECURITY_ERROR: NEXT_PUBLIC_APP_URL must use HTTPS in production for secure Cashfree redirect callbacks.'
+        );
+      }
     } else {
       if (!this.clientId || !this.clientSecret) {
         throw new Error(
@@ -112,20 +118,56 @@ export class CashfreePaymentProvider implements IPaymentProvider {
   public async createOrder(params: CreateOrderParams): Promise<ProviderOrderResponse> {
     this.validateConfiguration();
 
-    const customerPhone = (params.customer.phone || '9999999999').replace(/[^0-9]/g, '').slice(-10) || '9999999999';
+    if (!params.amount || params.amount <= 0 || !Number.isFinite(params.amount)) {
+      throw new Error(`Invalid order amount: ${params.amount}. Amount must be a positive finite number.`);
+    }
+
+    if (params.currency && params.currency.toUpperCase() !== 'INR') {
+      throw new Error(`Unsupported currency: ${params.currency}. Cashfree integration currently requires INR.`);
+    }
+
+    // Resolve Customer Phone
+    let customerPhone = (params.customer.phone || '').replace(/[^0-9]/g, '');
+    if (customerPhone.length > 10) {
+      customerPhone = customerPhone.slice(-10);
+    }
+
+    if (this.environment === 'production') {
+      if (!customerPhone || customerPhone.length !== 10) {
+        throw new Error(
+          'CASHFREE_CUSTOMER_VALIDATION_ERROR: A valid 10-digit Indian phone number is required for live Cashfree production orders.'
+        );
+      }
+    } else {
+      // In sandbox mode only, default if not provided
+      if (!customerPhone || customerPhone.length !== 10) {
+        customerPhone = '9999999999';
+      }
+    }
+
+    // Resolve Return URL
+    const baseAppUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/+$/, '');
+    const defaultReturnUrl = `${baseAppUrl}/payments/callback?order_id={order_id}`;
+    const returnUrl = params.returnUrl || defaultReturnUrl;
+
+    if (this.environment === 'production' && !returnUrl.startsWith('https://')) {
+      throw new Error(
+        'CASHFREE_RETURN_URL_INSECURE: Cashfree return URL must use HTTPS in production.'
+      );
+    }
 
     const orderPayload = {
       order_id: params.orderId,
       order_amount: Number(params.amount.toFixed(2)),
-      order_currency: params.currency || 'INR',
+      order_currency: 'INR',
       customer_details: {
         customer_id: params.customer.id,
-        customer_name: params.customer.name || 'GroEarn Learner',
-        customer_email: params.customer.email || 'learner@groearn.com',
+        customer_name: params.customer.name || 'GroEarn User',
+        customer_email: params.customer.email,
         customer_phone: customerPhone,
       },
       order_meta: {
-        return_url: params.returnUrl || `https://groearn.com/learner/dashboard?order_id={order_id}`,
+        return_url: returnUrl,
         notify_url: params.notifyUrl || undefined,
       },
       order_note: `GroEarn: ${params.itemTitle}`,
@@ -136,11 +178,17 @@ export class CashfreePaymentProvider implements IPaymentProvider {
       },
     };
 
-    const response = await fetch(`${this.baseUrl}/orders`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify(orderPayload),
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}/orders`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(orderPayload),
+        signal: AbortSignal.timeout(12000),
+      });
+    } catch (netErr: any) {
+      throw new Error(`Cashfree Gateway Connection Timeout/Error: ${netErr.message}`);
+    }
 
     const responseData = await response.json().catch(() => ({}));
 
@@ -154,7 +202,7 @@ export class CashfreePaymentProvider implements IPaymentProvider {
       providerOrderId: responseData.order_id || params.orderId,
       amount: Number(responseData.order_amount || params.amount),
       amountInPaise: Math.round(Number(responseData.order_amount || params.amount) * 100),
-      currency: responseData.order_currency || params.currency || 'INR',
+      currency: responseData.order_currency || 'INR',
       receipt: params.receipt,
       status: responseData.order_status || 'ACTIVE',
       paymentSessionId: responseData.payment_session_id,
@@ -183,7 +231,11 @@ export class CashfreePaymentProvider implements IPaymentProvider {
       };
     }
 
-    if (orderStatus.status === 'EXPIRED' || orderStatus.status === 'TERMINATED' || orderStatus.status === 'FAILED') {
+    if (
+      orderStatus.status === 'EXPIRED' ||
+      orderStatus.status === 'TERMINATED' ||
+      orderStatus.status === 'FAILED'
+    ) {
       return {
         verified: false,
         providerOrderId: params.providerOrderId,
@@ -257,7 +309,13 @@ export class CashfreePaymentProvider implements IPaymentProvider {
       throw new Error('Invalid Cashfree webhook cryptographic signature');
     }
 
-    const parsedEvent = JSON.parse(rawBody);
+    let parsedEvent: any;
+    try {
+      parsedEvent = JSON.parse(rawBody);
+    } catch {
+      throw new Error('Malformed Cashfree webhook JSON payload');
+    }
+
     const eventType = parsedEvent.type || parsedEvent.event || 'UNKNOWN';
     const eventId = parsedEvent.event_id || parsedEvent.id || `cf_evt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const data = parsedEvent.data || {};
@@ -265,7 +323,7 @@ export class CashfreePaymentProvider implements IPaymentProvider {
     let status: 'CAPTURED' | 'FAILED' | 'REFUNDED' | 'UNKNOWN' = 'UNKNOWN';
     const providerOrderId = data.order?.order_id || data.order_id;
     const providerPaymentId = String(data.payment?.cf_payment_id || data.payment?.payment_id || '');
-    const amount = data.payment?.payment_amount || data.order?.order_amount;
+    const amount = data.payment?.payment_amount ?? data.order?.order_amount;
     const refundAmount = data.refund?.refund_amount;
     let failureReason: string | undefined;
 
@@ -293,8 +351,8 @@ export class CashfreePaymentProvider implements IPaymentProvider {
       providerOrderId,
       providerPaymentId,
       status,
-      amount,
-      refundAmount,
+      amount: typeof amount === 'number' ? amount : undefined,
+      refundAmount: typeof refundAmount === 'number' ? refundAmount : undefined,
       failureReason,
       rawEvent: parsedEvent,
     };
@@ -304,6 +362,10 @@ export class CashfreePaymentProvider implements IPaymentProvider {
   public async refundPayment(params: RefundParams): Promise<RefundResult> {
     this.validateConfiguration();
 
+    if (!params.refundAmount || params.refundAmount <= 0) {
+      throw new Error(`Invalid refund amount: ${params.refundAmount}`);
+    }
+
     const refundPayload = {
       refund_amount: Number(params.refundAmount.toFixed(2)),
       refund_id: params.refundId,
@@ -311,11 +373,17 @@ export class CashfreePaymentProvider implements IPaymentProvider {
       refund_speed: 'STANDARD',
     };
 
-    const response = await fetch(`${this.baseUrl}/orders/${params.providerOrderId}/refunds`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify(refundPayload),
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}/orders/${params.providerOrderId}/refunds`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(refundPayload),
+        signal: AbortSignal.timeout(12000),
+      });
+    } catch (netErr: any) {
+      throw new Error(`Cashfree Refund Connection Error: ${netErr.message}`);
+    }
 
     const responseData = await response.json().catch(() => ({}));
 
@@ -337,16 +405,25 @@ export class CashfreePaymentProvider implements IPaymentProvider {
   public async getOrderStatus(providerOrderId: string): Promise<PaymentStatusResult> {
     this.validateConfiguration();
 
-    const [orderRes, paymentsRes] = await Promise.all([
-      fetch(`${this.baseUrl}/orders/${providerOrderId}`, {
-        method: 'GET',
-        headers: this.getHeaders(),
-      }),
-      fetch(`${this.baseUrl}/orders/${providerOrderId}/payments`, {
-        method: 'GET',
-        headers: this.getHeaders(),
-      }).catch(() => null),
-    ]);
+    let orderRes: Response;
+    let paymentsRes: Response | null = null;
+
+    try {
+      [orderRes, paymentsRes] = await Promise.all([
+        fetch(`${this.baseUrl}/orders/${providerOrderId}`, {
+          method: 'GET',
+          headers: this.getHeaders(),
+          signal: AbortSignal.timeout(10000),
+        }),
+        fetch(`${this.baseUrl}/orders/${providerOrderId}/payments`, {
+          method: 'GET',
+          headers: this.getHeaders(),
+          signal: AbortSignal.timeout(10000),
+        }).catch(() => null),
+      ]);
+    } catch (netErr: any) {
+      throw new Error(`Cashfree Order Status Query Connection Error: ${netErr.message}`);
+    }
 
     if (!orderRes.ok) {
       const errText = await orderRes.text().catch(() => '');
@@ -386,4 +463,3 @@ export class CashfreePaymentProvider implements IPaymentProvider {
     };
   }
 }
-

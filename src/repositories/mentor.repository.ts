@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import { RAGSyncService } from '@/lib/ai/rag-sync.service';
 
 export class MentorRepository {
   static async getAllMentors(params?: {
@@ -143,5 +144,67 @@ export class MentorRepository {
         status: 'SCHEDULED',
       },
     });
+  }
+
+  static async upsertMentorProfile(userId: string, data: {
+    hourlyRate?: number;
+    bio?: string;
+    expertise?: string;
+    yearsExperience?: number;
+    company?: string;
+    title?: string;
+    isAvailable?: boolean;
+    availability?: string;
+  }) {
+    const existing = await prisma.mentorProfile.findUnique({ where: { userId } });
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { skills: { include: { skill: true } } },
+    });
+
+    const bio = data.bio || existing?.bio || user?.bio || 'Experienced Industry Mentor ready to guide learners.';
+    const userSkills = user?.skills?.map((s) => s.skill.name).join(', ') || '';
+    const expertise = data.expertise || existing?.expertise || userSkills || 'Software Engineering, Web Development';
+    const hourlyRate = data.hourlyRate ?? (existing?.hourlyRate || 50);
+    const yearsExperience = data.yearsExperience ?? (existing?.yearsExperience || 5);
+    const title = data.title || existing?.title || user?.headline || 'Expert Mentor';
+
+    const mentorProfile = await prisma.mentorProfile.upsert({
+      where: { userId },
+      update: {
+        ...(data.hourlyRate !== undefined && { hourlyRate: data.hourlyRate }),
+        ...(data.bio !== undefined && { bio: data.bio }),
+        ...(data.expertise !== undefined && { expertise: data.expertise }),
+        ...(data.yearsExperience !== undefined && { yearsExperience: data.yearsExperience }),
+        ...(data.company !== undefined && { company: data.company }),
+        ...(data.title !== undefined && { title: data.title }),
+        ...(data.isAvailable !== undefined && { isAvailable: data.isAvailable }),
+        ...(data.availability !== undefined && { availability: data.availability }),
+      },
+      create: {
+        userId,
+        hourlyRate,
+        bio,
+        expertise,
+        yearsExperience,
+        company: data.company || null,
+        title,
+        isAvailable: data.isAvailable ?? true,
+        availability: data.availability || null,
+      },
+    });
+
+    // Auto-ingest into PostgreSQL pgvector using BGE-M3 (1024 dims)
+    RAGSyncService.triggerSyncMentor(mentorProfile.id);
+
+    return mentorProfile;
+  }
+
+  static async deleteMentorProfile(mentorProfileId: string) {
+    const deleted = await prisma.mentorProfile.delete({
+      where: { id: mentorProfileId },
+    });
+    RAGSyncService.triggerRemoveEntity('mentor', mentorProfileId);
+    return deleted;
   }
 }

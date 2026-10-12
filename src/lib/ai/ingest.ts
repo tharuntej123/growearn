@@ -228,7 +228,7 @@ export class DocumentIngestionService {
 
   // Delete vector index chunks when an entity is deleted.
   static async deleteEntityVector(sourceType: string, entityId: string): Promise<number> {
-    const sourceName = `${sourceType}_${entityId}`;
+    const sourceName = entityId.startsWith(`${sourceType}_`) ? entityId : `${sourceType}_${entityId}`;
     return PgVectorStore.deleteChunksBySource(sourceName);
   }
 }

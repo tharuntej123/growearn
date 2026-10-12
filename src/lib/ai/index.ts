@@ -16,3 +16,4 @@ export * from './skill-analysis.service';
 export * from './hybrid-matcher';
 export * from './schemas';
 export * from './types';
+export * from './rag-sync.service';

@@ -1,5 +1,7 @@
 import { roadmapSchema, RoadmapOutput, RoadmapPhaseOutput } from './schemas';
 import { SkillAnalysisService } from './skill-analysis.service';
+import { LearnerRoadmapSearchService, TavilySearchResult } from './learner-roadmap-search.service';
+import { LLMClient } from './llm-client';
 
 export class CareerRoadmapService {
   static generate(
@@ -79,7 +81,6 @@ export class CareerRoadmapService {
       return roadmapSchema.parse(rawOutput);
     }
 
-    const primarySkill = cleanSkills[0] || 'Core Stack';
     const phases: RoadmapPhaseOutput[] = [];
 
     if (targetLower.includes('backend') || targetLower.includes('java')) {
@@ -256,5 +257,152 @@ export class CareerRoadmapService {
     };
 
     return roadmapSchema.parse(rawOutput);
+  }
+
+  // Live Tavily-grounded roadmap generation EXCLUSIVELY for the LEARNER role.
+  // Never called by any other role or RAG pipeline.
+  public static async generateForLearnerWithTavily(params: {
+    userRole: string;
+    skills: string[];
+    targetRole?: string | null;
+    experienceLevel?: string | null;
+    careerGoal?: string | null;
+  }): Promise<RoadmapOutput> {
+    if (params.userRole !== 'LEARNER') {
+      throw new Error(
+        'Forbidden: Tavily web-grounded roadmap generation is exclusively restricted to the LEARNER role.'
+      );
+    }
+
+    const cleanSkills = params.skills.map((s) => s.trim()).filter(Boolean);
+    const target = (params.targetRole || params.careerGoal || 'Full Stack Developer').trim();
+    const exp = params.experienceLevel || 'Beginner';
+    const primarySkill = cleanSkills[0] || target;
+
+    // 1. Fetch live web learning materials via isolated Tavily search service
+    let searchResults: TavilySearchResult[] = [];
+    try {
+      searchResults = await LearnerRoadmapSearchService.searchLearningResources({
+        skill: primarySkill,
+        targetRole: target,
+        experienceLevel: exp,
+        maxResults: 6,
+      });
+    } catch (err: any) {
+      console.warn(
+        '[CareerRoadmapService:Warn] Tavily search error, falling back to curated knowledge:',
+        err.message
+      );
+    }
+
+    // 2. If Tavily returned live results and LLM is available, ground roadmap using Groq / LLM
+    if (searchResults.length > 0 && LLMClient.isAvailable()) {
+      try {
+        const sourcesText = searchResults
+          .map(
+            (s, idx) =>
+              `[Source ${idx + 1}] Title: ${s.title}\nURL: ${s.url}\nExcerpt: ${s.snippet}`
+          )
+          .join('\n\n');
+
+        const prompt = `You are an expert technical curriculum designer.
+Generate a structured, job-ready learning roadmap for a Learner with the following profile:
+- Target Role: ${target}
+- Current Skills: ${cleanSkills.length > 0 ? cleanSkills.join(', ') : 'None specified'}
+- Experience Level: ${exp}
+- Career Goal: ${params.careerGoal || target}
+
+CRITICAL: Incorporate these LIVE VERIFIED WEB SOURCES into the roadmap phase resources and topics:
+${sourcesText}
+
+Generate 4 sequential learning phases. Each phase must include:
+- phaseNumber: integer (1 to 4)
+- title: string
+- objective: string
+- durationWeeks: integer
+- skills: array of strings
+- topics: array of strings
+- resources: array of strings (incorporate real documentation and URLs from the verified sources)
+- practiceTasks: array of strings
+- projects: array of strings
+- milestone: string
+
+Return ONLY a valid JSON object matching this schema:
+{
+  "targetRole": "${target}",
+  "summary": "...",
+  "currentLevel": "${exp}",
+  "estimatedDurationWeeks": 16,
+  "currentSkills": ${JSON.stringify(cleanSkills)},
+  "skillGaps": ["..."],
+  "phases": [...],
+  "finalMilestone": "Job-Ready ${target}"
+}`;
+
+        const llmResult = await LLMClient.completeJSON<RoadmapOutput>({
+          messages: [
+            {
+              role: 'system',
+              content:
+                'You are an expert technical curriculum designer. Output only strictly valid JSON matching the requested schema with real, verified resource links.',
+            },
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ],
+          temperature: 0.3,
+          maxTokens: 2500,
+        });
+
+        if (llmResult && llmResult.data) {
+          const parsed = roadmapSchema.parse({
+            ...llmResult.data,
+            sources: searchResults.map((s) => ({
+              title: s.title,
+              url: s.url,
+              snippet: s.snippet,
+            })),
+          });
+          return parsed;
+        }
+      } catch (llmErr: any) {
+        console.warn(
+          '[CareerRoadmapService:Warn] LLM-assisted Tavily roadmap generation failed, falling back to curated template with attached web sources:',
+          llmErr.message
+        );
+      }
+    }
+
+    // 3. Fallback: Generate curated template roadmap and enrich with verified Tavily sources if available
+    const baseRoadmap = this.generate(cleanSkills, target, exp, params.careerGoal);
+
+    if (searchResults.length > 0) {
+      const enrichedPhases = baseRoadmap.phases.map((phase, idx) => {
+        const matchingSources = searchResults.slice(idx * 2, idx * 2 + 2);
+        const sourceStrings = matchingSources.map((s) => `${s.title}: ${s.url}`);
+        return {
+          ...phase,
+          resources: Array.from(new Set([...phase.resources, ...sourceStrings])),
+          sources: matchingSources.map((s) => ({
+            title: s.title,
+            url: s.url,
+            snippet: s.snippet,
+          })),
+        };
+      });
+
+      return roadmapSchema.parse({
+        ...baseRoadmap,
+        phases: enrichedPhases,
+        sources: searchResults.map((s) => ({
+          title: s.title,
+          url: s.url,
+          snippet: s.snippet,
+        })),
+      });
+    }
+
+    return baseRoadmap;
   }
 }

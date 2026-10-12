@@ -1,7 +1,6 @@
-// Production Marketplace Payment Orchestration Service.
+// Production Cashfree Marketplace Payment Orchestration Service.
 
 import { prisma } from '@/lib/prisma';
-import { MessagingRepository } from '@/repositories/messaging.repository';
 import { PaymentProviderName } from './provider.interface';
 import { PaymentProviderFactory } from './payment-provider.factory';
 
@@ -9,11 +8,9 @@ export interface CreateOrderResult {
   orderId: string;
   provider: PaymentProviderName;
   providerOrderId: string;
-  razorpayOrderId: string; // Backward compatibility alias
   amount: number;
   amountInPaise: number;
   currency: string;
-  keyId?: string;
   paymentSessionId?: string;
   checkoutData?: Record<string, any>;
   itemType: 'COURSE' | 'MENTORSHIP';
@@ -23,13 +20,9 @@ export interface CreateOrderResult {
 }
 
 export interface VerifyPaymentInput {
-  orderId?: string;
+  orderId: string;
   paymentId?: string;
   signature?: string;
-  razorpay_order_id?: string;
-  razorpay_payment_id?: string;
-  razorpay_signature?: string;
-  provider?: PaymentProviderName;
   rawBody?: string;
   timestamp?: string;
 }
@@ -52,7 +45,6 @@ export interface MentorEarningsSummary {
     id: string;
     provider: string;
     providerPaymentId: string | null;
-    razorpayPaymentId: string | null; // Compatibility alias
     amount: number;
     currency: string;
     itemType: string;
@@ -100,7 +92,6 @@ export interface PaymentHealthResult {
   platformCommissionPercent: number;
 }
 
-
 export class PaymentService {
   // Get configured platform commission rate (defaults to 10%).
   public static getPlatformCommissionPercent(): number {
@@ -116,8 +107,7 @@ export class PaymentService {
   public static async createCoursePaymentOrder(
     userId: string,
     courseId: string,
-    idempotencyKey?: string,
-    providerName?: PaymentProviderName
+    idempotencyKey?: string
   ): Promise<CreateOrderResult> {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
@@ -151,7 +141,7 @@ export class PaymentService {
       throw new Error('Free courses do not require payment order creation. Use direct enrollment.');
     }
 
-    const provider = PaymentProviderFactory.getProvider(providerName);
+    const provider = PaymentProviderFactory.getCashfreeProvider();
 
     // Idempotency check: if existing pending order with same key exists for user
     if (idempotencyKey) {
@@ -162,13 +152,11 @@ export class PaymentService {
         const orderNotes = (existingOrder.notes as any) || {};
         return {
           orderId: existingOrder.id,
-          provider: (orderNotes.provider as PaymentProviderName) || provider.name,
-          providerOrderId: existingOrder.razorpayOrderId,
-          razorpayOrderId: existingOrder.razorpayOrderId,
+          provider: 'CASHFREE',
+          providerOrderId: existingOrder.providerOrderId,
           amount: existingOrder.amount,
           amountInPaise: existingOrder.amountInPaise,
           currency: existingOrder.currency,
-          keyId: orderNotes.keyId,
           paymentSessionId: orderNotes.paymentSessionId,
           checkoutData: orderNotes.checkoutData,
           itemType: 'COURSE',
@@ -183,39 +171,14 @@ export class PaymentService {
     const receipt = `rcpt_c_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const internalOrderId = `ord_c_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
-    // Create authentic order via the configured provider
-    const providerOrder = await provider.createOrder({
-      orderId: internalOrderId,
-      amount: price,
-      amountInPaise,
-      currency: 'INR',
-      receipt,
-      customer: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: (user as any).phone || undefined,
-      },
-      itemType: 'COURSE',
-      itemId: course.id,
-      itemTitle: course.title,
-      notes: {
-        userId,
-        courseId,
-        courseTitle: course.title,
-        instructorId: course.instructorId,
-        provider: provider.name,
-      },
-    });
-
-    // Store authoritative internal PaymentOrder record
+    // 1. Persist initial pending order in database to ensure recoverability
     const internalOrder = await prisma.paymentOrder.create({
       data: {
         userId,
-        razorpayOrderId: providerOrder.providerOrderId,
+        providerOrderId: internalOrderId,
         amount: price,
         amountInPaise,
-        currency: providerOrder.currency || 'INR',
+        currency: 'INR',
         status: 'CREATED',
         itemType: 'COURSE',
         itemId: courseId,
@@ -224,28 +187,79 @@ export class PaymentService {
         notes: {
           courseTitle: course.title,
           instructorId: course.instructorId,
-          provider: provider.name,
-          paymentSessionId: providerOrder.paymentSessionId,
-          checkoutData: providerOrder.checkoutData,
+          provider: 'CASHFREE',
         },
       },
     });
 
-    return {
-      orderId: internalOrder.id,
-      provider: provider.name,
-      providerOrderId: providerOrder.providerOrderId,
-      razorpayOrderId: providerOrder.providerOrderId,
-      amount: price,
-      amountInPaise,
-      currency: providerOrder.currency || 'INR',
-      paymentSessionId: providerOrder.paymentSessionId,
-      checkoutData: providerOrder.checkoutData,
-      itemType: 'COURSE',
-      itemId: course.id,
-      itemTitle: course.title,
-      receipt,
-    };
+    try {
+      // 2. Call Cashfree Orders API
+      const providerOrder = await provider.createOrder({
+        orderId: internalOrderId,
+        amount: price,
+        amountInPaise,
+        currency: 'INR',
+        receipt,
+        customer: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          phone: (user as any).phone || undefined,
+        },
+        itemType: 'COURSE',
+        itemId: course.id,
+        itemTitle: course.title,
+        notes: {
+          userId,
+          courseId,
+          courseTitle: course.title,
+          instructorId: course.instructorId,
+          provider: 'CASHFREE',
+        },
+      });
+
+      // 3. Update order with payment session id and provider metadata
+      await prisma.paymentOrder.update({
+        where: { id: internalOrder.id },
+        data: {
+          notes: {
+            courseTitle: course.title,
+            instructorId: course.instructorId,
+            provider: 'CASHFREE',
+            paymentSessionId: providerOrder.paymentSessionId,
+            checkoutData: providerOrder.checkoutData,
+          },
+        },
+      });
+
+      return {
+        orderId: internalOrder.id,
+        provider: 'CASHFREE',
+        providerOrderId: providerOrder.providerOrderId,
+        amount: price,
+        amountInPaise,
+        currency: providerOrder.currency || 'INR',
+        paymentSessionId: providerOrder.paymentSessionId,
+        checkoutData: providerOrder.checkoutData,
+        itemType: 'COURSE',
+        itemId: course.id,
+        itemTitle: course.title,
+        receipt,
+      };
+    } catch (apiError: any) {
+      // If Cashfree API fails, update status to FAILED with failure reason
+      await prisma.paymentOrder.update({
+        where: { id: internalOrder.id },
+        data: {
+          status: 'FAILED',
+          notes: {
+            ...((internalOrder.notes as any) || {}),
+            failureReason: apiError.message,
+          },
+        },
+      }).catch(() => {});
+      throw apiError;
+    }
   }
 
   // Create an order for a paid 1-on-1 mentorship session.
@@ -259,7 +273,6 @@ export class PaymentService {
       scheduledAt: Date | string;
       durationMinutes?: number;
       idempotencyKey?: string;
-      providerName?: PaymentProviderName;
     }
   ): Promise<CreateOrderResult> {
     const user = await prisma.user.findUnique({ where: { id: userId } });
@@ -291,7 +304,7 @@ export class PaymentService {
     const receipt = `rcpt_m_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const internalOrderId = `ord_m_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
-    const provider = PaymentProviderFactory.getProvider(params.providerName);
+    const provider = PaymentProviderFactory.getCashfreeProvider();
 
     if (params.idempotencyKey) {
       const existingOrder = await prisma.paymentOrder.findUnique({
@@ -301,9 +314,8 @@ export class PaymentService {
         const orderNotes = (existingOrder.notes as any) || {};
         return {
           orderId: existingOrder.id,
-          provider: (orderNotes.provider as PaymentProviderName) || provider.name,
-          providerOrderId: existingOrder.razorpayOrderId,
-          razorpayOrderId: existingOrder.razorpayOrderId,
+          provider: 'CASHFREE',
+          providerOrderId: existingOrder.providerOrderId,
           amount: existingOrder.amount,
           amountInPaise: existingOrder.amountInPaise,
           currency: existingOrder.currency,
@@ -317,38 +329,14 @@ export class PaymentService {
       }
     }
 
-    const providerOrder = await provider.createOrder({
-      orderId: internalOrderId,
-      amount: price,
-      amountInPaise,
-      currency: 'INR',
-      receipt,
-      customer: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: (user as any).phone || undefined,
-      },
-      itemType: 'MENTORSHIP',
-      itemId: mentorProfile.id,
-      itemTitle: `1-on-1 Mentorship with ${mentorProfile.user.name}`,
-      notes: {
-        userId,
-        mentorProfileId,
-        mentorUserId: mentorProfile.userId,
-        topic: params.topic,
-        scheduledAt: new Date(params.scheduledAt).toISOString(),
-        provider: provider.name,
-      },
-    });
-
+    // 1. Persist initial order record
     const internalOrder = await prisma.paymentOrder.create({
       data: {
         userId,
-        razorpayOrderId: providerOrder.providerOrderId,
+        providerOrderId: internalOrderId,
         amount: price,
         amountInPaise,
-        currency: providerOrder.currency || 'INR',
+        currency: 'INR',
         status: 'CREATED',
         itemType: 'MENTORSHIP',
         itemId: mentorProfileId,
@@ -360,31 +348,85 @@ export class PaymentService {
           scheduledAt: new Date(params.scheduledAt).toISOString(),
           durationMinutes,
           mentorUserId: mentorProfile.userId,
-          provider: provider.name,
-          paymentSessionId: providerOrder.paymentSessionId,
-          checkoutData: providerOrder.checkoutData,
+          provider: 'CASHFREE',
         },
       },
     });
 
-    return {
-      orderId: internalOrder.id,
-      provider: provider.name,
-      providerOrderId: providerOrder.providerOrderId,
-      razorpayOrderId: providerOrder.providerOrderId,
-      amount: price,
-      amountInPaise,
-      currency: providerOrder.currency || 'INR',
-      paymentSessionId: providerOrder.paymentSessionId,
-      checkoutData: providerOrder.checkoutData,
-      itemType: 'MENTORSHIP',
-      itemId: mentorProfile.id,
-      itemTitle: `1-on-1 Mentorship with ${mentorProfile.user.name}`,
-      receipt,
-    };
+    try {
+      // 2. Call Cashfree
+      const providerOrder = await provider.createOrder({
+        orderId: internalOrderId,
+        amount: price,
+        amountInPaise,
+        currency: 'INR',
+        receipt,
+        customer: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          phone: (user as any).phone || undefined,
+        },
+        itemType: 'MENTORSHIP',
+        itemId: mentorProfile.id,
+        itemTitle: `1-on-1 Mentorship with ${mentorProfile.user.name}`,
+        notes: {
+          userId,
+          mentorProfileId,
+          mentorUserId: mentorProfile.userId,
+          topic: params.topic,
+          scheduledAt: new Date(params.scheduledAt).toISOString(),
+          provider: 'CASHFREE',
+        },
+      });
+
+      // 3. Update order notes with session ID
+      await prisma.paymentOrder.update({
+        where: { id: internalOrder.id },
+        data: {
+          notes: {
+            topic: params.topic,
+            message: params.message,
+            scheduledAt: new Date(params.scheduledAt).toISOString(),
+            durationMinutes,
+            mentorUserId: mentorProfile.userId,
+            provider: 'CASHFREE',
+            paymentSessionId: providerOrder.paymentSessionId,
+            checkoutData: providerOrder.checkoutData,
+          },
+        },
+      });
+
+      return {
+        orderId: internalOrder.id,
+        provider: 'CASHFREE',
+        providerOrderId: providerOrder.providerOrderId,
+        amount: price,
+        amountInPaise,
+        currency: providerOrder.currency || 'INR',
+        paymentSessionId: providerOrder.paymentSessionId,
+        checkoutData: providerOrder.checkoutData,
+        itemType: 'MENTORSHIP',
+        itemId: mentorProfile.id,
+        itemTitle: `Mentorship: ${mentorProfile.user.name}`,
+        receipt,
+      };
+    } catch (apiError: any) {
+      await prisma.paymentOrder.update({
+        where: { id: internalOrder.id },
+        data: {
+          status: 'FAILED',
+          notes: {
+            ...((internalOrder.notes as any) || {}),
+            failureReason: apiError.message,
+          },
+        },
+      }).catch(() => {});
+      throw apiError;
+    }
   }
 
-  // Cryptographically verify payment signature and execute entitlement / booking transaction.
+  // Cryptographically verify payment status with Cashfree server API and execute transaction.
   public static async verifyAndProcessPayment(
     userId: string,
     input: VerifyPaymentInput
@@ -395,65 +437,95 @@ export class PaymentService {
     itemId: string;
     entitlementId: string;
   }> {
-    const providerOrderId = input.orderId || input.razorpay_order_id;
-    const providerPaymentId = input.paymentId || input.razorpay_payment_id;
-    const signature = input.signature || input.razorpay_signature;
+    const providerOrderId = input.orderId;
 
     if (!providerOrderId) {
       throw new Error('Order ID is required for payment verification');
     }
 
     // 1. Lookup existing PaymentOrder
-    const order = await prisma.paymentOrder.findUnique({
-      where: { razorpayOrderId: providerOrderId },
+    const order = await prisma.paymentOrder.findFirst({
+      where: {
+        OR: [{ id: providerOrderId }, { providerOrderId: providerOrderId }],
+      },
+      include: { payment: true },
     });
 
     if (!order) {
-      throw new Error(`Payment order not found for order ${providerOrderId}`);
+      throw new Error(`Payment order not found for order identifier ${providerOrderId}`);
     }
 
     if (order.userId !== userId) {
       throw new Error('Unauthorized: Payment order does not belong to the current authenticated user');
     }
 
-    const orderNotes = (order.notes as any) || {};
-    const providerName = (input.provider || orderNotes.provider || 'CASHFREE') as PaymentProviderName;
-    const provider = PaymentProviderFactory.getProvider(providerName);
+    // Idempotency: If already marked PAID and payment captured, return existing entitlement
+    if (order.status === 'PAID' && order.payment && order.payment.status === 'CAPTURED') {
+      let entitlementId = '';
+      if (order.itemType === 'COURSE') {
+        const enrollment = await prisma.enrollment.findUnique({
+          where: { studentId_courseId: { studentId: userId, courseId: order.itemId } },
+        });
+        entitlementId = enrollment?.id || '';
+      } else if (order.itemType === 'MENTORSHIP') {
+        const booking = await prisma.mentorshipBooking.findFirst({
+          where: { studentId: userId, mentorId: order.itemId, status: 'SCHEDULED' },
+        });
+        entitlementId = booking?.id || '';
+      }
 
-    // 2. Verify signature / payment state with provider
+      return {
+        success: true,
+        paymentId: order.payment.id,
+        itemType: order.itemType,
+        itemId: order.itemId,
+        entitlementId,
+      };
+    }
+
+    const provider = PaymentProviderFactory.getCashfreeProvider();
+
+    // 2. Fetch authoritative payment status directly from Cashfree API
     const verification = await provider.verifyPayment({
-      providerOrderId,
-      providerPaymentId,
-      signature,
+      providerOrderId: order.providerOrderId,
+      providerPaymentId: input.paymentId,
+      signature: input.signature,
       rawBody: input.rawBody,
       timestamp: input.timestamp,
     });
 
     if (!verification.verified || verification.status === 'FAILED') {
       await prisma.payment.upsert({
-        where: { razorpayOrderId: providerOrderId },
+        where: { providerOrderId: order.providerOrderId },
         update: {
           status: 'FAILED',
-          failureReason: verification.failureReason || 'Cryptographic signature / verification failed',
+          failureReason: verification.failureReason || 'Verification failed with payment gateway',
         },
         create: {
           userId,
-          razorpayOrderId: providerOrderId,
-          razorpayPaymentId: providerPaymentId || null,
-          razorpaySignature: signature || null,
+          providerOrderId: order.providerOrderId,
+          providerPaymentId: verification.providerPaymentId || null,
+          providerSignature: input.signature || null,
           amount: order.amount,
           amountInPaise: order.amountInPaise,
           currency: order.currency,
           status: 'FAILED',
-          provider: provider.name,
+          provider: 'CASHFREE',
           itemType: order.itemType,
           itemId: order.itemId,
-          failureReason: verification.failureReason || 'Cryptographic signature / verification failed',
+          failureReason: verification.failureReason || 'Verification failed with payment gateway',
         },
       }).catch(() => {});
 
-      throw new Error(`Payment verification failed: ${verification.failureReason || 'Invalid signature'}`);
+      throw new Error(`Payment verification failed: ${verification.failureReason || 'Order is not marked PAID on Cashfree'}`);
     }
+
+    // Verify amount match
+    if (verification.amount && Math.abs(order.amount - verification.amount) > 0.01) {
+      throw new Error(`Payment verification amount mismatch: Expected ₹${order.amount}, received ₹${verification.amount}`);
+    }
+
+    const orderNotes = (order.notes as any) || {};
 
     // 3. Process Transactionally
     const transactionResult = await prisma.$transaction(async (tx) => {
@@ -465,24 +537,24 @@ export class PaymentService {
 
       // Upsert Payment record
       const payment = await tx.payment.upsert({
-        where: { razorpayOrderId: providerOrderId },
+        where: { providerOrderId: order.providerOrderId },
         update: {
           status: 'CAPTURED',
-          razorpayPaymentId: providerPaymentId || undefined,
-          razorpaySignature: signature || undefined,
-          provider: provider.name,
+          providerPaymentId: verification.providerPaymentId || undefined,
+          providerSignature: input.signature || undefined,
+          provider: 'CASHFREE',
         },
         create: {
           orderId: order.id,
           userId,
-          razorpayOrderId: providerOrderId,
-          razorpayPaymentId: providerPaymentId || null,
-          razorpaySignature: signature || null,
+          providerOrderId: order.providerOrderId,
+          providerPaymentId: verification.providerPaymentId || null,
+          providerSignature: input.signature || null,
           amount: order.amount,
           amountInPaise: order.amountInPaise,
           currency: order.currency,
           status: 'CAPTURED',
-          provider: provider.name,
+          provider: 'CASHFREE',
           itemType: order.itemType,
           itemId: order.itemId,
           courseId: order.itemType === 'COURSE' ? order.itemId : null,
@@ -559,85 +631,47 @@ export class PaymentService {
           data: { bookingId: booking.id },
         });
 
-        // Fetch mentor user ID for messaging & notification
-        const mentor = await tx.mentorProfile.findUnique({
-          where: { id: order.itemId },
-          select: { userId: true, user: { select: { name: true } } },
-        });
-
-        if (mentor) {
-          // Initialize direct conversation
-          await MessagingRepository.getOrCreateDirectConversation(mentor.userId, userId).catch(() => {});
-
-          // Notify student
-          await tx.notification.create({
-            data: {
-              userId,
-              title: 'Mentorship Session Confirmed! 🤝',
-              message: `Your session with ${mentor.user.name} is booked for ${scheduledAt.toLocaleDateString()}.`,
-              link: '/learner/dashboard',
-              notificationType: 'MENTORSHIP_REQUEST',
-            },
-          }).catch(() => {});
-
-          // Notify mentor
-          await tx.notification.create({
-            data: {
-              userId: mentor.userId,
-              title: 'New Paid Mentorship Booking! 💰',
-              message: `A student booked a ${durationMinutes}-min session (₹${order.amount}).`,
-              link: '/mentor/dashboard',
-              notificationType: 'MENTORSHIP_REQUEST',
-            },
-          }).catch(() => {});
-        }
+        // Send notifications
+        await tx.notification.create({
+          data: {
+            userId,
+            title: 'Mentorship Booking Confirmed! 🤝',
+            message: `Your mentorship session has been scheduled. Payment of ₹${order.amount} was captured.`,
+            link: '/mentors',
+            notificationType: 'GENERAL',
+          },
+        }).catch(() => {});
       }
 
       return {
-        success: true,
         paymentId: payment.id,
-        itemType: order.itemType,
-        itemId: order.itemId,
         entitlementId,
       };
     }, { timeout: 25000, maxWait: 10000 });
 
-    return transactionResult;
+    return {
+      success: true,
+      paymentId: transactionResult.paymentId,
+      itemType: order.itemType,
+      itemId: order.itemId,
+      entitlementId: transactionResult.entitlementId,
+    };
   }
 
-  // Process Provider Webhook Event with strict idempotency and cryptographic signature validation.
+  // Real Cashfree Webhook Verification & Idempotent Event Processing.
   public static async processWebhook(
     rawBody: string,
-    headers: Record<string, string | string[] | undefined> | string,
-    providerName?: PaymentProviderName
+    headers: Record<string, string | string[] | undefined>
   ): Promise<{ status: string; eventId: string; processed: boolean; error?: string }> {
-    // Normalize headers if string signature was passed
-    const headersObj: Record<string, string | string[] | undefined> =
-      typeof headers === 'string'
-        ? { 'x-razorpay-signature': headers }
-        : headers;
+    const provider = PaymentProviderFactory.getCashfreeProvider();
 
-    // Detect provider from headers or payload
-    let targetProviderName: PaymentProviderName = providerName || 'CASHFREE';
-    if (headersObj['x-razorpay-signature'] || headersObj['X-Razorpay-Signature']) {
-      targetProviderName = 'RAZORPAY';
-    } else if (
-      headersObj['x-webhook-signature'] ||
-      headersObj['X-Webhook-Signature'] ||
-      headersObj['x-cashfree-signature']
-    ) {
-      targetProviderName = 'CASHFREE';
-    }
-
-    const provider = PaymentProviderFactory.getProvider(targetProviderName);
-
-    // 1. Cryptographic validation via provider
-    const webhookResult = await provider.verifyWebhook(rawBody, headersObj);
+    // 1. Cryptographic validation via Cashfree provider
+    const webhookResult = await provider.verifyWebhook(rawBody, headers);
     if (!webhookResult.verified) {
-      throw new Error(`Invalid ${provider.name} webhook cryptographic signature`);
+      throw new Error('Invalid Cashfree webhook cryptographic signature');
     }
 
-    const { eventId, eventType, providerOrderId, providerPaymentId, status, rawEvent, failureReason, refundAmount } = webhookResult;
+    const { eventId, eventType, providerOrderId, providerPaymentId, status, rawEvent, failureReason, refundAmount, amount } = webhookResult;
 
     // 2. Strict idempotency check: check if event was already processed
     const existingEvent = await prisma.webhookEvent.findUnique({
@@ -669,33 +703,38 @@ export class PaymentService {
 
         if (status === 'CAPTURED' && providerOrderId) {
           const order = await tx.paymentOrder.findUnique({
-            where: { razorpayOrderId: providerOrderId },
+            where: { providerOrderId },
           });
 
           if (order) {
+            // Validate amount matches persisted order amount
+            if (amount !== undefined && Math.abs(order.amount - amount) > 0.01) {
+              throw new Error(`Webhook amount mismatch: order expects ₹${order.amount}, received ₹${amount}`);
+            }
+
             await tx.paymentOrder.update({
               where: { id: order.id },
               data: { status: 'PAID' },
             });
 
             const payment = await tx.payment.upsert({
-              where: { razorpayOrderId: providerOrderId },
+              where: { providerOrderId },
               update: {
                 status: 'CAPTURED',
-                razorpayPaymentId: providerPaymentId || undefined,
-                provider: provider.name,
+                providerPaymentId: providerPaymentId || undefined,
+                provider: 'CASHFREE',
                 webhookEventId: eventId,
               },
               create: {
                 orderId: order.id,
                 userId: order.userId,
-                razorpayOrderId: providerOrderId,
-                razorpayPaymentId: providerPaymentId || null,
+                providerOrderId,
+                providerPaymentId: providerPaymentId || null,
                 amount: order.amount,
                 amountInPaise: order.amountInPaise,
                 currency: order.currency,
                 status: 'CAPTURED',
-                provider: provider.name,
+                provider: 'CASHFREE',
                 itemType: order.itemType,
                 itemId: order.itemId,
                 courseId: order.itemType === 'COURSE' ? order.itemId : null,
@@ -727,23 +766,23 @@ export class PaymentService {
           }
         } else if (status === 'FAILED' && providerOrderId) {
           await tx.paymentOrder.updateMany({
-            where: { razorpayOrderId: providerOrderId },
+            where: { providerOrderId },
             data: { status: 'FAILED' },
           });
 
           await tx.payment.updateMany({
-            where: { razorpayOrderId: providerOrderId },
+            where: { providerOrderId },
             data: {
               status: 'FAILED',
               failureReason: failureReason || 'Payment failed',
               webhookEventId: eventId,
-              provider: provider.name,
+              provider: 'CASHFREE',
             },
           });
         } else if (status === 'REFUNDED') {
           if (providerPaymentId) {
             await tx.payment.updateMany({
-              where: { razorpayPaymentId: providerPaymentId },
+              where: { providerPaymentId },
               data: {
                 status: 'REFUNDED',
                 refundAmount: refundAmount || 0,
@@ -759,8 +798,17 @@ export class PaymentService {
     } catch (err: any) {
       await prisma.webhookEvent.upsert({
         where: { eventId },
-        update: { status: 'FAILED', errorMessage: err.message },
-        create: { eventId, eventType, payload: rawEvent, status: 'FAILED', errorMessage: err.message },
+        update: {
+          status: 'FAILED',
+          errorMessage: err.message,
+        },
+        create: {
+          eventId,
+          eventType,
+          payload: rawEvent,
+          status: 'FAILED',
+          errorMessage: err.message,
+        },
       }).catch(() => {});
 
       throw err;
@@ -768,7 +816,6 @@ export class PaymentService {
   }
 
   // Aggregate authentic mentor revenue and payments from PostgreSQL records.
-  // Calculates gross amount, configurable platform fee (default 10%), and net mentor earnings.
   public static async getMentorEarnings(mentorUserId: string): Promise<MentorEarningsSummary> {
     const mentorProfile = await prisma.mentorProfile.findUnique({
       where: { userId: mentorUserId },
@@ -778,14 +825,12 @@ export class PaymentService {
       throw new Error('Mentor profile not found for user');
     }
 
-    // 1. Fetch courses instructed by this mentor
     const instructedCourses = await prisma.course.findMany({
       where: { instructorId: mentorUserId },
       select: { id: true, title: true },
     });
     const courseIds = instructedCourses.map((c) => c.id);
 
-    // 2. Query captured payments for mentor offerings (Mentorship bookings + Course purchases)
     const payments = await prisma.payment.findMany({
       where: {
         OR: [
@@ -803,14 +848,12 @@ export class PaymentService {
     const commissionPercent = this.getPlatformCommissionPercent();
     const grossRevenue = payments.reduce((acc, p) => acc + p.amount, 0);
     const platformFee = Number(((grossRevenue * commissionPercent) / 100).toFixed(2));
-    const gatewayFee = 0; // Distinct provider fee, tracked as reported by gateway (independent from promotional assumptions)
+    const gatewayFee = 0;
     const netEarnings = Number((grossRevenue - platformFee).toFixed(2));
 
     const courseSalesCount = payments.filter((p) => p.itemType === 'COURSE').length;
     const mentorshipSessionCount = payments.filter((p) => p.itemType === 'MENTORSHIP').length;
 
-    // Distinguish CALCULATED earnings from ACTUALLY_SETTLED transfers
-    // Unless Cashfree Marketplace / Easy Split confirms payout, settlement is marked as CALCULATED_UNSETTLED
     const settledPayments = payments.filter((p) => (p.metadata as any)?.settled === true);
     const settledAmount = settledPayments.reduce(
       (acc, p) => acc + (p.amount - Number(((p.amount * commissionPercent) / 100).toFixed(2))),
@@ -841,8 +884,7 @@ export class PaymentService {
       successfulPayments: payments.map((p) => ({
         id: p.id,
         provider: p.provider,
-        providerPaymentId: p.razorpayPaymentId,
-        razorpayPaymentId: p.razorpayPaymentId,
+        providerPaymentId: p.providerPaymentId,
         amount: p.amount,
         currency: p.currency,
         itemType: p.itemType,
@@ -880,7 +922,6 @@ export class PaymentService {
       return payment;
     }
 
-    // Only buyer or instructor/mentor recipient can view
     const isBuyer = payment.userId === requestingUserId;
     const isInstructor = payment.course?.instructorId === requestingUserId;
     const isMentor = payment.mentorProfile?.userId === requestingUserId;
@@ -892,8 +933,8 @@ export class PaymentService {
     return payment;
   }
 
-  // Production-safe Refund Processing.
-  // Executes refund request via Cashfree/Provider API and updates PostgreSQL state.
+  // Production-safe Refund Processing via Cashfree Refund API.
+  // Requires ADMIN or INSTRUCTOR role. Disallows arbitrary buyers from self-issuing refunds.
   public static async processRefund(params: {
     paymentId: string;
     amount?: number;
@@ -920,21 +961,20 @@ export class PaymentService {
       throw new Error('Payment record not found');
     }
 
-    // IDOR / RBAC Check: Only ADMIN, or the instructor/mentor, or buyer can initiate
-    const isBuyer = payment.userId === params.requestingUserId;
+    // RBAC / Authorization check: Only ADMIN or the course instructor / mentor offering the service can process refunds
+    const isAdmin = params.requestingUserRole === 'ADMIN';
     const isInstructor = payment.course?.instructorId === params.requestingUserId;
     const isMentor = payment.mentorProfile?.userId === params.requestingUserId;
-    const isAdmin = params.requestingUserRole === 'ADMIN';
 
-    if (!isAdmin && !isInstructor && !isMentor && !isBuyer) {
-      throw new Error('Forbidden: Unauthorized to initiate refund for this payment');
+    if (!isAdmin && !isInstructor && !isMentor) {
+      throw new Error('Forbidden: Only administrators or course instructors are authorized to approve and process refunds');
     }
 
     if (payment.status !== 'CAPTURED') {
       throw new Error(`Refund cannot be initiated for payment with status ${payment.status}`);
     }
 
-    if (payment.refundStatus === 'COMPLETED') {
+    if (payment.refundStatus === 'COMPLETED' || payment.refundStatus === 'SUCCESS') {
       return {
         success: true,
         refundId: (payment.metadata as any)?.refundId || `rfnd_${payment.id}`,
@@ -950,38 +990,39 @@ export class PaymentService {
         : payment.amount;
 
     const refundId = `rfnd_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    const providerName = (payment.provider || 'CASHFREE') as PaymentProviderName;
-    const provider = PaymentProviderFactory.getProvider(providerName);
+    const provider = PaymentProviderFactory.getCashfreeProvider();
 
-    // Call provider refund endpoint
+    // Call authentic Cashfree refund API
     const refundResult = await provider.refundPayment({
-      providerOrderId: payment.razorpayOrderId,
-      providerPaymentId: payment.razorpayPaymentId || undefined,
+      providerOrderId: payment.providerOrderId,
+      providerPaymentId: payment.providerPaymentId || undefined,
       refundAmount,
       refundId,
       refundNote: params.reason || 'GroEarn Course/Mentorship Refund Request',
     });
+
+    const isConfirmedSuccess = refundResult.status === 'SUCCESS' || refundResult.status === 'COMPLETED';
 
     // Transactionally update payment status & audit log
     await prisma.$transaction(async (tx) => {
       await tx.payment.update({
         where: { id: payment.id },
         data: {
-          status: 'REFUNDED',
+          status: isConfirmedSuccess ? 'REFUNDED' : payment.status,
           refundAmount,
-          refundStatus: refundResult.status || 'COMPLETED',
+          refundStatus: refundResult.status || 'PENDING',
           metadata: {
             ...((payment.metadata as any) || {}),
             refundId,
             providerRefundId: refundResult.providerRefundId,
-            refundReason: params.reason || 'Refund requested and approved',
+            refundReason: params.reason || 'Refund processed',
             refundedAt: new Date().toISOString(),
           },
         },
       });
 
-      // Revoke or adjust course enrollment if full refund
-      if (payment.itemType === 'COURSE' && payment.courseId) {
+      // Revoke course access only once refund is confirmed successful
+      if (isConfirmedSuccess && payment.itemType === 'COURSE' && payment.courseId) {
         await tx.coursePurchase.deleteMany({
           where: { userId: payment.userId, courseId: payment.courseId },
         }).catch(() => {});
@@ -998,11 +1039,12 @@ export class PaymentService {
           resource: `payment:${payment.id}`,
           details: {
             paymentId: payment.id,
-            providerOrderId: payment.razorpayOrderId,
+            providerOrderId: payment.providerOrderId,
             refundAmount,
             refundId,
             providerRefundId: refundResult.providerRefundId,
             reason: params.reason,
+            refundStatus: refundResult.status,
           },
         },
       }).catch(() => {});
@@ -1013,7 +1055,7 @@ export class PaymentService {
       refundId,
       paymentId: payment.id,
       amount: refundAmount,
-      status: refundResult.status || 'COMPLETED',
+      status: refundResult.status || 'PENDING',
     };
   }
 
@@ -1030,10 +1072,7 @@ export class PaymentService {
 
     const order = await prisma.paymentOrder.findFirst({
       where: {
-        OR: [
-          { id: orderIdOrPaymentId },
-          { razorpayOrderId: orderIdOrPaymentId },
-        ],
+        OR: [{ id: orderIdOrPaymentId }, { providerOrderId: orderIdOrPaymentId }],
       },
       include: { payment: true },
     });
@@ -1042,36 +1081,71 @@ export class PaymentService {
       throw new Error(`Payment order not found for identifier ${orderIdOrPaymentId}`);
     }
 
-    const orderNotes = (order.notes as any) || {};
-    const providerName = (orderNotes.provider || 'CASHFREE') as PaymentProviderName;
-    const provider = PaymentProviderFactory.getProvider(providerName);
-
+    const provider = PaymentProviderFactory.getCashfreeProvider();
     const discrepancies: string[] = [];
     let providerStatus = 'UNKNOWN';
     let providerAmount: number | undefined;
     let providerCurrency: string | undefined;
 
     try {
-      const statusRes = await provider.getOrderStatus(order.razorpayOrderId);
+      const statusRes = await provider.getOrderStatus(order.providerOrderId);
       providerStatus = statusRes.status;
       providerAmount = statusRes.amount;
       providerCurrency = statusRes.currency;
 
       if (order.status === 'PAID' && statusRes.status !== 'PAID') {
-        discrepancies.push(`Status mismatch: DB has ${order.status} but provider reports ${statusRes.status}`);
+        discrepancies.push(`Status mismatch: DB has ${order.status} but Cashfree reports ${statusRes.status}`);
       } else if (order.status === 'CREATED' && statusRes.status === 'PAID') {
-        discrepancies.push(`Status mismatch: DB has CREATED but provider reports PAID`);
+        discrepancies.push(`Status mismatch: DB has CREATED but Cashfree reports PAID (Reconciliation healing required)`);
+
+        // Automatically heal desynchronized state
+        await prisma.$transaction(async (tx) => {
+          await tx.paymentOrder.update({
+            where: { id: order.id },
+            data: { status: 'PAID' },
+          });
+          const successfulPayment = statusRes.payments?.find((p) => p.status === 'SUCCESS');
+          await tx.payment.upsert({
+            where: { providerOrderId: order.providerOrderId },
+            update: {
+              status: 'CAPTURED',
+              providerPaymentId: successfulPayment?.paymentId || undefined,
+            },
+            create: {
+              orderId: order.id,
+              userId: order.userId,
+              providerOrderId: order.providerOrderId,
+              providerPaymentId: successfulPayment?.paymentId || null,
+              amount: order.amount,
+              amountInPaise: order.amountInPaise,
+              currency: order.currency,
+              status: 'CAPTURED',
+              provider: 'CASHFREE',
+              itemType: order.itemType,
+              itemId: order.itemId,
+              courseId: order.itemType === 'COURSE' ? order.itemId : null,
+              mentorProfileId: order.itemType === 'MENTORSHIP' ? order.itemId : null,
+            },
+          });
+          if (order.itemType === 'COURSE') {
+            await tx.enrollment.upsert({
+              where: { studentId_courseId: { studentId: order.userId, courseId: order.itemId } },
+              update: {},
+              create: { studentId: order.userId, courseId: order.itemId, progressPercent: 0 },
+            });
+          }
+        });
       }
 
       if (Math.abs(order.amount - statusRes.amount) > 0.01) {
-        discrepancies.push(`Amount mismatch: DB has ${order.amount} but provider has ${statusRes.amount}`);
+        discrepancies.push(`Amount mismatch: DB has ₹${order.amount} but Cashfree has ₹${statusRes.amount}`);
       }
 
       if (order.currency !== statusRes.currency) {
-        discrepancies.push(`Currency mismatch: DB has ${order.currency} but provider has ${statusRes.currency}`);
+        discrepancies.push(`Currency mismatch: DB has ${order.currency} but Cashfree has ${statusRes.currency}`);
       }
     } catch (err: any) {
-      discrepancies.push(`Provider status query: ${err.message}`);
+      discrepancies.push(`Cashfree status query error: ${err.message}`);
     }
 
     const matched = discrepancies.length === 0;
@@ -1084,7 +1158,7 @@ export class PaymentService {
         resource: `order:${order.id}`,
         details: {
           orderId: order.id,
-          providerOrderId: order.razorpayOrderId,
+          providerOrderId: order.providerOrderId,
           internalStatus: order.status,
           providerStatus,
           matched,
@@ -1095,8 +1169,8 @@ export class PaymentService {
 
     return {
       orderId: order.id,
-      providerOrderId: order.razorpayOrderId,
-      provider: providerName,
+      providerOrderId: order.providerOrderId,
+      provider: 'CASHFREE',
       internalStatus: order.status,
       providerStatus,
       internalAmount: order.amount,
@@ -1132,8 +1206,8 @@ export class PaymentService {
       } catch (err: any) {
         items.push({
           orderId: order.id,
-          providerOrderId: order.razorpayOrderId,
-          provider: 'UNKNOWN',
+          providerOrderId: order.providerOrderId,
+          provider: 'CASHFREE',
           internalStatus: order.status,
           providerStatus: 'ERROR',
           internalAmount: order.amount,
@@ -1157,10 +1231,8 @@ export class PaymentService {
   }
 
   // Payment System Configuration & Health Check.
-  // Reports provider, environment, API, and webhook readiness WITHOUT exposing secrets.
+  // Reports Cashfree environment, API, and webhook readiness WITHOUT exposing secrets.
   public static getPaymentHealth(): PaymentHealthResult {
-    const rawProvider = (process.env.PAYMENT_PROVIDER || 'CASHFREE').toUpperCase();
-    const provider: PaymentProviderName = rawProvider === 'RAZORPAY' ? 'RAZORPAY' : 'CASHFREE';
     const cf = PaymentProviderFactory.getCashfreeProvider();
     const environment = cf.getEnvironment();
     const apiConfigured = cf.isConfigured();
@@ -1180,16 +1252,16 @@ export class PaymentService {
       } else {
         liveStatus = 'CASHFREE_PRODUCTION_BLOCKED';
         blockReason =
-          'Awaiting live production low-value transaction verification on official merchant account.';
+          'Awaiting live production transaction verification and owner authorization on official merchant account.';
       }
     } else {
       liveStatus = 'CASHFREE_PRODUCTION_BLOCKED';
       blockReason =
-        'System currently running in SANDBOX mode. Live production mode requires CASHFREE_ENVIRONMENT=production and live merchant credentials.';
+        'System running in SANDBOX mode. Live production mode requires CASHFREE_ENVIRONMENT=production and live merchant credentials.';
     }
 
     return {
-      provider,
+      provider: 'CASHFREE',
       environment,
       apiConfigured,
       webhookConfigured,
@@ -1202,4 +1274,3 @@ export class PaymentService {
     };
   }
 }
-

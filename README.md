@@ -2,7 +2,7 @@
 
 GroEarn is a full-stack web application designed to connect learning, 1-on-1 mentorship, freelance contract opportunities, and company hiring into a single platform.
 
-The system is built with Next.js 16 (App Router), React 19, PostgreSQL with the pgvector extension, Prisma ORM, a local BGE-M3 embedding service, Cashfree and Razorpay payment integrations, and role-based access control.
+The system is built with Next.js 16 (App Router), React 19, PostgreSQL with the pgvector extension, Prisma ORM, a local BGE-M3 embedding service, Cashfree payment integration (v2023-08-01), and role-based access control.
 
 ---
 
@@ -86,7 +86,7 @@ graph TD
     subgraph Application["3. Core Application Layer"]
         AuthSvc["Auth & User Service"]
         SkillRAG["Skill & Roadmap RAG Engine"]
-        PaymentSvc["Payment Service (Cashfree & Razorpay)"]
+        PaymentSvc["Payment Service (Cashfree Payments)"]
         JobSvc["Job & Application Service"]
         StorageSvc["Storage Service (Local & Cloud)"]
     end
@@ -99,7 +99,6 @@ graph TD
 
     subgraph Payments["5. Payment Gateways"]
         Cashfree["Cashfree PG (v2023-08-01)"]
-        Razorpay["Razorpay SDK"]
     end
 
     subgraph Database["6. Persistence Layer"]
@@ -123,7 +122,6 @@ graph TD
     SkillRAG --> GroqLLM
 
     PaymentSvc --> Cashfree
-    PaymentSvc --> Razorpay
 
     AuthSvc --> DB
     SkillRAG --> DB
@@ -154,7 +152,7 @@ graph TD
 
 ### 3. Payment Processing & Entitlement Unlocking
 1. User initiates checkout for a course or mentorship session.
-2. Server validates price from database and generates an order via Cashfree or Razorpay.
+2. Server validates price from database and generates an order via Cashfree Payments.
 3. Upon checkout completion, webhook signatures are verified using HMAC-SHA256 with constant-time equality checks.
 4. Database records `CoursePurchase` or `MentorshipBooking` within a transaction and updates mentor payout ledgers (90% mentor / 10% platform fee).
 
@@ -179,7 +177,7 @@ graph TD
 | **Database & ORM** | PostgreSQL 15+ & Prisma ORM 6.4.1 | Relational models, migrations, foreign key constraints |
 | **Vector Engine** | pgvector (`vector(1024)`) | HNSW cosine distance search on document chunks |
 | **AI & Embeddings** | Local BGE-M3 & Groq API | 1024-dim vector inference and LLM chat responses |
-| **Payments** | Cashfree PG (v2023-08-01) & Razorpay | Marketplace payments, HMAC-SHA256 webhook verification, refunds |
+| **Payments** | Cashfree PG (v2023-08-01) | Marketplace payments, HMAC-SHA256 webhook verification, refunds |
 | **Authentication** | Stateless JWT & Bcrypt | HttpOnly cookies, password hashing, role-based guards |
 | **Rate Limiting** | PostgreSQL DatabaseRateLimiter | Distributed rate limiting backed by `RateLimit` table |
 | **Testing** | TSX test runner & Playwright | Integration test suites, browser E2E verification |
@@ -226,7 +224,7 @@ growearn/
 │   ├── repositories/            # Database query abstractions
 │   ├── services/
 │   │   ├── auth.service.ts      # Authentication and role management
-│   │   ├── payment/             # Cashfree & Razorpay providers and payment service
+│   │   ├── payment/             # Cashfree provider and payment service
 │   │   └── storage.service.ts   # Object storage abstraction (local disk and cloud)
 │   └── validators/              # Zod validation schemas
 ├── .env.example                 # Template for environment variables
@@ -252,10 +250,12 @@ cp .env.example .env
 | `EMBEDDING_BASE_URL` | Local embedding server URL | `http://127.0.0.1:11434` |
 | `BGE_M3_MODEL` | Embedding model identifier | `bge-m3` |
 | `GROQ_API_KEY` | Groq API key for LLM inference | `gsk_...` |
-| `PAYMENT_PROVIDER` | Active gateway (`CASHFREE` or `RAZORPAY`) | `CASHFREE` |
+| `TAVILY_API_KEY` | Tavily Search API key (exclusively for Learner roadmap generation) | `tvly-...` |
 | `CASHFREE_ENVIRONMENT` | Cashfree environment (`sandbox` or `production`) | `sandbox` |
 | `CASHFREE_CLIENT_ID` | Cashfree Client App ID | `your_cashfree_app_id` |
 | `CASHFREE_CLIENT_SECRET`| Cashfree Secret Key | `your_cashfree_secret_key` |
+| `CASHFREE_API_VERSION` | Cashfree PG API Version | `2023-08-01` |
+| `NEXT_PUBLIC_APP_URL` | Public application URL (HTTPS in production) | `http://localhost:3000` |
 | `PLATFORM_COMMISSION_PERCENT` | Platform revenue percentage | `10` |
 | `STORAGE_PROVIDER` | Storage backend (`local` or `s3`) | `local` |
 
@@ -331,7 +331,7 @@ npm run build
 
 ## Current Scope
 
-- **Payments:** Cashfree sandbox and production integration, Razorpay integration, refunds, and mentor revenue calculations.
+- **Payments:** Cashfree sandbox and production integration, cryptographic HMAC webhooks, real refunds, and mentor revenue calculations.
 - **AI/RAG:** Local BGE-M3 1024-dim pgvector cosine retrieval and Groq LLM inference with zero-shot keyword fallback.
 - **Storage:** Local file storage and S3/R2 cloud storage abstraction with signed download URLs.
 - **Roles:** Dedicated hubs for Learner, Freelancer, Mentor, Company, and Admin with canonical routing.

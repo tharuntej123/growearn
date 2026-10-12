@@ -5,6 +5,8 @@ import { apiSuccess, apiError } from '@/lib/utils';
 import { SkillAnalysisService } from '@/lib/ai/skill-analysis.service';
 import { CareerRoadmapService } from '@/lib/ai/roadmap.service';
 import { getUserAIContext } from '@/services/user-context.service';
+import { MentorRepository } from '@/repositories/mentor.repository';
+import { RAGSyncService } from '@/lib/ai/rag-sync.service';
 
 export async function POST(req: NextRequest) {
   try {
@@ -157,6 +159,16 @@ export async function POST(req: NextRequest) {
           relatedSkill: p.skills[0] || null,
         },
       });
+    }
+
+    if (authUser.role === 'MENTOR') {
+      await MentorRepository.upsertMentorProfile(authUser.id, {
+        yearsExperience: Number(yearsOfExperience) || 0,
+        expertise: cleanSkills.join(', '),
+        title: targetRole || 'Expert Mentor',
+      });
+    } else {
+      RAGSyncService.triggerSyncCandidate(authUser.id);
     }
 
     const userContext = await getUserAIContext(authUser.id);

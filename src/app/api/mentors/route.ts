@@ -4,3 +4,7 @@ import { MentorController } from '@/controllers/mentor.controller';
 export async function GET(req: NextRequest) {
   return MentorController.getMentors(req);
 }
+
+export async function POST(req: NextRequest) {
+  return MentorController.createOrUpdateProfile(req);
+}

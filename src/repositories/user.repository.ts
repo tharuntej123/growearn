@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import { RAGSyncService } from '@/lib/ai/rag-sync.service';
 
 export class UserRepository {
   static async findByEmail(email: string) {
@@ -43,7 +44,8 @@ export class UserRepository {
     name: string;
     role: string;
   }) {
-    return prisma.user.create({
+    const isMentor = data.role === 'MENTOR';
+    const user = await prisma.user.create({
       data: {
         email: data.email.toLowerCase(),
         passwordHash: data.passwordHash,
@@ -51,24 +53,66 @@ export class UserRepository {
         role: data.role,
         profile: {
           create: {
-            title: (data.role === 'STUDENT' || data.role === 'LEARNER') ? 'Learner / Student' : data.role === 'MENTOR' ? 'Expert Mentor' : (data.role === 'FREELANCER' || data.role === 'PROFESSIONAL') ? 'Verified Professional' : 'Organization Leader',
+            title: (data.role === 'STUDENT' || data.role === 'LEARNER') ? 'Learner / Student' : isMentor ? 'Expert Mentor' : (data.role === 'FREELANCER' || data.role === 'PROFESSIONAL') ? 'Verified Professional' : 'Organization Leader',
             availability: 'FULL_TIME',
             aiScore: 75,
           },
         },
+        mentorProfile: isMentor
+          ? {
+              create: {
+                bio: `${data.name} is an expert mentor available for guidance on GroEarn.`,
+                expertise: 'Software Engineering, Web Development',
+                hourlyRate: 50,
+                yearsExperience: 5,
+                title: 'Expert Mentor',
+              },
+            }
+          : undefined,
       },
       include: {
         profile: true,
+        mentorProfile: true,
       },
     });
+
+    if (isMentor && user.mentorProfile) {
+      RAGSyncService.triggerSyncMentor(user.mentorProfile.id);
+    } else {
+      RAGSyncService.triggerSyncCandidate(user.id);
+    }
+
+    return user;
   }
 
   static async updateRole(userId: string, role: string) {
-    return prisma.user.update({
+    const user = await prisma.user.update({
       where: { id: userId },
       data: { role },
       include: { profile: true, mentorProfile: true },
     });
+
+    if (role === 'MENTOR') {
+      if (!user.mentorProfile) {
+        const mp = await prisma.mentorProfile.create({
+          data: {
+            userId,
+            bio: `${user.name} is an expert mentor on GroEarn.`,
+            expertise: 'Software Engineering, Web Development',
+            hourlyRate: 50,
+            yearsExperience: 5,
+            title: 'Expert Mentor',
+          },
+        });
+        RAGSyncService.triggerSyncMentor(mp.id);
+      } else {
+        RAGSyncService.triggerSyncMentor(user.mentorProfile.id);
+      }
+    } else {
+      RAGSyncService.triggerSyncCandidate(userId);
+    }
+
+    return user;
   }
 
   static async updateProfile(userId: string, data: Prisma.ProfileUpdateInput, userData?: Prisma.UserUpdateInput) {

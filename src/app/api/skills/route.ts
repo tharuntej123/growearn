@@ -5,6 +5,7 @@ import { apiSuccess, apiError } from '@/lib/utils';
 import { getUserAIContext } from '@/services/user-context.service';
 import { SkillAnalysisService } from '@/lib/ai/skill-analysis.service';
 import { CareerRoadmapService } from '@/lib/ai/roadmap.service';
+import { RAGSyncService } from '@/lib/ai/rag-sync.service';
 import { z } from 'zod';
 
 const addSkillSchema = z.object({
@@ -94,6 +95,12 @@ export async function POST(req: NextRequest) {
           suggestedRolesJson: JSON.stringify(analysis.recommendedSkills),
         },
       });
+    }
+
+    // Auto-sync candidate profile into pgvector
+    RAGSyncService.triggerSyncCandidate(authUser.id);
+    if (authUser.role === 'MENTOR') {
+      RAGSyncService.triggerSyncMentor(authUser.id);
     }
 
     return apiSuccess({ userSkill, userContext }, 201);

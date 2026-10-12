@@ -3,6 +3,7 @@ import { getCurrentUser, isRoleAllowed } from '@/lib/auth';
 import { apiSuccess, apiError } from '@/lib/utils';
 import { prisma } from '@/lib/prisma';
 import { CourseRepository } from '@/repositories/course.repository';
+import { RAGSyncService } from '@/lib/ai/rag-sync.service';
 import { z } from 'zod';
 
 const createCourseSchema = z.object({
@@ -244,6 +245,9 @@ export class CourseController {
         },
       });
 
+      // Auto-ingest into PostgreSQL pgvector using BGE-M3 (1024 dims)
+      RAGSyncService.triggerSyncCourse(course.id);
+
       return apiSuccess({ course }, 201);
     } catch (error: any) {
       return apiError(error.message || 'Failed to create course', 'INTERNAL_ERROR', 500);
@@ -286,7 +290,7 @@ export class CourseController {
 
         if (!purchase) {
           return apiError(
-            `Payment required: "${course.title}" is a paid course (₹${course.price}). Please complete Razorpay payment checkout to gain access.`,
+            `Payment required: "${course.title}" is a paid course (₹${course.price}). Please complete Cashfree payment checkout to gain access.`,
             'PAYMENT_REQUIRED',
             402
           );

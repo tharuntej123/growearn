@@ -26,6 +26,7 @@ import {
   Share2,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { CheckoutModal } from '@/components/payment/checkout-modal';
 
 export default function CourseDetailPage() {
   const params = useParams();
@@ -39,6 +40,7 @@ export default function CourseDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [openModuleIndex, setOpenModuleIndex] = useState<number | null>(0);
   const [isEnrolling, setIsEnrolling] = useState(false);
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
 
   useEffect(() => {
     if (slug) {
@@ -72,6 +74,11 @@ export default function CourseDetailPage() {
       return;
     }
 
+    if (course.price > 0) {
+      setShowCheckoutModal(true);
+      return;
+    }
+
     setIsEnrolling(true);
     try {
       const res = await fetch(`/api/courses/${slug}/enroll`, {
@@ -90,6 +97,11 @@ export default function CourseDetailPage() {
     } finally {
       setIsEnrolling(false);
     }
+  };
+
+  const handlePaymentSuccess = () => {
+    setIsEnrolled(true);
+    fetchCourseDetail();
   };
 
   if (isLoading) {
@@ -199,7 +211,7 @@ export default function CourseDetailPage() {
               <div className="flex items-baseline justify-between">
                 <span className="text-xs font-semibold text-slate-500">Price</span>
                 <span className="text-2xl font-extrabold text-slate-900">
-                  {course.price === 0 ? 'Free' : `$${course.price}`}
+                  {course.price === 0 ? 'Free' : `₹${course.price}`}
                 </span>
               </div>
 
@@ -330,6 +342,19 @@ export default function CourseDetailPage() {
           </section>
         )}
       </main>
+
+      {course && (
+        <CheckoutModal
+          isOpen={showCheckoutModal}
+          onClose={() => setShowCheckoutModal(false)}
+          itemType="COURSE"
+          itemId={course.id}
+          title={course.title}
+          price={course.price}
+          instructorOrMentorName={course.instructor?.name}
+          onSuccess={handlePaymentSuccess}
+        />
+      )}
     </div>
   );
 }

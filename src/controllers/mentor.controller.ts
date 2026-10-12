@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { apiSuccess, apiError } from '@/lib/utils';
 import { prisma } from '@/lib/prisma';
+import { MentorRepository } from '@/repositories/mentor.repository';
 import { MessagingRepository } from '@/repositories/messaging.repository';
 import { enforceRateLimit } from '@/lib/rate-limiter';
 import { z } from 'zod';
@@ -305,6 +306,31 @@ export class MentorController {
       });
     } catch (error: any) {
       return apiError(error.message || 'Failed to update request status', 'INTERNAL_ERROR', 500);
+    }
+  }
+
+  static async createOrUpdateProfile(req: NextRequest) {
+    try {
+      const authUser = await getCurrentUser(req);
+      if (!authUser) {
+        return apiError('Unauthorized', 'UNAUTHORIZED', 401);
+      }
+
+      const body = await req.json();
+      const mentorProfile = await MentorRepository.upsertMentorProfile(authUser.id, {
+        hourlyRate: typeof body.hourlyRate === 'number' ? body.hourlyRate : undefined,
+        bio: body.bio,
+        expertise: body.expertise,
+        yearsExperience: typeof body.yearsExperience === 'number' ? body.yearsExperience : undefined,
+        company: body.company,
+        title: body.title,
+        isAvailable: body.isAvailable,
+        availability: body.availability,
+      });
+
+      return apiSuccess({ mentorProfile });
+    } catch (error: any) {
+      return apiError(error.message || 'Failed to update mentor profile', 'INTERNAL_ERROR', 500);
     }
   }
 }

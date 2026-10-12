@@ -1,35 +1,22 @@
-// Factory for resolving the active and alternate PaymentProviders.
+// Factory for resolving the official Cashfree PaymentProvider.
 
 import { IPaymentProvider, PaymentProviderName } from './provider.interface';
 import { CashfreePaymentProvider } from './cashfree.provider';
-import { RazorpayPaymentProvider } from './razorpay.provider';
 
 export class PaymentProviderFactory {
-  private static providers: Map<PaymentProviderName, IPaymentProvider> = new Map();
+  private static instance: CashfreePaymentProvider | null = null;
 
-  public static getProvider(name?: PaymentProviderName): IPaymentProvider {
-    const targetName: PaymentProviderName = (
-      name ||
-      (process.env.PAYMENT_PROVIDER as PaymentProviderName) ||
-      'CASHFREE'
-    ).toUpperCase() as PaymentProviderName;
-
-    if (!this.providers.has(targetName)) {
-      if (targetName === 'RAZORPAY') {
-        this.providers.set('RAZORPAY', new RazorpayPaymentProvider());
-      } else {
-        this.providers.set('CASHFREE', new CashfreePaymentProvider());
-      }
+  public static getProvider(name?: PaymentProviderName | string): IPaymentProvider {
+    if (name && name !== 'CASHFREE') {
+      throw new Error(`Unsupported payment provider: "${name}". Cashfree is the sole supported payment gateway.`);
     }
-
-    return this.providers.get(targetName)!;
+    return this.getCashfreeProvider();
   }
 
   public static getCashfreeProvider(): CashfreePaymentProvider {
-    return this.getProvider('CASHFREE') as CashfreePaymentProvider;
-  }
-
-  public static getRazorpayProvider(): RazorpayPaymentProvider {
-    return this.getProvider('RAZORPAY') as RazorpayPaymentProvider;
+    if (!this.instance) {
+      this.instance = new CashfreePaymentProvider();
+    }
+    return this.instance;
   }
 }

@@ -17,6 +17,14 @@ export const skillAnalysisSchema = z.object({
 
 export type SkillAnalysisOutput = z.infer<typeof skillAnalysisSchema>;
 
+export const roadmapSourceSchema = z.object({
+  title: z.string(),
+  url: z.string(),
+  snippet: z.string().optional(),
+});
+
+export type RoadmapSource = z.infer<typeof roadmapSourceSchema>;
+
 export const roadmapPhaseSchema = z.object({
   phaseNumber: z.number(),
   title: z.string(),
@@ -28,6 +36,7 @@ export const roadmapPhaseSchema = z.object({
   practiceTasks: z.array(z.string()),
   projects: z.array(z.string()),
   milestone: z.string(),
+  sources: z.array(roadmapSourceSchema).optional(),
 });
 
 export const roadmapSchema = z.object({
@@ -39,6 +48,7 @@ export const roadmapSchema = z.object({
   skillGaps: z.array(z.string()),
   phases: z.array(roadmapPhaseSchema),
   finalMilestone: z.string(),
+  sources: z.array(roadmapSourceSchema).optional(),
 });
 
 export type RoadmapOutput = z.infer<typeof roadmapSchema>;

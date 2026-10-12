@@ -53,7 +53,7 @@ graph TD
     end
 
     subgraph Payments_Layer["5. Payment Processing"]
-        Payment_Providers["Cashfree PG (v2023-08-01) & Razorpay SDK"]
+        Payment_Providers["Cashfree PG (v2023-08-01)"]
         Payment_Orders["Server-Side Order Creation"]
         Payment_Webhook["HMAC-SHA256 Webhook Verification"]
         Payment_Entitlements["Course & Mentorship Unlocking"]

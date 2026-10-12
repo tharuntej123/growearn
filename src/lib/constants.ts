@@ -119,13 +119,19 @@ export const DEMO_USERS = [
     name: 'NovaTech Solutions',
     title: 'Enterprise Cloud & FinTech Platforms',
   },
+  {
+    email: 'admin@growearn.com',
+    role: ROLES.ADMIN,
+    name: 'Platform Admin',
+    title: 'System Oversight & Moderation',
+  },
 ];
 
 export function isDemoMode(): boolean {
-  if (typeof process === 'undefined') return false;
-  return (
-    process.env.NEXT_PUBLIC_DEMO_MODE === 'true' ||
-    process.env.DEMO_MODE === 'true'
-  );
+  if (typeof process === 'undefined') return true;
+  if (process.env.NEXT_PUBLIC_DEMO_MODE === 'false' || process.env.DEMO_MODE === 'false') {
+    return false;
+  }
+  return true;
 }
 

@@ -6,6 +6,8 @@ import { apiSuccess, apiError } from '@/lib/utils';
 import { getUserAIContext } from '@/services/user-context.service';
 import { SkillAnalysisService } from '@/lib/ai/skill-analysis.service';
 import { CareerRoadmapService } from '@/lib/ai/roadmap.service';
+import { MentorRepository } from '@/repositories/mentor.repository';
+import { RAGSyncService } from '@/lib/ai/rag-sync.service';
 
 export async function GET(req: NextRequest) {
   const authUser = await getCurrentUser(req);
@@ -75,6 +77,20 @@ export async function PUT(req: NextRequest) {
         targetRole: (profileData as any).targetRole || (profileData as any).careerGoal,
       },
     });
+
+    // If user is a MENTOR or provided mentor-specific fields, keep mentor profile in sync
+    if (authUser.role === 'MENTOR' || profileData.hourlyRate !== undefined) {
+      await MentorRepository.upsertMentorProfile(authUser.id, {
+        hourlyRate: profileData.hourlyRate,
+        bio: bio || undefined,
+        title: (profileData as any).title || headline,
+        yearsExperience: profileData.yearsOfExperience,
+        company: (profileData as any).companyName,
+      });
+    }
+
+    // Auto-sync candidate vector chunk into pgvector
+    RAGSyncService.triggerSyncCandidate(authUser.id);
 
     const userContext = await getUserAIContext(authUser.id);
     if (userContext && userContext.hasSkills) {
