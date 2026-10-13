@@ -45,6 +45,17 @@ async function runMasterTestSuite() {
   console.log('🚀 GROEARN PRODUCTION-GRADE MASTER VERIFICATION TEST SUITE');
   console.log('================================================================================\n');
 
+  // Ensure deterministic test credentials for Cashfree verification in CI / test environments
+  if (!process.env.CASHFREE_CLIENT_SECRET) {
+    process.env.CASHFREE_CLIENT_SECRET = 'test_secret_for_cryptographic_verification_key';
+  }
+  if (!process.env.CASHFREE_CLIENT_ID) {
+    process.env.CASHFREE_CLIENT_ID = 'test_cashfree_client_id_for_verification';
+  }
+  if (!process.env.CASHFREE_ENVIRONMENT) {
+    process.env.CASHFREE_ENVIRONMENT = 'sandbox';
+  }
+
   // Warm up database connection
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {

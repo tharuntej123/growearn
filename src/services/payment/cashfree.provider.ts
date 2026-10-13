@@ -52,11 +52,13 @@ export class CashfreePaymentProvider implements IPaymentProvider {
   }
 
   public isConfigured(): boolean {
+    const clientId = this.getClientId();
+    const clientSecret = this.getClientSecret();
     const isDummy =
-      this.clientId.includes('your_cashfree') ||
-      this.clientSecret.includes('your_cashfree') ||
-      this.clientId.length === 0 ||
-      this.clientSecret.length === 0;
+      clientId.includes('your_cashfree') ||
+      clientSecret.includes('your_cashfree') ||
+      clientId.length === 0 ||
+      clientSecret.length === 0;
     return !isDummy;
   }
 
@@ -253,6 +255,14 @@ export class CashfreePaymentProvider implements IPaymentProvider {
     };
   }
 
+  private getClientSecret(): string {
+    return (this.clientSecret || process.env.CASHFREE_CLIENT_SECRET || '').trim();
+  }
+
+  private getClientId(): string {
+    return (this.clientId || process.env.CASHFREE_CLIENT_ID || '').trim();
+  }
+
   // Cryptographically verify Cashfree Webhook Signature.
   // Cashfree computes signature as:
   // Base64( HMAC_SHA256( timestamp + raw_body, client_secret ) )
@@ -271,7 +281,8 @@ export class CashfreePaymentProvider implements IPaymentProvider {
       headers['X-Webhook-Timestamp']
     ) as string | undefined;
 
-    if (!this.clientSecret || this.clientSecret.length === 0) {
+    const secret = this.getClientSecret();
+    if (!secret || secret.length === 0) {
       throw new Error('CASHFREE_CLIENT_SECRET is not configured in the environment.');
     }
 
@@ -291,7 +302,7 @@ export class CashfreePaymentProvider implements IPaymentProvider {
 
     const payloadToSign = `${timestamp}${rawBody}`;
     const expectedSignature = crypto
-      .createHmac('sha256', this.clientSecret)
+      .createHmac('sha256', secret)
       .update(payloadToSign)
       .digest('base64');
 

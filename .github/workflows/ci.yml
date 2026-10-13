@@ -35,6 +35,10 @@ jobs:
       NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3000"
       STORAGE_PROVIDER: "local"
       ALLOW_PRODUCTION_SEED: "true"
+      CASHFREE_ENVIRONMENT: "sandbox"
+      CASHFREE_CLIENT_ID: "test_cashfree_client_id_for_verification"
+      CASHFREE_CLIENT_SECRET: "test_secret_for_cryptographic_verification_key"
+      CASHFREE_API_VERSION: "2023-08-01"
 
     steps:
       - name: Checkout Source Code
