@@ -79,7 +79,11 @@ export class CashfreePaymentProvider implements IPaymentProvider {
   }
 
   public getClientId(): string {
-    return this.clientId;
+    return (this.clientId || process.env.CASHFREE_CLIENT_ID || '').trim();
+  }
+
+  public getClientSecret(): string {
+    return (this.clientSecret || process.env.CASHFREE_CLIENT_SECRET || '').trim();
   }
 
   // Validate configuration and enforce fail-closed production readiness.
@@ -253,14 +257,6 @@ export class CashfreePaymentProvider implements IPaymentProvider {
       status: 'PENDING',
       amount: orderStatus.amount,
     };
-  }
-
-  private getClientSecret(): string {
-    return (this.clientSecret || process.env.CASHFREE_CLIENT_SECRET || '').trim();
-  }
-
-  private getClientId(): string {
-    return (this.clientId || process.env.CASHFREE_CLIENT_ID || '').trim();
   }
 
   // Cryptographically verify Cashfree Webhook Signature.
