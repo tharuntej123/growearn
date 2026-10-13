@@ -47,7 +47,7 @@ Explore all 5 role hubs locally without manual registration (password for all de
 <div align="center">
   <img src="https://img.shields.io/badge/Real--world%20Skills-4F46E5?style=for-the-badge" alt="Real-world Skills" />
   &nbsp;
-  <img src="https://img.shields.io/badge/Guaranteed%20Earnings-059669?style=for-the-badge" alt="Guaranteed Earnings" />
+  <img src="https://img.shields.io/badge/Paid%20Freelance%20Contracts-059669?style=for-the-badge" alt="Paid Freelance Contracts" />
   &nbsp;
   <img src="https://img.shields.io/badge/AI--Native%20Workflow-8B5CF6?style=for-the-badge" alt="AI Native Workflow" />
 </div>
@@ -66,7 +66,7 @@ Learners finish video tutorials but have no verified roadmap to transition into 
 
 ### Core Pillars
 
-- 🎓 **AI Skill Roadmaps (1024-dim BGE-M3 RAG)**: Input any technical skill (`Java`, `Next.js`, `Kubernetes`) to retrieve database-backed 4-phase milestone roadmaps, top courses, and top mentors with zero duplicate pagination.
+- 🎓 **AI Skill Roadmaps (1024-dim BGE-M3 RAG)**: Input any technical skill (`Java`, `Next.js`, `PostgreSQL`, `TypeScript`) to retrieve database-backed 4-phase milestone roadmaps, top courses, and top mentors with zero duplicate pagination.
 - 💼 **5-Factor Hybrid Job Matcher**: Matches candidates to open contracts based on Skill Overlap (50%), Experience Level (20%), Location Alignment (10%), Career Goal Fit (10%), and pgvector Cosine Similarity (10%).
 - 👨‍🏫 **1-on-1 Mentorship & Direct Messaging**: Connect directly with verified mentors, schedule coaching sessions, and communicate over real-time private messaging channels.
 - 💳 **Cashfree Marketplace Payments**: Enterprise-grade Cashfree Payments (v2023-08-01) integration with cryptographic HMAC-SHA256 signature verification, automated 90% mentor / 10% platform fee splits, and instant entitlement unlocking.
@@ -88,7 +88,7 @@ GroEarn is engineered with a modular, service-oriented architecture using Next.j
 - **Authentication**: Stateless JWT in `HttpOnly` `SameSite=Lax` secure cookies, [Bcrypt.js](https://github.com/dcodeIO/bcrypt.js), server-side RBAC
 - **AI & RAG Engine**: Local BGE-M3 (1024-dimensional dense vectors), HNSW Cosine Index, [Groq LLM](https://groq.com/) (Llama 3.3 70B), LangChain text splitters, zero-shot intent classifier fallback
 - **Payments Gateway**: [Cashfree Payments](https://www.cashfree.com/) (API v2023-08-01), HMAC-SHA256 signature verification, replay attack prevention, mentor revenue split
-- **Object Storage**: Pluggable `StorageService` (Local disk storage with path traversal & magic-byte protection, and AWS S3 / Cloudflare R2 compatibility)
+- **Object Storage**: Local filesystem storage with HMAC-signed download URLs, path traversal defense, and magic-byte header validation for uploaded resumes
 - **Rate Limiting**: Multi-instance database rate limiter backed by PostgreSQL `RateLimit` table
 
 ---
@@ -123,7 +123,7 @@ graph TD
         Svc_Auth["AuthService"]
         Svc_SkillRAG["SkillRAGService & IntentClassifier"]
         Svc_Payment["PaymentService (CashfreeProvider)"]
-        Svc_Storage["StorageService (LocalStorage / S3Provider)"]
+        Svc_Storage["StorageService (LocalStorageProvider)"]
         Svc_RAGSync["RAGSyncService (Real-time Entity Ingestion)"]
     end
 
@@ -136,7 +136,7 @@ graph TD
 
     subgraph External_Services["6. External Gateways & Storage"]
         Cashfree["Cashfree Payments Gateway (v2023-08-01)"]
-        DiskS3["Object Storage (Local Disk / AWS S3 / R2)"]
+        LocalStorage["Local Object Storage (storage/private)"]
     end
 
     subgraph Database_Layer["7. PostgreSQL Persistence Layer (Prisma ORM)"]
@@ -175,7 +175,7 @@ graph TD
     MultiSignal --> Groq
 
     Svc_Payment --> Cashfree
-    Svc_Storage --> DiskS3
+    Svc_Storage --> LocalStorage
 
     Svc_Auth --> DB_User
     Svc_Payment --> DB_Payments
@@ -361,7 +361,7 @@ Verify or configure your environment variables:
 | `CASHFREE_CLIENT_SECRET` | Cashfree Secret Key | `your_cashfree_secret_key` |
 | `CASHFREE_API_VERSION` | Cashfree PG API Version | `2023-08-01` |
 | `NEXT_PUBLIC_APP_URL` | Application root URL | `http://localhost:3000` |
-| `STORAGE_PROVIDER` | Storage backend (`local` or `s3`) | `local` |
+| `STORAGE_PROVIDER` | File storage provider (local disk) | `local` |
 
 ---
 
