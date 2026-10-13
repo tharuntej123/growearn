@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { AuthService } from '@/services/auth.service';
 import { registerSchema, loginSchema, roleSelectSchema } from '@/validators/auth.schema';
 import { apiSuccess, apiError } from '@/lib/utils';
-import { AUTH_COOKIE_NAME, getCurrentUserFromRequest, getAuthCookieOptions } from '@/lib/auth';
+import { AUTH_COOKIE_NAME, LEGACY_COOKIE_NAME, getCurrentUserFromRequest, getAuthCookieOptions } from '@/lib/auth';
 import { enforceRateLimit } from '@/lib/rate-limiter';
 
 export class AuthController {
@@ -71,7 +71,9 @@ export class AuthController {
 
   static async logout() {
     const response = apiSuccess({ message: 'Logged out successfully' });
-    response.cookies.delete(AUTH_COOKIE_NAME);
+    const clearOpts = { ...getAuthCookieOptions(), maxAge: 0 };
+    response.cookies.set(AUTH_COOKIE_NAME, '', clearOpts);
+    response.cookies.set(LEGACY_COOKIE_NAME, '', clearOpts);
     return response;
   }
 

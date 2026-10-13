@@ -43,9 +43,17 @@ async function insertChunk(
 }
 
 async function main() {
-  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_PRODUCTION_SEED !== 'true') {
-    console.error('⛔ FATAL: Database seed execution blocked in PRODUCTION environment.');
-    console.error('To override for initial provisioning, set ALLOW_PRODUCTION_SEED=true explicitly.');
+  const dbUrl = process.env.DATABASE_URL || '';
+  const isCloudOrProdDb =
+    process.env.NODE_ENV === 'production' ||
+    dbUrl.includes('supabase.co') ||
+    dbUrl.includes('neon.tech') ||
+    dbUrl.includes('rds.amazonaws.com') ||
+    dbUrl.includes('pooler.supabase');
+
+  if (isCloudOrProdDb && process.env.ALLOW_PRODUCTION_SEED !== 'true') {
+    console.error('⛔ FATAL: Destructive database seed execution blocked for PRODUCTION / CLOUD database.');
+    console.error('To override for explicit initial provisioning, set ALLOW_PRODUCTION_SEED=true.');
     process.exit(1);
   }
 

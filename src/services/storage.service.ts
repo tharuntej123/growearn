@@ -52,6 +52,18 @@ export class LocalStorageProvider implements IStorageProvider {
     }
   }
 
+  private getSafePath(key: string): string {
+    if (!key || key.includes('..') || path.isAbsolute(key)) {
+      throw new Error('Access denied: Path traversal attempt detected');
+    }
+    const resolvedPath = path.resolve(this.privateBaseDir, key);
+    const resolvedBase = path.resolve(this.privateBaseDir);
+    if (!resolvedPath.startsWith(resolvedBase + path.sep) && resolvedPath !== resolvedBase) {
+      throw new Error('Access denied: Path traversal attempt detected');
+    }
+    return resolvedPath;
+  }
+
   async upload(
     fileBuffer: Buffer,
     key: string,
@@ -59,7 +71,7 @@ export class LocalStorageProvider implements IStorageProvider {
     isPrivate: boolean,
     originalName: string
   ): Promise<StorageObjectMetadata> {
-    const fullPath = path.join(this.privateBaseDir, key);
+    const fullPath = this.getSafePath(key);
     await this.ensureDir(path.dirname(fullPath));
     await fs.writeFile(fullPath, fileBuffer);
 
@@ -76,7 +88,7 @@ export class LocalStorageProvider implements IStorageProvider {
 
   async delete(key: string): Promise<boolean> {
     try {
-      const fullPath = path.join(this.privateBaseDir, key);
+      const fullPath = this.getSafePath(key);
       await fs.unlink(fullPath);
       return true;
     } catch {
@@ -97,11 +109,16 @@ export class LocalStorageProvider implements IStorageProvider {
     if (now > expires) return false;
     const payload = `${key}:${expires}`;
     const expectedSig = crypto.createHmac('sha256', this.getSigningSecret()).update(payload).digest('hex');
-    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSig));
+    const sigBuf = Buffer.from(signature, 'utf8');
+    const expBuf = Buffer.from(expectedSig, 'utf8');
+    if (sigBuf.length !== expBuf.length) {
+      return false;
+    }
+    return crypto.timingSafeEqual(sigBuf, expBuf);
   }
 
   async download(key: string): Promise<{ buffer: Buffer; mimeType: string }> {
-    const fullPath = path.join(this.privateBaseDir, key);
+    const fullPath = this.getSafePath(key);
     const buffer = await fs.readFile(fullPath);
     // Simple MIME detection fallback
     const ext = path.extname(key).toLowerCase();
@@ -464,6 +481,9 @@ export class StorageService {
       throw new Error(`Unsupported file format: ${mimeType}. Allowed formats: ${allowed.join(', ')}`);
     }
 
+    // Validate file header magic bytes to prevent MIME type spoofing
+    this.validateMagicBytes(fileBuffer, mimeType);
+
     const maxSize = options.maxSizeBytes || 10 * 1024 * 1024; // 10 MB default
     if (fileBuffer.length > maxSize) {
       throw new Error(`File size ${(fileBuffer.length / (1024 * 1024)).toFixed(1)}MB exceeds ${maxSize / (1024 * 1024)}MB limit`);
@@ -537,5 +557,37 @@ export class StorageService {
 
   public static verifyLocalSignature(key: string, expires: number, signature: string): boolean {
     return this.localProvider.verifySignature(key, expires, signature);
+  }
+
+  private static validateMagicBytes(buffer: Buffer, mimeType: string): void {
+    if (buffer.length < 4) {
+      throw new Error('File content is empty or corrupt');
+    }
+    if (mimeType === 'application/pdf') {
+      const header = buffer.subarray(0, 5).toString('ascii');
+      if (!header.startsWith('%PDF-')) {
+        throw new Error('Invalid PDF file: Missing %PDF- magic bytes signature');
+      }
+    } else if (mimeType === 'image/png') {
+      if (buffer[0] !== 0x89 || buffer[1] !== 0x50 || buffer[2] !== 0x4E || buffer[3] !== 0x47) {
+        throw new Error('Invalid PNG file: Missing PNG magic signature');
+      }
+    } else if (mimeType === 'image/jpeg') {
+      if (buffer[0] !== 0xFF || buffer[1] !== 0xD8 || buffer[2] !== 0xFF) {
+        throw new Error('Invalid JPEG file: Missing JPEG magic signature');
+      }
+    } else if (mimeType === 'image/webp') {
+      const riff = buffer.subarray(0, 4).toString('ascii');
+      const webp = buffer.length >= 12 ? buffer.subarray(8, 12).toString('ascii') : '';
+      if (riff !== 'RIFF' || webp !== 'WEBP') {
+        throw new Error('Invalid WebP file: Missing WebP magic signature');
+      }
+    } else if (mimeType === 'text/plain') {
+      for (let i = 0; i < Math.min(buffer.length, 512); i++) {
+        if (buffer[i] === 0x00) {
+          throw new Error('Invalid text file: Binary data detected');
+        }
+      }
+    }
   }
 }

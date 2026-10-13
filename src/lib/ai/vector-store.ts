@@ -24,6 +24,16 @@ export interface IngestChunkInput {
 
 // Format a JavaScript number array into a pgvector string literal format: "[0.123,0.456,...]"
 export function formatVectorForPg(vector: number[]): string {
+  if (!Array.isArray(vector) || vector.length !== 1024) {
+    throw new Error(
+      `SEMANTIC_RAG_DIMENSION_MISMATCH: Expected exactly 1024 embedding dimensions, received ${vector?.length}`
+    );
+  }
+  for (let i = 0; i < vector.length; i++) {
+    if (typeof vector[i] !== 'number' || !Number.isFinite(vector[i])) {
+      throw new Error(`SEMANTIC_RAG_UNAVAILABLE: Non-finite float at vector index ${i}`);
+    }
+  }
   return `[${vector.join(',')}]`;
 }
 
@@ -95,6 +105,7 @@ export class PgVectorStore {
     topK: number = 5,
     filterSourceType?: string
   ): Promise<DocumentChunkRecord[]> {
+    const safeTopK = Math.min(100, Math.max(1, topK));
     const vectorStr = formatVectorForPg(queryEmbedding);
 
     let rows: Array<{
@@ -123,7 +134,7 @@ export class PgVectorStore {
         `,
         vectorStr,
         filterSourceType,
-        topK
+        safeTopK
       );
     } else {
       rows = await prisma.$queryRawUnsafe(
@@ -140,7 +151,7 @@ export class PgVectorStore {
         LIMIT $2
         `,
         vectorStr,
-        topK
+        safeTopK
       );
     }
 

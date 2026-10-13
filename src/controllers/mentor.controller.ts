@@ -276,6 +276,30 @@ export class MentorController {
         return apiError('Forbidden: You can only manage requests sent to your mentor profile', 'FORBIDDEN', 403);
       }
 
+      // Enforce strict mentorship state machine transition rules
+      const currentStatus = mentorshipRequest.status;
+      if (currentStatus === 'COMPLETED' || currentStatus === 'REJECTED') {
+        return apiError(
+          `Cannot transition mentorship request from finalized status '${currentStatus}'`,
+          'INVALID_STATE_TRANSITION',
+          400
+        );
+      }
+      if (currentStatus === 'PENDING' && status === 'COMPLETED') {
+        return apiError(
+          'Cannot mark request as COMPLETED directly from PENDING. It must first be ACCEPTED.',
+          'INVALID_STATE_TRANSITION',
+          400
+        );
+      }
+      if (currentStatus === 'ACCEPTED' && status === 'REJECTED') {
+        return apiError(
+          'Cannot REJECT a mentorship request that was already ACCEPTED.',
+          'INVALID_STATE_TRANSITION',
+          400
+        );
+      }
+
       const updated = await prisma.mentorshipRequest.update({
         where: { id: requestId },
         data: { status },

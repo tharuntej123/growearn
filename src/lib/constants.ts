@@ -128,10 +128,16 @@ export const DEMO_USERS = [
 ];
 
 export function isDemoMode(): boolean {
-  if (typeof process === 'undefined') return true;
-  if (process.env.NEXT_PUBLIC_DEMO_MODE === 'false' || process.env.DEMO_MODE === 'false') {
+  if (typeof process === 'undefined') return false;
+  // Strictly disabled by default in production
+  if (process.env.NODE_ENV === 'production') {
     return false;
   }
-  return true;
+  // In development/staging, require explicit enablement flag
+  return (
+    process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === 'true' ||
+    process.env.ENABLE_DEMO_LOGIN === 'true' ||
+    process.env.DEMO_MODE === 'true'
+  );
 }
 

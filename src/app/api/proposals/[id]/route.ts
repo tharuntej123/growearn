@@ -4,6 +4,48 @@ import { JobRepository } from '@/repositories/job.repository';
 import { apiSuccess, apiError } from '@/lib/utils';
 import prisma from '@/lib/prisma';
 
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const user = await getCurrentUser(req);
+  if (!user) {
+    return apiError('Authentication required', 'UNAUTHORIZED', 401);
+  }
+
+  const proposal = await prisma.proposal.findUnique({
+    where: { id },
+    include: {
+      job: true,
+      professional: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          avatarUrl: true,
+          headline: true,
+        },
+      },
+    },
+  });
+
+  if (!proposal) {
+    return apiError('Proposal not found', 'NOT_FOUND', 404);
+  }
+
+  // Enforce IDOR protection: only proposal author, job company, or admin can read
+  const isFreelancer = proposal.professionalId === user.id;
+  const isCompany = proposal.job.companyId === user.id;
+  const isAdmin = user.role === 'ADMIN';
+
+  if (!isFreelancer && !isCompany && !isAdmin) {
+    return apiError('Forbidden: You do not have permission to view this proposal', 'FORBIDDEN', 403);
+  }
+
+  return apiSuccess({ proposal });
+}
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

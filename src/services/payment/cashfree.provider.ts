@@ -295,14 +295,11 @@ export class CashfreePaymentProvider implements IPaymentProvider {
       .update(payloadToSign)
       .digest('base64');
 
+    const expBuf = Buffer.from(expectedSignature, 'utf8');
+    const sigBuf = Buffer.from(signature, 'utf8');
     let isValid = false;
-    try {
-      isValid = crypto.timingSafeEqual(
-        Buffer.from(expectedSignature, 'utf8'),
-        Buffer.from(signature, 'utf8')
-      );
-    } catch {
-      isValid = false;
+    if (expBuf.length === sigBuf.length) {
+      isValid = crypto.timingSafeEqual(expBuf, sigBuf);
     }
 
     if (!isValid) {

@@ -24,7 +24,7 @@ import {
   Check,
   MousePointerClick,
 } from 'lucide-react';
-import { DEMO_USERS, ROLE_INFO } from '@/lib/constants';
+import { DEMO_USERS, ROLE_INFO, isDemoMode } from '@/lib/constants';
 import { toast } from 'sonner';
 
 export default function LoginPage() {
@@ -150,7 +150,7 @@ export default function LoginPage() {
             </div>
             <CardTitle className="text-2xl font-bold text-slate-900">Welcome Back</CardTitle>
             <CardDescription className="text-xs text-slate-500">
-              Sign in to your Growearn account or select a 1-click guest profile
+              Sign in to your Growearn account
             </CardDescription>
           </CardHeader>
 
@@ -161,78 +161,82 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Instant 1-Click Guest Logins & Credentials Display */}
-            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-slate-50 via-emerald-50/20 to-teal-50/20 border border-emerald-200/90 shadow-2xs space-y-2.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs text-slate-900 font-bold">
-                  <Zap className="h-4 w-4 text-emerald-600 fill-emerald-600" />
-                  <span>Instant 1-Click Guest Logins:</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleCopyPassword}
-                  className="flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-white border border-emerald-300 text-emerald-800 hover:bg-emerald-50 transition-colors cursor-pointer shadow-2xs"
-                  title="Click to copy demo password"
-                >
-                  {copiedPassword ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3 text-emerald-600" />}
-                  <span>Password: Demo1234!</span>
-                </button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                {DEMO_USERS.map((demo) => {
-                  const Icon = roleIcons[demo.role] || Sparkles;
-                  const isThisLoading = activeDemoEmail === demo.email;
-                  const badgeColor = roleBadgeColors[demo.role] || 'bg-slate-100 text-slate-700 border-slate-200';
-
-                  return (
-                    <div
-                      key={demo.email}
-                      onClick={() => handleInstantDemoLogin(demo.email, demo.role)}
-                      className={`p-2.5 rounded-xl border text-left transition-all relative cursor-pointer group select-none ${
-                        isThisLoading
-                          ? 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-400/30'
-                          : 'border-slate-200 bg-white hover:border-emerald-500 hover:bg-emerald-50/50 hover:shadow-xs'
-                      }`}
-                      title={`Click to login as ${demo.name} (${demo.role})`}
-                    >
-                      <div className="flex items-center justify-between gap-1 mb-1">
-                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md border ${badgeColor}`}>
-                          <Icon className="h-3 w-3" />
-                          <span>{roleLabels[demo.role] || demo.role}</span>
-                        </span>
-                        <button
-                          type="button"
-                          onClick={(e) => handleAutoFill(demo.email, e)}
-                          className="text-[10px] text-slate-500 hover:text-emerald-700 font-medium px-1.5 py-0.5 rounded hover:bg-slate-100 transition-colors"
-                          title="Auto-fill form inputs below"
-                        >
-                          Fill
-                        </button>
-                      </div>
-                      <p className="text-[12px] font-bold text-slate-900 group-hover:text-emerald-700 transition-colors truncate">
-                        {demo.name}
-                      </p>
-                      <p className="text-[10px] text-slate-500 truncate">{demo.email}</p>
-                      <div className="mt-1 flex items-center justify-end text-[10px] font-semibold text-emerald-600 opacity-90 group-hover:opacity-100 transition-opacity">
-                        <span className="flex items-center gap-0.5">
-                          {isThisLoading ? 'Signing in...' : '1-Click Login'}
-                          <MousePointerClick className="h-3 w-3" />
-                        </span>
-                      </div>
+            {/* Instant 1-Click Guest Logins & Credentials Display (Visible only in development when demo mode is explicitly enabled) */}
+            {isDemoMode() && (
+              <>
+                <div className="p-3.5 rounded-2xl bg-gradient-to-br from-slate-50 via-emerald-50/20 to-teal-50/20 border border-emerald-200/90 shadow-2xs space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-900 font-bold">
+                      <Zap className="h-4 w-4 text-emerald-600 fill-emerald-600" />
+                      <span>Instant 1-Click Guest Logins:</span>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
+                    <button
+                      type="button"
+                      onClick={handleCopyPassword}
+                      className="flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-white border border-emerald-300 text-emerald-800 hover:bg-emerald-50 transition-colors cursor-pointer shadow-2xs"
+                      title="Click to copy demo password"
+                    >
+                      {copiedPassword ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3 text-emerald-600" />}
+                      <span>Password: Demo1234!</span>
+                    </button>
+                  </div>
 
-            <div className="relative flex py-1 items-center">
-              <div className="flex-grow border-t border-slate-200"></div>
-              <span className="flex-shrink mx-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                Or Sign In with Email & Password
-              </span>
-              <div className="flex-grow border-t border-slate-200"></div>
-            </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {DEMO_USERS.map((demo) => {
+                      const Icon = roleIcons[demo.role] || Sparkles;
+                      const isThisLoading = activeDemoEmail === demo.email;
+                      const badgeColor = roleBadgeColors[demo.role] || 'bg-slate-100 text-slate-700 border-slate-200';
+
+                      return (
+                        <div
+                          key={demo.email}
+                          onClick={() => handleInstantDemoLogin(demo.email, demo.role)}
+                          className={`p-2.5 rounded-xl border text-left transition-all relative cursor-pointer group select-none ${
+                            isThisLoading
+                              ? 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-400/30'
+                              : 'border-slate-200 bg-white hover:border-emerald-500 hover:bg-emerald-50/50 hover:shadow-xs'
+                          }`}
+                          title={`Click to login as ${demo.name} (${demo.role})`}
+                        >
+                          <div className="flex items-center justify-between gap-1 mb-1">
+                            <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md border ${badgeColor}`}>
+                              <Icon className="h-3 w-3" />
+                              <span>{roleLabels[demo.role] || demo.role}</span>
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => handleAutoFill(demo.email, e)}
+                              className="text-[10px] text-slate-500 hover:text-emerald-700 font-medium px-1.5 py-0.5 rounded hover:bg-slate-100 transition-colors"
+                              title="Auto-fill form inputs below"
+                            >
+                              Fill
+                            </button>
+                          </div>
+                          <p className="text-[12px] font-bold text-slate-900 group-hover:text-emerald-700 transition-colors truncate">
+                            {demo.name}
+                          </p>
+                          <p className="text-[10px] text-slate-500 truncate">{demo.email}</p>
+                          <div className="mt-1 flex items-center justify-end text-[10px] font-semibold text-emerald-600 opacity-90 group-hover:opacity-100 transition-opacity">
+                            <span className="flex items-center gap-0.5">
+                              {isThisLoading ? 'Signing in...' : '1-Click Login'}
+                              <MousePointerClick className="h-3 w-3" />
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="relative flex py-1 items-center">
+                  <div className="flex-grow border-t border-slate-200"></div>
+                  <span className="flex-shrink mx-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                    Or Sign In with Email & Password
+                  </span>
+                  <div className="flex-grow border-t border-slate-200"></div>
+                </div>
+              </>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-3.5">
               <div>

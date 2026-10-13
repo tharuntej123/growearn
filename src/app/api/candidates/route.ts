@@ -97,7 +97,31 @@ export async function GET(req: NextRequest) {
       })(),
     ]);
 
+    // Determine which candidates have applied to jobs posted by this company (or admin access)
+    const authorizedCandidateIds = new Set<string>();
+    if (authUser.role !== 'ADMIN') {
+      const companyApplications = await prisma.application.findMany({
+        where: { job: { companyId: authUser.id } },
+        select: { applicantId: true },
+      });
+      companyApplications.forEach((a) => authorizedCandidateIds.add(a.applicantId));
+    }
+
     const scoredCandidates = candidates.map((candidate) => {
+      const isResumeAuthorized = authUser.role === 'ADMIN' || authorizedCandidateIds.has(candidate.id);
+      const sanitizedProfile = candidate.profile
+        ? {
+            ...candidate.profile,
+            resumeUrl: isResumeAuthorized ? candidate.profile.resumeUrl : null,
+            resumeName: isResumeAuthorized ? candidate.profile.resumeName : null,
+          }
+        : null;
+
+      const safeCandidate = {
+        ...candidate,
+        profile: sanitizedProfile,
+      };
+
       const candidateSkills = candidate.skills.map((s) => s.skill.name);
       const yearsExp = candidate.profile?.yearsOfExperience || 0;
       const candidateVectorSim = vectorSimilarities[candidate.id];
@@ -139,7 +163,7 @@ export async function GET(req: NextRequest) {
         }
 
         return {
-          ...candidate,
+          ...safeCandidate,
           vectorSimilarity: candidateVectorSim,
           aiMatch: {
             ...matchResult,
@@ -155,7 +179,7 @@ export async function GET(req: NextRequest) {
       // Default candidate directory scoring
       const defaultScore = candidate.profile?.aiScore || (candidateSkills.length > 3 ? 90 : 80);
       return {
-        ...candidate,
+        ...safeCandidate,
         vectorSimilarity: candidateVectorSim,
         aiMatch: {
           overallScore: defaultScore,

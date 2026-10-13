@@ -119,6 +119,22 @@ export class AuthService {
     }
 
     const normalized = normalizeRole(rawRole);
+
+    const user = await UserRepository.findById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Critical Invariant: Prevent removing or demoting the last active administrator
+    if (user.role === 'ADMIN' && normalized !== 'ADMIN') {
+      const activeAdminCount = await prisma.user.count({
+        where: { role: 'ADMIN' },
+      });
+      if (activeAdminCount <= 1) {
+        throw new Error('Forbidden: Cannot remove or demote the last active platform administrator.');
+      }
+    }
+
     const updated = await UserRepository.updateRole(userId, normalized);
 
     // Record role change audit log
@@ -156,7 +172,8 @@ export class AuthService {
     const user = await UserRepository.findById(userId);
     if (!user) return null;
 
-    const { passwordHash: _, ...safeUser } = user;
+    const { passwordHash: _passwordHash, ...safeUser } = user;
+    void _passwordHash;
     return safeUser;
   }
 }

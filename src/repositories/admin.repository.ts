@@ -99,11 +99,34 @@ export class AdminRepository {
     return { users, total };
   }
 
-  // Update user role by administrator.
+  // Update user role by administrator with last-admin safeguard.
   static async updateUserRole(adminUserId: string, targetUserId: string, newRole: string) {
+    const canonicalRole = newRole.toUpperCase().trim();
+    const validRoles = ['LEARNER', 'FREELANCER', 'MENTOR', 'COMPANY', 'ADMIN'];
+    if (!validRoles.includes(canonicalRole)) {
+      throw new Error(`Invalid role '${newRole}'. Allowed roles: ${validRoles.join(', ')}`);
+    }
+
+    const targetUser = await prisma.user.findUnique({
+      where: { id: targetUserId },
+    });
+    if (!targetUser) {
+      throw new Error(`User not found: ${targetUserId}`);
+    }
+
+    // Critical Invariant: Prevent removing or demoting the last active administrator
+    if (targetUser.role === 'ADMIN' && canonicalRole !== 'ADMIN') {
+      const activeAdminCount = await prisma.user.count({
+        where: { role: 'ADMIN' },
+      });
+      if (activeAdminCount <= 1) {
+        throw new Error('Forbidden: Cannot remove or demote the last active platform administrator.');
+      }
+    }
+
     const user = await prisma.user.update({
       where: { id: targetUserId },
-      data: { role: newRole.toUpperCase() },
+      data: { role: canonicalRole },
     });
 
     await prisma.auditLog.create({
@@ -111,7 +134,7 @@ export class AdminRepository {
         userId: adminUserId,
         action: 'ADMIN_ROLE_CHANGE',
         resource: 'User',
-        details: { targetUserId, newRole: newRole.toUpperCase() },
+        details: { targetUserId, previousRole: targetUser.role, newRole: canonicalRole },
       },
     });
 
@@ -156,11 +179,17 @@ export class AdminRepository {
     return course;
   }
 
-  // Moderate job posting.
+  // Moderate job posting with strict status validation.
   static async moderateJob(adminUserId: string, jobId: string, status: string) {
+    const validStatuses = ['OPEN', 'CLOSED', 'DRAFT', 'ARCHIVED'];
+    const normalizedStatus = status.toUpperCase().trim();
+    if (!validStatuses.includes(normalizedStatus)) {
+      throw new Error(`Invalid job status '${status}'. Must be one of: ${validStatuses.join(', ')}`);
+    }
+
     const job = await prisma.job.update({
       where: { id: jobId },
-      data: { status },
+      data: { status: normalizedStatus },
     });
 
     await prisma.auditLog.create({
@@ -168,7 +197,7 @@ export class AdminRepository {
         userId: adminUserId,
         action: 'ADMIN_MODERATE_JOB',
         resource: 'Job',
-        details: { jobId, status },
+        details: { jobId, status: normalizedStatus },
       },
     });
 

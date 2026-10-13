@@ -16,7 +16,7 @@ export function getJwtSecret(): string {
 
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 export const AUTH_COOKIE_NAME = 'growearn_auth_token';
-const LEGACY_COOKIE_NAME = 'ufp_auth_token';
+export const LEGACY_COOKIE_NAME = 'ufp_auth_token';
 
 export interface JWTPayload {
   userId: string;
@@ -35,33 +35,62 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 }
 
 export function signJwtToken(payload: JWTPayload): string {
-  return jwt.sign(payload, getJwtSecret(), { expiresIn: JWT_EXPIRES_IN as jwt.SignOptions['expiresIn'] });
+  return jwt.sign(payload, getJwtSecret(), {
+    algorithm: 'HS256',
+    expiresIn: JWT_EXPIRES_IN as jwt.SignOptions['expiresIn'],
+  });
 }
 
 export function verifyJwtToken(token: string): JWTPayload | null {
   try {
-    return jwt.verify(token, getJwtSecret()) as JWTPayload;
+    const decoded = jwt.verify(token, getJwtSecret(), { algorithms: ['HS256'] }) as JWTPayload;
+    if (!decoded || !decoded.userId || !decoded.role) {
+      return null;
+    }
+    return decoded;
   } catch {
     return null;
   }
 }
 
-export function normalizeRole(rawRole?: string): 'LEARNER' | 'FREELANCER' | 'MENTOR' | 'COMPANY' | 'ADMIN' {
+export type CanonicalRole = 'LEARNER' | 'FREELANCER' | 'MENTOR' | 'COMPANY' | 'ADMIN';
+
+export function normalizeRole(rawRole?: string): CanonicalRole {
   if (!rawRole) return 'LEARNER';
-  const r = rawRole.toUpperCase();
+  const r = rawRole.toUpperCase().trim();
   if (r === 'STUDENT' || r === 'LEARNER') return 'LEARNER';
   if (r === 'FREELANCER' || r === 'PROFESSIONAL') return 'FREELANCER';
   if (r === 'MENTOR') return 'MENTOR';
   if (r === 'COMPANY' || r === 'EMPLOYER') return 'COMPANY';
   if (r === 'ADMIN') return 'ADMIN';
-  return 'LEARNER';
+  throw new Error(`Invalid role '${rawRole}': Must be one of LEARNER, FREELANCER, MENTOR, COMPANY, ADMIN`);
+}
+
+export function isValidRole(role: string): boolean {
+  try {
+    normalizeRole(role);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function isRoleAllowed(userRole: string | undefined, allowedRoles: string[]): boolean {
   if (!userRole) return false;
-  const normalizedUserRole = normalizeRole(userRole);
+  let normalizedUserRole: CanonicalRole;
+  try {
+    normalizedUserRole = normalizeRole(userRole);
+  } catch {
+    return false;
+  }
   if (normalizedUserRole === 'ADMIN') return true; // ADMIN has superuser access
-  return allowedRoles.map((r) => normalizeRole(r)).includes(normalizedUserRole);
+  return allowedRoles.some((r) => {
+    try {
+      return normalizeRole(r) === normalizedUserRole;
+    } catch {
+      return false;
+    }
+  });
 }
 
 export async function getCurrentUserFromCookies(): Promise<JWTPayload | null> {
@@ -108,9 +137,10 @@ export async function getCurrentUser(req?: NextRequest): Promise<(JWTPayload & {
 
 export function getAuthCookieOptions() {
   const isHttps = process.env.NEXT_PUBLIC_APP_URL?.startsWith('https://') || Boolean(process.env.VERCEL_URL?.startsWith('https://'));
+  const isProd = process.env.NODE_ENV === 'production';
   return {
     httpOnly: true,
-    secure: Boolean(isHttps),
+    secure: isProd || Boolean(isHttps),
     sameSite: 'lax' as const,
     maxAge: 60 * 60 * 24 * 7, // 7 days
     path: '/',

@@ -44,7 +44,7 @@ export class LocalBGE3EmbeddingProvider implements EmbeddingProvider {
       const models = (data.models || []).map((m: any) => m.name || m.model);
       const hasModel = models.some((m: string) => m.includes(this.model) || this.model.includes(m));
       return {
-        healthy: true,
+        healthy: Boolean(hasModel),
         model: this.model,
         error: hasModel ? undefined : `Model '${this.model}' not found in Ollama library`,
       };

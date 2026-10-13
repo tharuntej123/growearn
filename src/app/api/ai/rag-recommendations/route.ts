@@ -17,8 +17,11 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { skill } = body;
 
-    if (!skill || !skill.trim()) {
+    if (!skill || typeof skill !== 'string' || !skill.trim()) {
       return apiError('Skill or learning target is required', 'VALIDATION_ERROR', 400);
+    }
+    if (skill.length > 200) {
+      return apiError('Skill or learning target exceeds maximum length of 200 characters', 'VALIDATION_ERROR', 400);
     }
 
     const cleanSkill = skill.trim();

@@ -19,6 +19,15 @@ export async function GET(
     return apiError('Application not found', 'NOT_FOUND', 404);
   }
 
+  // Enforce IDOR protection: only the applicant, company owner, or admin can view this application
+  const isApplicant = application.applicantId === user.id;
+  const isCompany = application.job.companyId === user.id;
+  const isAdmin = user.role === 'ADMIN';
+
+  if (!isApplicant && !isCompany && !isAdmin) {
+    return apiError('Forbidden: You do not have permission to view this application', 'FORBIDDEN', 403);
+  }
+
   return apiSuccess({ application });
 }
 

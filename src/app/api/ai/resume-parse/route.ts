@@ -4,8 +4,10 @@ import { AIService } from '@/lib/ai/ai-service';
 import { apiSuccess, apiError } from '@/lib/utils';
 import { z } from 'zod';
 
+import { enforceRateLimit } from '@/lib/rate-limiter';
+
 const resumeParseSchema = z.object({
-  resumeText: z.string().min(10, 'Resume text is required'),
+  resumeText: z.string().min(10, 'Resume text is required').max(100000, 'Resume text exceeds maximum allowed length of 100,000 characters'),
 });
 
 export async function POST(req: NextRequest) {
@@ -13,6 +15,10 @@ export async function POST(req: NextRequest) {
   if (!userPayload) {
     return apiError('Unauthorized', 'UNAUTHORIZED', 401);
   }
+
+  // Rate limit: 10 requests / minute per user
+  const rateLimitResponse = await enforceRateLimit(req, 'ai:resume-parse', 10, 60, userPayload.userId);
+  if (rateLimitResponse) return rateLimitResponse;
 
   try {
     const body = await req.json();

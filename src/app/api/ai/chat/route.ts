@@ -18,8 +18,11 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { message } = body;
 
-    if (!message || !message.trim()) {
+    if (!message || typeof message !== 'string' || !message.trim()) {
       return apiError('Message cannot be empty', 'VALIDATION_ERROR', 400);
+    }
+    if (message.length > 4000) {
+      return apiError('Message exceeds maximum allowed length of 4000 characters', 'VALIDATION_ERROR', 400);
     }
 
     let userContext = null;

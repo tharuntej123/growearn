@@ -86,7 +86,7 @@ export async function middleware(req: NextRequest) {
 
   if (token) {
     try {
-      const { payload } = await jwtVerify(token, getMiddlewareJwtSecret());
+      const { payload } = await jwtVerify(token, getMiddlewareJwtSecret(), { algorithms: ['HS256'] });
       userPayload = payload as unknown as { userId: string; email: string; role: string; name: string };
     } catch {
       userPayload = null;
