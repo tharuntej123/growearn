@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { RAGSyncService } from '@/lib/ai/rag-sync.service';
+import { normalizeRole } from '@/lib/auth';
 
 export class UserRepository {
   static async findByEmail(email: string) {
@@ -44,16 +45,17 @@ export class UserRepository {
     name: string;
     role: string;
   }) {
-    const isMentor = data.role === 'MENTOR';
+    const canonicalRole = normalizeRole(data.role);
+    const isMentor = canonicalRole === 'MENTOR';
     const user = await prisma.user.create({
       data: {
         email: data.email.toLowerCase(),
         passwordHash: data.passwordHash,
         name: data.name,
-        role: data.role,
+        role: canonicalRole,
         profile: {
           create: {
-            title: (data.role === 'STUDENT' || data.role === 'LEARNER') ? 'Learner / Student' : isMentor ? 'Expert Mentor' : (data.role === 'FREELANCER' || data.role === 'PROFESSIONAL') ? 'Verified Professional' : 'Organization Leader',
+            title: canonicalRole === 'LEARNER' ? 'Learner / Student' : isMentor ? 'Expert Mentor' : canonicalRole === 'FREELANCER' ? 'Verified Professional' : 'Organization Leader',
             availability: 'FULL_TIME',
             aiScore: 75,
           },

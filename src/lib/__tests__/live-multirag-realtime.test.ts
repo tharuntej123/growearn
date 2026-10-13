@@ -164,7 +164,7 @@ async function runLiveMultiRAGTest() {
     name: `Sneha Kulkarni ${timestamp.toString().slice(-4)}`,
     email: candidateEmail,
     passwordHash: 'TestHash123!Secure',
-    role: 'PROFESSIONAL',
+    role: 'FREELANCER',
   });
 
   await prisma.profile.update({

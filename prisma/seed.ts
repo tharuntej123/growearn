@@ -51,7 +51,7 @@ async function main() {
     dbUrl.includes('rds.amazonaws.com') ||
     dbUrl.includes('pooler.supabase');
 
-  if (isCloudOrProdDb && process.env.ALLOW_PRODUCTION_SEED !== 'true') {
+  if (isCloudOrProdDb && process.env.ALLOW_PRODUCTION_SEED?.trim() !== 'true') {
     console.error('⛔ FATAL: Destructive database seed execution blocked for PRODUCTION / CLOUD database.');
     console.error('To override for explicit initial provisioning, set ALLOW_PRODUCTION_SEED=true.');
     process.exit(1);
@@ -201,7 +201,7 @@ async function main() {
       email: 'professional@example.com',
       passwordHash: demoPasswordHash,
       name: 'Pooja Verma',
-      role: 'PROFESSIONAL',
+      role: 'FREELANCER',
       headline: 'Senior Mobile & Full Stack Specialist',
       location: 'Bangalore, Karnataka, India',
       country: 'India',
@@ -313,7 +313,7 @@ async function main() {
         email: prof.email,
         passwordHash: demoPasswordHash,
         name: prof.name,
-        role: 'PROFESSIONAL',
+        role: 'FREELANCER',
         headline: prof.headline,
         location: prof.location,
         country: 'India',
@@ -614,7 +614,7 @@ async function main() {
         email: c.email,
         passwordHash: demoPasswordHash,
         name: c.name,
-        role: 'EMPLOYER',
+        role: 'COMPANY',
         headline: `[SEED TEST COMPANY] ${c.headline}`,
         location: `${c.city}, ${c.state}, India`,
         country: 'India',
@@ -1980,7 +1980,7 @@ Community Feed: Cross-role knowledge sharing with verified role badges on every 
       email: 'professional@growearn.com',
       passwordHash: demoPasswordHash,
       name: 'Pooja Verma',
-      role: 'PROFESSIONAL',
+      role: 'FREELANCER',
       headline: 'Senior Mobile & Full Stack Specialist',
       location: 'Bangalore, Karnataka, India',
       country: 'India',
@@ -2071,7 +2071,7 @@ Community Feed: Cross-role knowledge sharing with verified role badges on every 
       email: 'employer@growearn.com',
       passwordHash: demoPasswordHash,
       name: 'NovaTech Solutions',
-      role: 'EMPLOYER',
+      role: 'COMPANY',
       headline: 'Enterprise Cloud Architecture & Distributed Systems',
       location: 'Bangalore, Karnataka, India',
       country: 'India',

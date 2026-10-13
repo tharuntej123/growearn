@@ -101,7 +101,7 @@ async function runTests() {
           name: 'Apex Test Enterprise',
           email: `test-employer-${Date.now()}@example.com`,
           passwordHash: '$2a$10$abcdefghijklmnopqrstuvwxyz123456789',
-          role: 'EMPLOYER',
+          role: 'COMPANY',
           profile: {
             create: {
               companyName: 'Apex Test Enterprise',

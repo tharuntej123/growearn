@@ -17,7 +17,7 @@ async function verifyAllThreeRoles() {
   console.log('  Top Matched Mentor:', studentRag.topMentors[0]?.name, `(Score: ${studentRag.topMentors[0]?.matchScore}%)`);
 
   console.log('\n--- 2. FREELANCER ROLE (Profile Skills/Projects/Certs -> RAG Job Matching & Proposals) ---');
-  const freelancer = await prisma.user.findFirst({ where: { role: 'PROFESSIONAL' } });
+  const freelancer = await prisma.user.findFirst({ where: { role: { in: ['FREELANCER', 'PROFESSIONAL'] } } });
   if (freelancer) {
     const userContext = await getUserAIContext(freelancer.id);
     if (userContext) {
@@ -30,7 +30,7 @@ async function verifyAllThreeRoles() {
 
   console.log('\n--- 3. COMPANY ROLE (Job Description -> RAG Candidate Matching & Scoring) ---');
   const candidate = await prisma.user.findFirst({
-    where: { role: 'PROFESSIONAL' },
+    where: { role: { in: ['FREELANCER', 'PROFESSIONAL'] } },
     include: { profile: true, skills: { include: { skill: true } } },
   });
   if (candidate) {
