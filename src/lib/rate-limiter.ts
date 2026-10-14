@@ -8,6 +8,29 @@ export interface RateLimitResult {
   resetSeconds: number;
 }
 
+export class MemoryFallbackLimiter {
+  private static store = new Map<string, { points: number; resetAt: number }>();
+
+  static consume(key: string, limit: number, windowSeconds: number): RateLimitResult {
+    const now = Date.now();
+    const entry = this.store.get(key);
+
+    if (!entry || entry.resetAt <= now) {
+      this.store.set(key, { points: 1, resetAt: now + windowSeconds * 1000 });
+      return { success: true, limit, remaining: limit - 1, resetSeconds: windowSeconds };
+    }
+
+    entry.points += 1;
+    const resetSeconds = Math.max(1, Math.ceil((entry.resetAt - now) / 1000));
+
+    if (entry.points > limit) {
+      return { success: false, limit, remaining: 0, resetSeconds };
+    }
+
+    return { success: true, limit, remaining: Math.max(0, limit - entry.points), resetSeconds };
+  }
+}
+
 export class DatabaseRateLimiter {
   // Consume rate limit points for a given key.
   // Backed by PostgreSQL rate_limits table with atomic single-statement upsert
@@ -52,32 +75,8 @@ export class DatabaseRateLimiter {
         resetSeconds: remainingTime,
       };
     } catch (err) {
-      console.warn(`[RateLimiter] Database rate check error:`, err);
-
-      // Strict fail-closed policy for sensitive and abuse-prone endpoints
-      const isSensitivePath =
-        key.startsWith('auth:') ||
-        key.startsWith('payments:') ||
-        key.startsWith('ai:') ||
-        key.startsWith('storage:') ||
-        key.startsWith('mentorship:');
-
-      if (isSensitivePath) {
-        return {
-          success: false,
-          limit,
-          remaining: 0,
-          resetSeconds: windowSeconds,
-        };
-      }
-
-      // Fail-open for general read endpoints to avoid total platform outage on transient DB errors
-      return {
-        success: true,
-        limit,
-        remaining: Math.max(0, limit - 1),
-        resetSeconds: windowSeconds,
-      };
+      console.warn(`[RateLimiter] Database rate check error, utilizing resilient in-memory fallback:`, err);
+      return MemoryFallbackLimiter.consume(key, limit, windowSeconds);
     }
   }
 
@@ -138,10 +137,15 @@ export async function enforceRateLimit(
   const result = await DatabaseRateLimiter.consume(identifier, limit, windowSeconds);
 
   if (!result.success) {
+    const message = `Too many requests. Please retry after ${result.resetSeconds} seconds.`;
     return NextResponse.json(
       {
         success: false,
-        error: `Too many requests. Please retry after ${result.resetSeconds} seconds.`,
+        error: {
+          code: 'RATE_LIMIT_EXCEEDED',
+          message,
+        },
+        message,
         code: 'RATE_LIMIT_EXCEEDED',
         retryAfter: result.resetSeconds,
       },

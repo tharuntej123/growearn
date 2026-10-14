@@ -100,10 +100,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        return { success: false, error: data.error?.message || 'Login failed' };
+
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        if (!res.ok) {
+          return { success: false, error: `Server error (${res.status}: ${res.statusText || 'Login failed'}). Please try again.` };
+        }
       }
+
+      if (!res.ok || !data?.success) {
+        const errorMsg =
+          typeof data?.error === 'string'
+            ? data.error
+            : data?.error?.message || data?.message || 'Invalid email or password';
+        return { success: false, error: errorMsg };
+      }
+
       const loggedUser = data.data?.user;
       if (loggedUser) {
         updateUserState(loggedUser);
@@ -112,8 +126,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await refreshUser();
       }
       return { success: true, user: loggedUser };
-    } catch {
-      return { success: false, error: 'Network error. Please try again.' };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : '';
+      if (msg.includes('abort') || msg.includes('timeout')) {
+        return { success: false, error: 'Connection timed out. Please check your internet and retry.' };
+      }
+      return { success: false, error: 'Unable to connect to the server. Please verify the application is running.' };
     }
   };
 
@@ -124,10 +142,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password, confirmPassword, role }),
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        return { success: false, error: data.error?.message || 'Registration failed' };
+
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        if (!res.ok) {
+          return { success: false, error: `Server error (${res.status}: ${res.statusText || 'Registration failed'}). Please try again.` };
+        }
       }
+
+      if (!res.ok || !data?.success) {
+        const errorMsg =
+          typeof data?.error === 'string'
+            ? data.error
+            : data?.error?.message || data?.message || 'Registration failed';
+        return { success: false, error: errorMsg };
+      }
+
       const newUser = data.data?.user;
       if (newUser) {
         updateUserState(newUser);
@@ -136,8 +168,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await refreshUser();
       }
       return { success: true, user: newUser };
-    } catch {
-      return { success: false, error: 'Network error during registration' };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : '';
+      if (msg.includes('abort') || msg.includes('timeout')) {
+        return { success: false, error: 'Registration timed out. Please check your internet connection and try again.' };
+      }
+      return { success: false, error: 'Unable to connect to the server. Please ensure the server is running.' };
     }
   };
 
@@ -148,10 +184,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role }),
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        return { success: false, error: data.error?.message || 'Role selection failed' };
+
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        if (!res.ok) {
+          return { success: false, error: `Server error (${res.status}). Please try again.` };
+        }
       }
+
+      if (!res.ok || !data?.success) {
+        const errorMsg =
+          typeof data?.error === 'string'
+            ? data.error
+            : data?.error?.message || data?.message || 'Role selection failed';
+        return { success: false, error: errorMsg };
+      }
+
       if (data.data?.user) {
         updateUserState(data.data.user);
       } else {
@@ -159,7 +209,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       return { success: true };
     } catch {
-      return { success: false, error: 'Failed to update role' };
+      return { success: false, error: 'Failed to update role. Please try again.' };
     }
   };
 

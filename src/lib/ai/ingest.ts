@@ -1,7 +1,6 @@
 // Production Document and Entity Ingestion Pipeline using BGE-M3 (1024 dims).
 
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
-import { PDFParse } from 'pdf-parse';
 import { PgVectorStore, IngestChunkInput } from './vector-store';
 import { generateEmbeddings, isEmbeddingConfigured } from './embeddings';
 
@@ -39,7 +38,9 @@ export class DocumentIngestionService {
     }
 
     if (input.sourceType === 'pdf' || input.filename.toLowerCase().endsWith('.pdf')) {
-      const parser = new PDFParse({ data: input.buffer });
+      const pdfModule = await import('pdf-parse');
+      const PDFParseClass = (pdfModule as any).PDFParse || (pdfModule as any).default || pdfModule;
+      const parser = new PDFParseClass({ data: input.buffer });
       const parsed = await parser.getText();
       return parsed.text || '';
     }

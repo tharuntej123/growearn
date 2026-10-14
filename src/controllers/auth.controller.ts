@@ -7,11 +7,11 @@ import { enforceRateLimit } from '@/lib/rate-limiter';
 
 export class AuthController {
   static async register(req: NextRequest) {
-    // Enforce 5 registrations per 10 minutes per IP
-    const rateLimitResponse = await enforceRateLimit(req, 'auth:register', 5, 600);
-    if (rateLimitResponse) return rateLimitResponse;
-
     try {
+      // Enforce 5 registrations per 10 minutes per IP
+      const rateLimitResponse = await enforceRateLimit(req, 'auth:register', 5, 600);
+      if (rateLimitResponse) return rateLimitResponse;
+
       const body = await req.json();
       const validated = registerSchema.safeParse(body);
       if (!validated.success) {
@@ -39,11 +39,11 @@ export class AuthController {
   }
 
   static async login(req: NextRequest) {
-    // Enforce 10 login attempts per 1 minute per IP
-    const rateLimitResponse = await enforceRateLimit(req, 'auth:login', 10, 60);
-    if (rateLimitResponse) return rateLimitResponse;
-
     try {
+      // Enforce 10 login attempts per 1 minute per IP
+      const rateLimitResponse = await enforceRateLimit(req, 'auth:login', 10, 60);
+      if (rateLimitResponse) return rateLimitResponse;
+
       const body = await req.json();
       const validated = loginSchema.safeParse(body);
       if (!validated.success) {
