@@ -3,6 +3,16 @@ import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 import { NextRequest } from 'next/server';
 
+// Ensure environment variables from .env / .env.local are loaded if not yet set in process.env
+if (!process.env.JWT_SECRET && typeof window === 'undefined') {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const dotenv = require('dotenv');
+    dotenv.config();
+    dotenv.config({ path: '.env.local' });
+  } catch {}
+}
+
 export function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET;
   if (!secret || secret.trim().length === 0) {
