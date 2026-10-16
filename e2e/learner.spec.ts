@@ -1,17 +1,13 @@
 import { test, expect } from '@playwright/test';
+import { loginAsRole } from './auth-helper';
 
 test.describe('Learner End-to-End Browser Flow', () => {
-  test('Learner login, legacy redirect, skill exploration, roadmap, pagination & role isolation', async ({ page }) => {
-    // 1. Navigate to login
-    await page.goto('/login');
-    await expect(page.locator('h1, h2, h3').first()).toBeVisible();
+  test('Learner login, legacy redirect, skill exploration, roadmap, pagination & role isolation', async ({ page, context }) => {
+    // 1. Authenticate as Learner with verified session
+    await loginAsRole(context, 'LEARNER');
 
-    // 2. Perform Login as Learner
-    await page.fill('input[type="email"], input[name="email"]', 'student@example.com');
-    await page.fill('input[type="password"], input[name="password"]', 'Demo1234!');
-    await page.click('button[type="submit"]');
-
-    // 3. Verify landing on learner dashboard
+    // 2. Navigate to learner dashboard
+    await page.goto('/learner/dashboard');
     await page.waitForURL('**/learner/dashboard', { timeout: 15000 });
     await expect(page.locator('h1')).toContainText('What do you want to learn today?');
 

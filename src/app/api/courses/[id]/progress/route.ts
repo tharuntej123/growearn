@@ -15,7 +15,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: courseId } = await params;
-  const userPayload = getCurrentUserFromRequest(req);
+  const userPayload = await getCurrentUserFromRequest(req);
   if (!userPayload) {
     return apiError('Unauthorized', 'UNAUTHORIZED', 401);
   }

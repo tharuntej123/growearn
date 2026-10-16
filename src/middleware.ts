@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 
-function getMiddlewareJwtSecret(): Uint8Array {
-  const secret = process.env.JWT_SECRET;
+function getMiddlewareAuthSecret(): Uint8Array {
+  const secret = process.env.AUTH_SECRET;
   if (!secret || secret.length < 32) {
-    return new TextEncoder().encode('__UNCONFIGURED_JWT_SECRET_FAIL_CLOSED_NO_TOKENS_VALID__');
+    return new TextEncoder().encode('__UNCONFIGURED_AUTH_SECRET_FAIL_CLOSED_NO_SESSIONS_VALID__');
   }
   return new TextEncoder().encode(secret);
 }
 
-const AUTH_COOKIE_NAME = 'growearn_auth_token';
-const LEGACY_COOKIE_NAME = 'ufp_auth_token';
+const AUTH_COOKIE_NAME = 'groearn_session';
+const LEGACY_COOKIE_NAME = 'growearn_auth_token';
+const LEGACY_UFP_COOKIE_NAME = 'ufp_auth_token';
 
 type CanonicalRole = 'LEARNER' | 'FREELANCER' | 'MENTOR' | 'COMPANY' | 'ADMIN';
 
@@ -81,12 +82,13 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL('/freelancer/dashboard', req.url));
   }
 
-  const token = req.cookies.get(AUTH_COOKIE_NAME)?.value || req.cookies.get(LEGACY_COOKIE_NAME)?.value;
+  // Extract session token from modern HTTP-only session cookie
+  const sessionToken = req.cookies.get(AUTH_COOKIE_NAME)?.value;
   let userPayload: { userId: string; email: string; role: string; name: string } | null = null;
 
-  if (token) {
+  if (sessionToken) {
     try {
-      const { payload } = await jwtVerify(token, getMiddlewareJwtSecret(), { algorithms: ['HS256'] });
+      const { payload } = await jwtVerify(sessionToken, getMiddlewareAuthSecret(), { algorithms: ['HS256'] });
       userPayload = payload as unknown as { userId: string; email: string; role: string; name: string };
     } catch {
       userPayload = null;
@@ -96,81 +98,104 @@ export async function middleware(req: NextRequest) {
   const normalizedRole = getNormalizedRole(userPayload?.role);
   const isAuthenticated = Boolean(userPayload);
 
+  // Helper response that clears obsolete legacy tokens if present
+  const cleanupObsoleteCookies = (res: NextResponse) => {
+    if (req.cookies.has(LEGACY_COOKIE_NAME)) {
+      res.cookies.set(LEGACY_COOKIE_NAME, '', { path: '/', maxAge: 0 });
+    }
+    if (req.cookies.has(LEGACY_UFP_COOKIE_NAME)) {
+      res.cookies.set(LEGACY_UFP_COOKIE_NAME, '', { path: '/', maxAge: 0 });
+    }
+    return res;
+  };
+
+  // If already authenticated and visiting auth entry points (/login, /signup, /auth/role-select),
+  // immediately route them to their database-authoritative role dashboard.
+  if (isAuthenticated && (pathname === '/login' || pathname === '/signup' || pathname === '/auth/role-select')) {
+    const properDashboard = getDefaultDashboard(normalizedRole);
+    return cleanupObsoleteCookies(NextResponse.redirect(new URL(properDashboard, req.url)));
+  }
+
   // Admin Area Protection (Admin ONLY)
   if (pathname.startsWith('/admin')) {
     if (!isAuthenticated) {
       const loginUrl = new URL('/login', req.url);
       loginUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(loginUrl);
+      return cleanupObsoleteCookies(NextResponse.redirect(loginUrl));
     }
     if (normalizedRole !== 'ADMIN') {
       const properDashboard = getDefaultDashboard(normalizedRole);
-      return NextResponse.redirect(new URL(properDashboard, req.url));
+      return cleanupObsoleteCookies(NextResponse.redirect(new URL(properDashboard, req.url)));
     }
   }
 
-  // Learner Area Protection
+  // Learner Area Protection (Learner and Admin ONLY; other roles strictly blocked)
   if (pathname.startsWith('/learner')) {
     if (!isAuthenticated) {
       const loginUrl = new URL('/login', req.url);
       loginUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(loginUrl);
+      return cleanupObsoleteCookies(NextResponse.redirect(loginUrl));
     }
     if (normalizedRole !== 'LEARNER' && normalizedRole !== 'ADMIN') {
       const properDashboard = getDefaultDashboard(normalizedRole);
-      return NextResponse.redirect(new URL(properDashboard, req.url));
+      return cleanupObsoleteCookies(NextResponse.redirect(new URL(properDashboard, req.url)));
     }
   }
 
-  // Company Area Protection
+  // Company Area Protection (Company and Admin ONLY; other roles strictly blocked)
   if (pathname.startsWith('/company')) {
     if (!isAuthenticated) {
       const loginUrl = new URL('/login', req.url);
       loginUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(loginUrl);
+      return cleanupObsoleteCookies(NextResponse.redirect(loginUrl));
     }
     if (normalizedRole !== 'COMPANY' && normalizedRole !== 'ADMIN') {
       const properDashboard = getDefaultDashboard(normalizedRole);
-      return NextResponse.redirect(new URL(properDashboard, req.url));
+      return cleanupObsoleteCookies(NextResponse.redirect(new URL(properDashboard, req.url)));
     }
   }
 
-  // Mentor Area Protection
+  // Mentor Area Protection (Mentor and Admin ONLY; other roles strictly blocked)
   if (pathname.startsWith('/mentor') && !pathname.startsWith('/mentors')) {
     if (!isAuthenticated) {
       const loginUrl = new URL('/login', req.url);
       loginUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(loginUrl);
+      return cleanupObsoleteCookies(NextResponse.redirect(loginUrl));
     }
     if (normalizedRole !== 'MENTOR' && normalizedRole !== 'ADMIN') {
       const properDashboard = getDefaultDashboard(normalizedRole);
-      return NextResponse.redirect(new URL(properDashboard, req.url));
+      return cleanupObsoleteCookies(NextResponse.redirect(new URL(properDashboard, req.url)));
     }
   }
 
-  // Freelancer Area Protection
+  // Freelancer Area Protection (Freelancer and Admin ONLY; other roles strictly blocked)
   if (pathname.startsWith('/freelancer')) {
     if (!isAuthenticated) {
       const loginUrl = new URL('/login', req.url);
       loginUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(loginUrl);
+      return cleanupObsoleteCookies(NextResponse.redirect(loginUrl));
     }
     if (normalizedRole !== 'FREELANCER' && normalizedRole !== 'ADMIN') {
       const properDashboard = getDefaultDashboard(normalizedRole);
-      return NextResponse.redirect(new URL(properDashboard, req.url));
+      return cleanupObsoleteCookies(NextResponse.redirect(new URL(properDashboard, req.url)));
     }
   }
 
-  // Onboarding Protection
+  // Onboarding Protection (Learner only; other roles directed to their dashboards)
   if (pathname.startsWith('/onboarding')) {
     if (!isAuthenticated) {
       const loginUrl = new URL('/login', req.url);
       loginUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(loginUrl);
+      return cleanupObsoleteCookies(NextResponse.redirect(loginUrl));
+    }
+    if (normalizedRole !== 'LEARNER' && normalizedRole !== 'ADMIN') {
+      const properDashboard = getDefaultDashboard(normalizedRole);
+      return cleanupObsoleteCookies(NextResponse.redirect(new URL(properDashboard, req.url)));
     }
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+  return cleanupObsoleteCookies(response);
 }
 
 export const config = {
@@ -184,5 +209,8 @@ export const config = {
     '/professional/:path*',
     '/freelancer/:path*',
     '/onboarding/:path*',
+    '/login',
+    '/signup',
+    '/auth/role-select',
   ],
 };

@@ -37,9 +37,9 @@ export class LocalStorageProvider implements IStorageProvider {
   private privateBaseDir = path.join(process.cwd(), 'storage', 'private');
 
   private getSigningSecret(): string {
-    const secret = process.env.STORAGE_SIGNING_SECRET || process.env.JWT_SECRET;
+    const secret = process.env.STORAGE_SIGNING_SECRET || process.env.AUTH_SECRET;
     if (!secret || secret.length < 32) {
-      throw new Error('STORAGE_SIGNING_SECRET or JWT_SECRET (min 32 chars) must be configured for secure storage URLs');
+      throw new Error('STORAGE_SIGNING_SECRET or AUTH_SECRET (min 32 chars) must be configured for secure storage URLs');
     }
     return secret;
   }

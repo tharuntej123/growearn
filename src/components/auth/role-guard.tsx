@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
-import { ROLE_INFO, DEMO_USERS, isDemoMode } from '@/lib/constants';
+import { ROLE_INFO } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
-import { Lock, ArrowRight, ShieldAlert, Zap } from 'lucide-react';
+import { Lock, ArrowRight, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
-import { toast } from 'sonner';
 
 interface RoleGuardProps {
   children: React.ReactNode;
@@ -22,9 +21,8 @@ export function RoleGuard({
   fallbackUrl,
   roleName = 'this section',
 }: RoleGuardProps) {
-  const { user, isLoading, login } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
-  const [isSwitching, setIsSwitching] = useState(false);
 
   useEffect(() => {
     if (isLoading) return;
@@ -74,35 +72,15 @@ export function RoleGuard({
 
   if (!isAllowed) {
     const userDashboard = ROLE_INFO[user.role]?.defaultDashboard || fallbackUrl || '/feed';
-
-    // Find demo account for target role
-    const matchingDemo = DEMO_USERS.find((d) => {
-      const dRole = d.role.toUpperCase();
-      return allowedRoles.some(
-        (ar) =>
-          ar === dRole ||
-          (ar === 'STUDENT' && dRole === 'LEARNER') ||
-          (ar === 'FREELANCER' && dRole === 'PROFESSIONAL') ||
-          (ar === 'COMPANY' && dRole === 'EMPLOYER')
-      );
-    });
-
-    const handleSwitchRole = async () => {
-      if (!matchingDemo) return;
-      setIsSwitching(true);
-      try {
-        const res = await login(matchingDemo.email, 'Demo1234!');
-        if (res.success) {
-          toast.success(`Switched active profile to ${matchingDemo.role}: ${matchingDemo.name}`);
-        } else {
-          toast.error(res.error || 'Failed to switch profile');
-        }
-      } catch {
-        toast.error('Failed to switch profile');
-      } finally {
-        setIsSwitching(false);
-      }
-    };
+    const displayRole = user.role === 'EMPLOYER' || user.role === 'COMPANY'
+      ? 'Company'
+      : user.role === 'STUDENT' || user.role === 'LEARNER'
+      ? 'Learner'
+      : user.role === 'PROFESSIONAL' || user.role === 'FREELANCER'
+      ? 'Freelancer'
+      : user.role === 'MENTOR'
+      ? 'Mentor'
+      : user.role;
 
     return (
       <div className="min-h-[70vh] flex items-center justify-center p-4">
@@ -113,28 +91,16 @@ export function RoleGuard({
           <div>
             <h2 className="text-xl font-bold text-slate-900">Access Restricted</h2>
             <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
-              This dashboard is only accessible by {roleName} accounts. Your current profile is registered as <strong className="text-slate-800 uppercase">{user.role}</strong>.
+              This section is strictly for {roleName} accounts. Your account is registered as <strong className="text-slate-800 uppercase">{user.role}</strong>. You have access only to your {displayRole} workspace.
             </p>
           </div>
 
           <div className="space-y-2 pt-2">
             <Link href={userDashboard} className="block">
               <Button variant="default" className="w-full gap-2 font-semibold shadow-md">
-                Go to Your {user.role === 'EMPLOYER' ? 'Company' : user.role} Dashboard <ArrowRight className="h-4 w-4" />
+                Go to Your {displayRole} Dashboard <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
-
-            {isDemoMode() && matchingDemo && (
-              <Button
-                variant="outline"
-                onClick={handleSwitchRole}
-                isLoading={isSwitching}
-                className="w-full gap-2 text-xs font-semibold border-emerald-300 text-emerald-800 hover:bg-emerald-50"
-              >
-                <Zap className="h-3.5 w-3.5 text-emerald-600" />
-                Switch to {roleName} Account (1-Click)
-              </Button>
-            )}
           </div>
         </div>
       </div>

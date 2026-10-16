@@ -1,10 +1,12 @@
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 import { NextRequest } from 'next/server';
+import { SignJWT, jwtVerify } from 'jose';
+import crypto from 'crypto';
+import { OAuth2Client } from 'google-auth-library';
+import prisma from '@/lib/prisma';
 
 // Ensure environment variables from .env / .env.local are loaded if not yet set in process.env
-if (!process.env.JWT_SECRET && typeof window === 'undefined') {
+if (!process.env.AUTH_SECRET && typeof window === 'undefined') {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const dotenv = require('dotenv');
@@ -13,55 +15,41 @@ if (!process.env.JWT_SECRET && typeof window === 'undefined') {
   } catch {}
 }
 
-export function getJwtSecret(): string {
-  const secret = process.env.JWT_SECRET;
+export function getAuthSecret(): string {
+  const secret = process.env.AUTH_SECRET;
   if (!secret || secret.trim().length === 0) {
-    throw new Error('FATAL SECURITY ERROR: JWT_SECRET environment variable is missing. Authentication cannot operate without a secure secret.');
+    throw new Error('FATAL SECURITY ERROR: AUTH_SECRET environment variable is missing. Authentication cannot operate without a secure secret.');
   }
   if (secret.length < 32) {
-    throw new Error('INSECURE CONFIGURATION ERROR: JWT_SECRET must be at least 32 characters long to ensure cryptographic token security.');
+    throw new Error('INSECURE CONFIGURATION ERROR: AUTH_SECRET must be at least 32 characters long to ensure cryptographic session security.');
   }
   return secret;
 }
 
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
-export const AUTH_COOKIE_NAME = 'growearn_auth_token';
-export const LEGACY_COOKIE_NAME = 'ufp_auth_token';
+export function getAuthSecretKey(): Uint8Array {
+  return new TextEncoder().encode(getAuthSecret());
+}
 
-export interface JWTPayload {
+export const AUTH_COOKIE_NAME = 'groearn_session';
+export const OAUTH_STATE_COOKIE_NAME = 'groearn_oauth_state';
+export const LINKING_COOKIE_NAME = 'groearn_account_linking';
+export const LEGACY_COOKIE_NAME = 'growearn_auth_token';
+export const LEGACY_UFP_COOKIE_NAME = 'ufp_auth_token';
+
+export const SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60; // 7 days
+
+export interface SessionPayload {
+  sessionId: string;
+  sessionToken: string;
   userId: string;
   email: string;
-  role: string;
+  role: CanonicalRole;
   name: string;
+  avatarUrl?: string | null;
 }
 
-export async function hashPassword(password: string): Promise<string> {
-  const salt = await bcrypt.genSalt(10);
-  return bcrypt.hash(password, salt);
-}
-
-export async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  return bcrypt.compare(password, hash);
-}
-
-export function signJwtToken(payload: JWTPayload): string {
-  return jwt.sign(payload, getJwtSecret(), {
-    algorithm: 'HS256',
-    expiresIn: JWT_EXPIRES_IN as jwt.SignOptions['expiresIn'],
-  });
-}
-
-export function verifyJwtToken(token: string): JWTPayload | null {
-  try {
-    const decoded = jwt.verify(token, getJwtSecret(), { algorithms: ['HS256'] }) as JWTPayload;
-    if (!decoded || !decoded.userId || !decoded.role) {
-      return null;
-    }
-    return decoded;
-  } catch {
-    return null;
-  }
-}
+// Backward-compatible type alias for existing codebase call sites
+export type JWTPayload = SessionPayload;
 
 export type CanonicalRole = 'LEARNER' | 'FREELANCER' | 'MENTOR' | 'COMPANY' | 'ADMIN';
 
@@ -103,37 +91,232 @@ export function isRoleAllowed(userRole: string | undefined, allowedRoles: string
   });
 }
 
-export async function getCurrentUserFromCookies(): Promise<JWTPayload | null> {
+export function getAppBaseUrl(): string {
+  const url = process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+  return url.replace(/\/$/, '');
+}
+
+export function getGoogleOAuthClient(redirectUri?: string): OAuth2Client {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const defaultRedirect = `${getAppBaseUrl()}/api/auth/google/callback`;
+
+  return new OAuth2Client({
+    clientId: clientId || 'unconfigured_google_client_id',
+    clientSecret: clientSecret || 'unconfigured_google_client_secret',
+    redirectUri: redirectUri || defaultRedirect,
+  });
+}
+
+export function isGoogleOAuthConfigured(): boolean {
+  const id = process.env.GOOGLE_CLIENT_ID;
+  const sec = process.env.GOOGLE_CLIENT_SECRET;
+  return Boolean(
+    id &&
+    id.trim().length > 0 &&
+    !id.includes('your-google-client-id') &&
+    sec &&
+    sec.trim().length > 0 &&
+    !sec.includes('your-google-client-secret')
+  );
+}
+
+// Generates cryptographically secure OAuth 2.0 PKCE code verifier and challenge
+export function generatePKCE() {
+  const codeVerifier = crypto.randomBytes(32).toString('base64url');
+  const codeChallenge = crypto
+    .createHash('sha256')
+    .update(codeVerifier)
+    .digest('base64url');
+  return { codeVerifier, codeChallenge };
+}
+
+// Signs OAuth state containing role and action to guarantee server integrity across redirect
+export async function createSignedOAuthState(params: {
+  role?: string;
+  action: 'signup' | 'login';
+  redirectUrl?: string;
+}): Promise<{ stateToken: string; randomState: string; codeVerifier: string; codeChallenge: string }> {
+  const randomState = crypto.randomBytes(24).toString('hex');
+  const { codeVerifier, codeChallenge } = generatePKCE();
+
+  const secretKey = getAuthSecretKey();
+  const stateToken = await new SignJWT({
+    state: randomState,
+    role: params.role ? normalizeRole(params.role) : undefined,
+    action: params.action,
+    redirectUrl: params.redirectUrl || undefined,
+  })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('10m') // State expires in 10 minutes
+    .sign(secretKey);
+
+  return { stateToken, randomState, codeVerifier, codeChallenge };
+}
+
+// Verifies OAuth state returned from Google callback against signed server state
+export async function verifySignedOAuthState(
+  stateToken: string,
+  returnedState: string
+): Promise<{ valid: boolean; role?: CanonicalRole; action: 'signup' | 'login'; redirectUrl?: string; error?: string }> {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(AUTH_COOKIE_NAME)?.value || cookieStore.get(LEGACY_COOKIE_NAME)?.value;
-    if (!token) return null;
-    return verifyJwtToken(token);
+    const secretKey = getAuthSecretKey();
+    const { payload } = await jwtVerify(stateToken, secretKey, { algorithms: ['HS256'] });
+
+    if (!payload || payload.state !== returnedState) {
+      return { valid: false, action: 'login', error: 'OAuth state mismatch: possible CSRF or tampered state parameter' };
+    }
+
+    const action = payload.action === 'signup' ? 'signup' : 'login';
+    let role: CanonicalRole | undefined = undefined;
+    if (payload.role && typeof payload.role === 'string') {
+      try {
+        role = normalizeRole(payload.role);
+      } catch {
+        role = undefined;
+      }
+    }
+
+    return {
+      valid: true,
+      action,
+      role,
+      redirectUrl: typeof payload.redirectUrl === 'string' ? payload.redirectUrl : undefined,
+    };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Invalid state token';
+    return { valid: false, action: 'login', error: `OAuth state validation failed: ${msg}` };
+  }
+}
+
+// Creates a database-backed session and returns signed session cookie value
+export async function createDatabaseSession(user: {
+  id: string;
+  email: string;
+  role: string;
+  name: string;
+  avatarUrl?: string | null;
+}): Promise<{ sessionToken: string; cookieValue: string }> {
+  const canonicalRole = normalizeRole(user.role);
+  const sessionToken = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + SESSION_MAX_AGE_SECONDS * 1000);
+
+  const dbSession = await prisma.session.create({
+    data: {
+      sessionToken,
+      userId: user.id,
+      expiresAt,
+    },
+  });
+
+  const secretKey = getAuthSecretKey();
+  const cookieValue = await new SignJWT({
+    sessionId: dbSession.id,
+    sessionToken,
+    userId: user.id,
+    email: user.email,
+    role: canonicalRole,
+    name: user.name,
+    avatarUrl: user.avatarUrl || null,
+  })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime(`${SESSION_MAX_AGE_SECONDS}s`)
+    .sign(secretKey);
+
+  return { sessionToken, cookieValue };
+}
+
+// Verifies a signed session cookie and checks active DB session status
+export async function verifySessionCookie(cookieValue: string): Promise<SessionPayload | null> {
+  try {
+    const secretKey = getAuthSecretKey();
+    const { payload } = await jwtVerify(cookieValue, secretKey, { algorithms: ['HS256'] });
+
+    if (!payload || !payload.userId || !payload.sessionToken) {
+      return null;
+    }
+
+    // Verify session existence in database (enforces revocation and expiry)
+    const dbSession = await prisma.session.findUnique({
+      where: { sessionToken: payload.sessionToken as string },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            role: true,
+            name: true,
+            avatarUrl: true,
+          },
+        },
+      },
+    });
+
+    if (!dbSession || dbSession.expiresAt < new Date()) {
+      return null;
+    }
+
+    return {
+      sessionId: dbSession.id,
+      sessionToken: dbSession.sessionToken,
+      userId: dbSession.user.id,
+      email: dbSession.user.email,
+      role: normalizeRole(dbSession.user.role),
+      name: dbSession.user.name,
+      avatarUrl: dbSession.user.avatarUrl,
+    };
   } catch {
     return null;
   }
 }
 
-export function getCurrentUserFromRequest(req: NextRequest): JWTPayload | null {
-  const authHeader = req.headers.get('authorization');
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.split(' ')[1];
-    const payload = verifyJwtToken(token);
-    if (payload) return payload;
-  }
+// Fast edge / middleware verification without database roundtrip
+export async function verifySessionCookieFast(cookieValue: string): Promise<SessionPayload | null> {
+  try {
+    const secretKey = getAuthSecretKey();
+    const { payload } = await jwtVerify(cookieValue, secretKey, { algorithms: ['HS256'] });
 
-  const token = req.cookies.get(AUTH_COOKIE_NAME)?.value || req.cookies.get(LEGACY_COOKIE_NAME)?.value;
-  if (token) {
-    return verifyJwtToken(token);
-  }
+    if (!payload || !payload.userId || !payload.role) {
+      return null;
+    }
 
-  return null;
+    return {
+      sessionId: (payload.sessionId as string) || '',
+      sessionToken: (payload.sessionToken as string) || '',
+      userId: payload.userId as string,
+      email: payload.email as string,
+      role: normalizeRole(payload.role as string),
+      name: (payload.name as string) || '',
+      avatarUrl: (payload.avatarUrl as string) || null,
+    };
+  } catch {
+    return null;
+  }
 }
 
-export async function getCurrentUser(req?: NextRequest): Promise<(JWTPayload & { id: string }) | null> {
-  let payload: JWTPayload | null = null;
+export async function getCurrentUserFromCookies(): Promise<SessionPayload | null> {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get(AUTH_COOKIE_NAME)?.value;
+    if (!token) return null;
+    return verifySessionCookie(token);
+  } catch {
+    return null;
+  }
+}
+
+export async function getCurrentUserFromRequest(req: NextRequest): Promise<SessionPayload | null> {
+  const token = req.cookies.get(AUTH_COOKIE_NAME)?.value;
+  if (!token) return null;
+  return verifySessionCookie(token);
+}
+
+export async function getCurrentUser(req?: NextRequest): Promise<(SessionPayload & { id: string }) | null> {
+  let payload: SessionPayload | null = null;
   if (req) {
-    payload = getCurrentUserFromRequest(req);
+    payload = await getCurrentUserFromRequest(req);
   }
   if (!payload) {
     payload = await getCurrentUserFromCookies();
@@ -145,6 +328,14 @@ export async function getCurrentUser(req?: NextRequest): Promise<(JWTPayload & {
   };
 }
 
+export async function revokeSession(sessionToken: string): Promise<void> {
+  try {
+    await prisma.session.deleteMany({
+      where: { sessionToken },
+    });
+  } catch {}
+}
+
 export function getAuthCookieOptions() {
   const isHttps = process.env.NEXT_PUBLIC_APP_URL?.startsWith('https://') || Boolean(process.env.VERCEL_URL?.startsWith('https://'));
   const isProd = process.env.NODE_ENV === 'production';
@@ -152,7 +343,7 @@ export function getAuthCookieOptions() {
     httpOnly: true,
     secure: isProd || Boolean(isHttps),
     sameSite: 'lax' as const,
-    maxAge: 60 * 60 * 24 * 7, // 7 days
+    maxAge: SESSION_MAX_AGE_SECONDS,
     path: '/',
   };
 }

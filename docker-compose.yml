@@ -78,7 +78,10 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://${POSTGRES_USER:-groearn}:${POSTGRES_PASSWORD:-groearn_secure_password}@postgres:5432/${POSTGRES_DB:-groearn}?schema=public
-      - JWT_SECRET=${JWT_SECRET}
+      - AUTH_SECRET=${AUTH_SECRET}
+      - AUTH_URL=${AUTH_URL:-http://localhost:3000}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - GROQ_API_KEY=${GROQ_API_KEY}
       - EMBEDDING_BASE_URL=http://embedding-service:11434
       - BGE_M3_MODEL=${BGE_M3_MODEL:-bge-m3}

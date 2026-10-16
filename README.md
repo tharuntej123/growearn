@@ -312,7 +312,7 @@ growearn/
 | **AI Embeddings** | [BGE-M3](https://ollama.com/) | `1024-dim` | Dense semantic embeddings served via Ollama / Docker |
 | **LLM Inference** | [Groq Cloud](https://groq.com/) | Llama 3.3 70B | Grounded responses, proposal generation, resume parsing |
 | **Payments** | [Cashfree PG](https://www.cashfree.com/) | `v2023-08-01` | Sandbox & Production marketplace checkout, HMAC-SHA256 webhooks |
-| **Auth & Security** | JWT & Bcrypt.js | `jose` / `bcryptjs` | HttpOnly secure cookies, password hashing, server-side RBAC |
+| **Auth & Security** | Google OAuth & Sessions | `google-auth-library` / `jose` | Exclusive Google OAuth 2.0 / OIDC, PKCE, HttpOnly secure cookies, server-side RBAC |
 | **Validation** | [Zod](https://zod.dev/) | `3.24.2` | Runtime schema validation for requests and API inputs |
 | **Testing** | TSX & Playwright | `4.19` / `1.63` | 59 automated integration tests and browser E2E workflows |
 
@@ -351,8 +351,10 @@ Verify or configure your environment variables:
 | Variable | Description | Default / Example |
 | :--- | :--- | :--- |
 | `DATABASE_URL` | PostgreSQL connection string | `postgresql://growearn:growearn_secret@localhost:5432/growearn_db` |
-| `JWT_SECRET` | Secret key for JWT signing (minimum 32 characters) | `your_secure_32_character_jwt_secret_key_here` |
-| `JWT_EXPIRES_IN` | Token expiration duration | `7d` |
+| `AUTH_SECRET` | Secret key for session signing (minimum 32 characters) | `your_secure_32_character_auth_secret_key_here` |
+| `AUTH_URL` | Application root URL | `http://localhost:3000` |
+| `GOOGLE_CLIENT_ID` | Google OAuth 2.0 Client ID | `your-google-client-id.apps.googleusercontent.com` |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth 2.0 Client Secret | `your-google-client-secret` |
 | `EMBEDDING_BASE_URL` | Local embedding server URL | `http://127.0.0.1:11434` |
 | `BGE_M3_MODEL` | Embedding model identifier | `bge-m3` |
 | `GROQ_API_KEY` | Groq Cloud API Key for LLM chat & proposals | `gsk_...` |

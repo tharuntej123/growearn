@@ -13,7 +13,7 @@ datasource db {
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
-  passwordHash  String
+  passwordHash  String?
   name          String
   role          String    @default("LEARNER") // LEARNER, MENTOR, PROFESSIONAL, EMPLOYER, ADMIN
   avatarUrl     String?
@@ -27,6 +27,8 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  accounts              Account[]
+  sessions              Session[]
   profile               Profile?
   mentorProfile         MentorProfile?
   skills                UserSkill[]
@@ -859,4 +861,31 @@ model RateLimit {
 
   @@index([expiresAt])
   @@map("rate_limits")
+}
+
+model Account {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider          String   // "google"
+  providerAccountId String   // Google sub identifier
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
+  @@index([sessionToken])
+  @@index([expiresAt])
 }

@@ -41,18 +41,22 @@ export class UserRepository {
 
   static async create(data: {
     email: string;
-    passwordHash: string;
+    passwordHash?: string | null;
     name: string;
     role: string;
+    avatarUrl?: string | null;
+    isVerified?: boolean;
   }) {
     const canonicalRole = normalizeRole(data.role);
     const isMentor = canonicalRole === 'MENTOR';
     const user = await prisma.user.create({
       data: {
         email: data.email.toLowerCase(),
-        passwordHash: data.passwordHash,
+        passwordHash: data.passwordHash || null,
         name: data.name,
         role: canonicalRole,
+        avatarUrl: data.avatarUrl || null,
+        isVerified: data.isVerified ?? false,
         profile: {
           create: {
             title: canonicalRole === 'LEARNER' ? 'Learner / Student' : isMentor ? 'Expert Mentor' : canonicalRole === 'FREELANCER' ? 'Verified Professional' : 'Organization Leader',

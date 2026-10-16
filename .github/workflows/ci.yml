@@ -29,8 +29,10 @@ jobs:
     env:
       DATABASE_URL: "postgresql://postgres:postgrespassword@127.0.0.1:5432/groearn_test?sslmode=disable"
       DIRECT_URL: "postgresql://postgres:postgrespassword@127.0.0.1:5432/groearn_test?sslmode=disable"
-      JWT_SECRET: "ci-test-jwt-secret-key-2026-production-testing-random-grade"
-      JWT_EXPIRES_IN: "7d"
+      AUTH_SECRET: "ci-test-auth-secret-key-minimum-32-chars-long-secure-random"
+      AUTH_URL: "http://127.0.0.1:3000"
+      GOOGLE_CLIENT_ID: "mock-ci-google-client-id.apps.googleusercontent.com"
+      GOOGLE_CLIENT_SECRET: "mock-ci-google-client-secret"
       MOCK_AI: "true"
       NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3000"
       STORAGE_PROVIDER: "local"
@@ -105,7 +107,10 @@ jobs:
           NODE_ENV: "production"
           DATABASE_URL: "postgresql://postgres:postgrespassword@127.0.0.1:5432/groearn_test?sslmode=disable"
           DIRECT_URL: "postgresql://postgres:postgrespassword@127.0.0.1:5432/groearn_test?sslmode=disable"
-          JWT_SECRET: "ci-test-jwt-secret-key-2026-production-testing-random-grade"
+          AUTH_SECRET: "ci-test-auth-secret-key-minimum-32-chars-long-secure-random"
+          AUTH_URL: "http://127.0.0.1:3000"
+          GOOGLE_CLIENT_ID: "mock-ci-google-client-id.apps.googleusercontent.com"
+          GOOGLE_CLIENT_SECRET: "mock-ci-google-client-secret"
           NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3000"
 
       - name: Upload Playwright Test Report Artifacts

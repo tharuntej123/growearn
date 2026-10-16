@@ -1,7 +1,6 @@
 // Production Database Seed Script for GrowEarn Platform.
 
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
 import { generateEmbedding, isEmbeddingConfigured } from '../src/lib/ai/embeddings';
 import { PRODUCTION_ROADMAPS_CATALOG } from '../src/lib/ai/roadmaps-catalog';
 import { RoadmapRepository } from '../src/repositories/roadmap.repository';
@@ -102,7 +101,7 @@ async function main() {
   await prisma.profile.deleteMany().catch(() => {});
   await prisma.user.deleteMany().catch(() => {});
 
-  const demoPasswordHash = await bcrypt.hash('Demo1234!', 10);
+  const demoPasswordHash = 'google-oauth-seed-account';
 
   // 1. Technical Skills (30 In-Demand Skills)
   const skillsData = [

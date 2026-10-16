@@ -23,6 +23,23 @@ export default function RoleSelectPage() {
   const [selectedRole, setSelectedRole] = useState<string>(user?.role || ROLES.LEARNER);
   const [isLoading, setIsLoading] = useState(false);
 
+  React.useEffect(() => {
+    if (user?.role) {
+      const canonical = user.role.toUpperCase();
+      if (canonical === 'LEARNER' || canonical === 'STUDENT') {
+        router.replace('/learner/dashboard');
+      } else if (canonical === 'FREELANCER' || canonical === 'PROFESSIONAL') {
+        router.replace('/freelancer/dashboard');
+      } else if (canonical === 'MENTOR') {
+        router.replace('/mentor/dashboard');
+      } else if (canonical === 'COMPANY' || canonical === 'EMPLOYER') {
+        router.replace('/company/dashboard');
+      } else if (canonical === 'ADMIN') {
+        router.replace('/admin/dashboard');
+      }
+    }
+  }, [user, router]);
+
   const roleChoices = [
     {
       role: ROLES.LEARNER,

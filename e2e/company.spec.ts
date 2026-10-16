@@ -1,14 +1,13 @@
 import { test, expect } from '@playwright/test';
+import { loginAsRole } from './auth-helper';
 
 test.describe('Company End-to-End Browser Flow', () => {
-  test('Company login, legacy redirect, dashboard access, job creation & candidate discovery', async ({ page }) => {
-    // 1. Login as Company
-    await page.goto('/login');
-    await page.fill('input[type="email"], input[name="email"]', 'careers@novatech-solutions.io');
-    await page.fill('input[type="password"], input[name="password"]', 'Demo1234!');
-    await page.click('button[type="submit"]');
+  test('Company login, legacy redirect, dashboard access, job creation & candidate discovery', async ({ page, context }) => {
+    // 1. Authenticate as Company with verified session
+    await loginAsRole(context, 'COMPANY');
 
     // 2. Verify landing on canonical Company Dashboard
+    await page.goto('/company/dashboard');
     await page.waitForURL('**/company/dashboard', { timeout: 15000 });
     await expect(page.locator('h1').first()).toContainText('Company ATS & Hiring Workspace');
 

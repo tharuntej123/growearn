@@ -29,35 +29,18 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string; user?: User }>;
-  register: (name: string, email: string, password: string, confirmPassword: string, role?: string) => Promise<{ success: boolean; error?: string; user?: User }>;
+  signInWithGoogle: (role?: string, redirectUrl?: string) => void;
   selectRole: (role: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-const USER_STORAGE_KEY = 'growearn_user_session';
-const LEGACY_STORAGE_KEY = 'ufp_user_session';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-
-  const updateUserState = (newUser: User | null) => {
-    setUser(newUser);
-    if (typeof window !== 'undefined') {
-      try {
-        if (newUser) {
-          localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(newUser));
-        } else {
-          localStorage.removeItem(USER_STORAGE_KEY);
-          localStorage.removeItem(LEGACY_STORAGE_KEY);
-        }
-      } catch {}
-    }
-  };
 
   const refreshUser = async () => {
     try {
@@ -65,116 +48,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (res.ok) {
         const json = await res.json();
         if (json.success && json.data?.user) {
-          updateUserState(json.data.user);
+          setUser(json.data.user);
         } else {
-          updateUserState(null);
+          setUser(null);
         }
       } else {
-        updateUserState(null);
+        setUser(null);
       }
     } catch {
+      setUser(null);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const cached = localStorage.getItem(USER_STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          setUser(parsed);
-          setIsLoading(false);
-        }
-      } catch {}
-    }
-
+    // Initial fetch of authoritative server session
     refreshUser();
   }, []);
 
-  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string; user?: User }> => {
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      let data: any = null;
-      try {
-        data = await res.json();
-      } catch {
-        if (!res.ok) {
-          return { success: false, error: `Server error (${res.status}: ${res.statusText || 'Login failed'}). Please try again.` };
-        }
-      }
-
-      if (!res.ok || !data?.success) {
-        const errorMsg =
-          typeof data?.error === 'string'
-            ? data.error
-            : data?.error?.message || data?.message || 'Invalid email or password';
-        return { success: false, error: errorMsg };
-      }
-
-      const loggedUser = data.data?.user;
-      if (loggedUser) {
-        updateUserState(loggedUser);
-        setIsLoading(false);
-      } else {
-        await refreshUser();
-      }
-      return { success: true, user: loggedUser };
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : '';
-      if (msg.includes('abort') || msg.includes('timeout')) {
-        return { success: false, error: 'Connection timed out. Please check your internet and retry.' };
-      }
-      return { success: false, error: 'Unable to connect to the server. Please verify the application is running.' };
-    }
-  };
-
-  const register = async (name: string, email: string, password: string, confirmPassword: string, role?: string): Promise<{ success: boolean; error?: string; user?: User }> => {
-    try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, confirmPassword, role }),
-      });
-
-      let data: any = null;
-      try {
-        data = await res.json();
-      } catch {
-        if (!res.ok) {
-          return { success: false, error: `Server error (${res.status}: ${res.statusText || 'Registration failed'}). Please try again.` };
-        }
-      }
-
-      if (!res.ok || !data?.success) {
-        const errorMsg =
-          typeof data?.error === 'string'
-            ? data.error
-            : data?.error?.message || data?.message || 'Registration failed';
-        return { success: false, error: errorMsg };
-      }
-
-      const newUser = data.data?.user;
-      if (newUser) {
-        updateUserState(newUser);
-        setIsLoading(false);
-      } else {
-        await refreshUser();
-      }
-      return { success: true, user: newUser };
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : '';
-      if (msg.includes('abort') || msg.includes('timeout')) {
-        return { success: false, error: 'Registration timed out. Please check your internet connection and try again.' };
-      }
-      return { success: false, error: 'Unable to connect to the server. Please ensure the server is running.' };
-    }
+  const signInWithGoogle = (role?: string, redirectUrl?: string) => {
+    const params = new URLSearchParams();
+    if (role) params.set('role', role);
+    if (redirectUrl) params.set('redirect', redirectUrl);
+    const queryString = params.toString();
+    window.location.href = `/api/auth/google/init${queryString ? `?${queryString}` : ''}`;
   };
 
   const selectRole = async (role: string) => {
@@ -203,7 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (data.data?.user) {
-        updateUserState(data.data.user);
+        setUser(data.data.user);
       } else {
         await refreshUser();
       }
@@ -216,10 +114,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
-      updateUserState(null);
+      setUser(null);
       router.push('/');
     } catch {
-      updateUserState(null);
+      setUser(null);
       router.push('/');
     }
   };
@@ -229,8 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         isLoading,
-        login,
-        register,
+        signInWithGoogle,
         selectRole,
         logout,
         refreshUser,

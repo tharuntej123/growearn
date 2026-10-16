@@ -1,14 +1,13 @@
 import { test, expect } from '@playwright/test';
+import { loginAsRole } from './auth-helper';
 
 test.describe('Mentor End-to-End Browser Flow', () => {
-  test('Mentor login, dashboard access, request management, and course creation flow', async ({ page }) => {
-    // 1. Login as Mentor
-    await page.goto('/login');
-    await page.fill('input[type="email"], input[name="email"]', 'priya.sharma@example.com');
-    await page.fill('input[type="password"], input[name="password"]', 'Demo1234!');
-    await page.click('button[type="submit"]');
+  test('Mentor login, dashboard access, request management, and course creation flow', async ({ page, context }) => {
+    // 1. Authenticate as Mentor with verified session
+    await loginAsRole(context, 'MENTOR');
 
     // 2. Verify Mentor Dashboard
+    await page.goto('/mentor/dashboard');
     await page.waitForURL('**/mentor/dashboard', { timeout: 15000 });
     await expect(page.locator('h1, h2').first()).toBeVisible({ timeout: 10000 });
 

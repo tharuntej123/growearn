@@ -1,14 +1,13 @@
 import { test, expect } from '@playwright/test';
+import { loginAsRole } from './auth-helper';
 
 test.describe('Freelancer End-to-End Browser Flow', () => {
-  test('Freelancer login, legacy redirect, dashboard, job discovery, AI proposal generator & applications flow', async ({ page }) => {
-    // 1. Login as Freelancer
-    await page.goto('/login');
-    await page.fill('input[type="email"], input[name="email"]', 'professional@example.com');
-    await page.fill('input[type="password"], input[name="password"]', 'Demo1234!');
-    await page.click('button[type="submit"]');
+  test('Freelancer login, legacy redirect, dashboard, job discovery, AI proposal generator & applications flow', async ({ page, context }) => {
+    // 1. Authenticate as Freelancer with verified session
+    await loginAsRole(context, 'FREELANCER');
 
     // 2. Verify landing on canonical Freelancer Dashboard
+    await page.goto('/freelancer/dashboard');
     await page.waitForURL('**/freelancer/dashboard', { timeout: 15000 });
     await expect(page.locator('h1').first()).toContainText('Freelancer Workspace');
 

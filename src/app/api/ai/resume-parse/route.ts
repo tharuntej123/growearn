@@ -11,7 +11,7 @@ const resumeParseSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const userPayload = getCurrentUserFromRequest(req);
+  const userPayload = await getCurrentUserFromRequest(req);
   if (!userPayload) {
     return apiError('Unauthorized', 'UNAUTHORIZED', 401);
   }

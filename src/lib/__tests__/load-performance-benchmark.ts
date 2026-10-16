@@ -6,7 +6,6 @@ import { UserRepository } from '../../repositories/user.repository';
 import { SkillRAGService } from '../ai/skill-rag.service';
 import { RecommendationService } from '../../services/recommendation.service';
 import { HybridMatcher } from '../ai/hybrid-matcher';
-import { AuthService } from '../../services/auth.service';
 import { getUserAIContext } from '../../services/user-context.service';
 
 interface MetricResult {

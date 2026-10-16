@@ -25,25 +25,9 @@ import { DEMO_USERS, isDemoMode } from '@/lib/constants';
 import { toast } from 'sonner';
 
 export default function LandingPage() {
-  const { login } = useAuth();
   const router = useRouter();
   const [activeRoleTab, setActiveRoleTab] = useState<'student' | 'professional' | 'mentor' | 'company'>('student');
-  const [isLoggingInDemo, setIsLoggingInDemo] = useState(false);
   const showDemo = isDemoMode();
-
-  const handleQuickDemoLogin = async (email: string, targetDashboard: string) => {
-    setIsLoggingInDemo(true);
-    toast.loading('Logging in to demo environment...');
-    const res = await login(email, 'Demo1234!');
-    toast.dismiss();
-    setIsLoggingInDemo(false);
-    if (res.success) {
-      toast.success(`Welcome to ${email}!`);
-      router.push(targetDashboard);
-    } else {
-      toast.error(res.error || 'Failed to log in to demo account');
-    }
-  };
 
   const roleJourneys = {
     student: {
@@ -137,25 +121,13 @@ export default function LandingPage() {
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
               <div className="flex items-center gap-2 text-slate-700 font-semibold">
                 <Zap className="h-4 w-4 text-emerald-600" />
-                <span>1-Click Instant Guest Demo Logins:</span>
+                <span>Explore Workspaces by Role:</span>
               </div>
               <div className="flex flex-wrap gap-2 justify-center">
                 {DEMO_USERS.map((demo) => (
                   <button
                     key={demo.email}
-                    disabled={isLoggingInDemo}
-                    onClick={() =>
-                      handleQuickDemoLogin(
-                        demo.email,
-                        (demo.role as string) === 'LEARNER' || (demo.role as string) === 'STUDENT'
-                          ? '/learner/dashboard'
-                          : (demo.role as string) === 'MENTOR'
-                          ? '/mentor/dashboard'
-                          : (demo.role as string) === 'FREELANCER' || (demo.role as string) === 'PROFESSIONAL'
-                          ? '/freelancer/dashboard'
-                          : '/company/dashboard'
-                      )
-                    }
+                    onClick={() => router.push(`/signup?role=${demo.role}`)}
                     className="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800 font-medium transition-all hover:border-emerald-400 flex items-center gap-1.5 cursor-pointer"
                   >
                     <span className="font-bold text-emerald-700">{demo.role}:</span> {demo.name.split(' ')[0]}

@@ -1,5 +1,6 @@
+import { NextRequest } from 'next/server';
 import { AuthController } from '@/controllers/auth.controller';
 
-export async function POST() {
-  return AuthController.logout();
+export async function POST(req: NextRequest) {
+  return AuthController.logout(req);
 }

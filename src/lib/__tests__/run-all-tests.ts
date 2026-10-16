@@ -18,8 +18,17 @@ import { EMBEDDING_DIMENSION, LocalBGE3EmbeddingProvider } from '../ai/embedding
 import { formatVectorForPg } from '../ai/vector-store';
 import { PaymentService } from '../../services/payment/payment.service';
 import { PaymentProviderFactory } from '../../services/payment/payment-provider.factory';
-import { getJwtSecret, normalizeRole, isValidRole } from '../auth';
 import crypto from 'crypto';
+import {
+  getAuthSecret,
+  normalizeRole,
+  isValidRole,
+  isRoleAllowed,
+  createSignedOAuthState,
+  verifySignedOAuthState,
+  verifySessionCookie,
+  revokeSession,
+} from '../auth';
 
 interface TestResult {
   name: string;
@@ -70,7 +79,7 @@ async function runMasterTestSuite() {
   // SUITE 1: SECURITY, AUTHENTICATION & IDOR ISOLATION
   console.log('🔒 SUITE 1: Security, Auth & IDOR Isolation...');
   try {
-    // 1.1: ADMIN registration attack test via Zod schema
+    // 1.1: ADMIN registration attack test via Zod schema & OAuth logic
     const adminAttackPayload = {
       name: 'Hacker Admin',
       email: 'attacker@evil.com',
@@ -85,14 +94,13 @@ async function runMasterTestSuite() {
       'ADMIN was allowed in public registration schema'
     );
 
-    // 1.2: Direct AuthService ADMIN escalation attack attempt
+    // 1.2: Direct AuthService Google OAuth ADMIN escalation attack attempt
     try {
-      await AuthService.register({
-        name: 'Hacker Admin',
+      await AuthService.processGoogleIdentity({
+        googleSub: 'google-attacker-sub',
         email: 'attacker-direct@evil.com',
-        password: 'StrongPassword123!',
-        confirmPassword: 'StrongPassword123!',
-        role: 'ADMIN' as any,
+        name: 'Hacker Admin',
+        role: 'ADMIN',
       });
       assert(false, 'AuthService Blocks ADMIN Role Escalation', 'AuthService allowed ADMIN creation');
     } catch (err: any) {
@@ -103,46 +111,56 @@ async function runMasterTestSuite() {
       );
     }
 
-    // 1.3: Valid User Registration & Password Hashing
-    const testLearnerEmail = `test-learner-${Date.now()}@growearn-test.internal`;
-    const registeredResult = await AuthService.register({
-      name: 'Automated Test Learner',
+    // 1.3: Valid Google User Signup with Permitted Role (LEARNER)
+    const testGoogleSub = `google-sub-${Date.now()}`;
+    const testLearnerEmail = `test-google-learner-${Date.now()}@growearn-test.internal`;
+    const registeredResult = await AuthService.processGoogleIdentity({
+      googleSub: testGoogleSub,
       email: testLearnerEmail,
-      password: 'SecurePassword123!',
-      confirmPassword: 'SecurePassword123!',
+      name: 'Automated Test Google Learner',
       role: 'LEARNER',
+      emailVerified: true,
     });
 
     const registeredUser = registeredResult.user;
     assert(
-      Boolean(registeredUser.id && registeredUser.role === 'LEARNER'),
-      'Valid Learner User Registration & Role Assignment'
+      Boolean(registeredUser && registeredUser.id && registeredUser.role === 'LEARNER' && registeredResult.session),
+      'Google OAuth: New User Signup with LEARNER Role & Database Session Issuance'
     );
 
-    const dbUser = await prisma.user.findUnique({ where: { id: registeredUser.id } });
-    assert(
-      Boolean(dbUser && dbUser.passwordHash.startsWith('$2')),
-      'Password Hashed with Bcrypt in Database'
-    );
-
-    // 1.4: Login verification & Token Generation
-    const loginResult = await AuthService.login({
-      email: testLearnerEmail,
-      password: 'SecurePassword123!',
+    const dbAccount = await prisma.account.findUnique({
+      where: {
+        provider_providerAccountId: {
+          provider: 'google',
+          providerAccountId: testGoogleSub,
+        },
+      },
     });
     assert(
-      Boolean(loginResult.token && loginResult.user.id === registeredUser.id),
-      'Authentication Login & JWT Token Generation'
+      Boolean(dbAccount && dbAccount.userId === registeredUser?.id),
+      'Google OAuth: Identity Account Mapping (Google Sub) Persisted with Unique Constraint'
+    );
+
+    // 1.4: Existing Google User Login & Role Preservation Invariant
+    const loginResult = await AuthService.processGoogleIdentity({
+      googleSub: testGoogleSub,
+      email: testLearnerEmail,
+      name: 'Automated Test Google Learner',
+      role: 'COMPANY', // Malicious attempt to change role during login
+    });
+    assert(
+      Boolean(loginResult.user && loginResult.user.id === registeredUser?.id && loginResult.user.role === 'LEARNER'),
+      'Google OAuth: Existing User Login Preserves DB Role (Prevents Role Overwrite Attack)'
     );
 
     // 1.5: IDOR Test: User A cannot read User B's conversation
     const otherUser = await prisma.user.findFirst({
-      where: { id: { not: registeredUser.id } },
+      where: { id: { not: registeredUser!.id } },
     });
     if (otherUser) {
       // Create a private conversation between otherUser and a third user
       const thirdUser = await prisma.user.findFirst({
-        where: { id: { notIn: [registeredUser.id, otherUser.id] } },
+        where: { id: { notIn: [registeredUser!.id, otherUser.id] } },
       });
       if (thirdUser) {
         const privateConv = await MessagingRepository.getOrCreateDirectConversation(
@@ -152,7 +170,7 @@ async function runMasterTestSuite() {
 
         try {
           // Attempt IDOR: registeredUser trying to read privateConv messages
-          await MessagingRepository.getConversationMessages(privateConv.id, registeredUser.id);
+          await MessagingRepository.getConversationMessages(privateConv.id, registeredUser!.id);
           assert(false, 'IDOR Prevention: User Cannot Access Unauthorized Conversation', 'Access was erroneously granted');
         } catch (idorErr: any) {
           assert(
@@ -163,29 +181,85 @@ async function runMasterTestSuite() {
       }
     }
 
-    // 1.6: JWT_SECRET Mandatory Environment Validation
-    const currentSecret = process.env.JWT_SECRET;
+    // 1.6: AUTH_SECRET Mandatory Environment Validation
+    const currentSecret = process.env.AUTH_SECRET;
     try {
-      delete process.env.JWT_SECRET;
+      delete process.env.AUTH_SECRET;
       let missingSecretCaught = false;
       try {
-        getJwtSecret();
+        getAuthSecret();
       } catch (err: any) {
-        missingSecretCaught = err.message.includes('FATAL SECURITY ERROR') || err.message.includes('JWT_SECRET');
+        missingSecretCaught = err.message.includes('FATAL SECURITY ERROR') || err.message.includes('AUTH_SECRET');
       }
-      assert(missingSecretCaught, 'JWT Security: Missing JWT_SECRET Fails Startup / Token Issuance (Fail-Closed)');
+      assert(missingSecretCaught, 'Auth Security: Missing AUTH_SECRET Fails Startup / Session Issuance (Fail-Closed)');
 
-      process.env.JWT_SECRET = 'short-secret';
+      process.env.AUTH_SECRET = 'short-secret';
       let shortSecretCaught = false;
       try {
-        getJwtSecret();
+        getAuthSecret();
       } catch (err: any) {
         shortSecretCaught = err.message.includes('INSECURE CONFIGURATION') || err.message.includes('at least 32 characters');
       }
-      assert(shortSecretCaught, 'JWT Security: Insecure / Short JWT_SECRET (<32 chars) Strictly Blocked');
+      assert(shortSecretCaught, 'Auth Security: Insecure / Short AUTH_SECRET (<32 chars) Strictly Blocked');
     } finally {
-      process.env.JWT_SECRET = currentSecret;
+      process.env.AUTH_SECRET = currentSecret;
     }
+
+    // 1.6b: Safe Handling of Email Collisions & Secure Account Linking (Takeover Prevention)
+    const existingLegacyUser = await prisma.user.create({
+      data: {
+        email: `legacy-local-user-${Date.now()}@growearn-test.internal`,
+        name: 'Legacy Local User',
+        role: 'MENTOR',
+      },
+    });
+    const collisionSub = `google-sub-collision-${Date.now()}`;
+    const collisionResult = await AuthService.processGoogleIdentity({
+      googleSub: collisionSub,
+      email: existingLegacyUser.email,
+      name: 'Unverified Google Claimant',
+      role: 'LEARNER',
+    });
+    assert(
+      collisionResult.status === 'NEEDS_LINKING' && Boolean(collisionResult.linkingToken),
+      'Account Security: Email Collision Prevents Silent Takeover & Requires Explicit Linking Token'
+    );
+
+    // Confirm Linking
+    const linkedResult = await AuthService.confirmAccountLink({
+      linkingToken: collisionResult.linkingToken!,
+    });
+    assert(
+      linkedResult.status === 'SUCCESS' && linkedResult.user?.id === existingLegacyUser.id && linkedResult.user?.role === 'MENTOR',
+      'Account Security: Confirmed Account Linking Preserves Existing User ID, Role, and Data'
+    );
+
+    // 1.6c: Session Lifecycle & Active Revocation
+    const verifiedSession = await verifySessionCookie(registeredResult.session!.cookieValue);
+    assert(
+      Boolean(verifiedSession && verifiedSession.userId === registeredUser?.id),
+      'Session Lifecycle: Active Database Session Validated via Signed Cookie'
+    );
+    await revokeSession(registeredResult.session!.sessionToken);
+    const revokedSession = await verifySessionCookie(registeredResult.session!.cookieValue);
+    assert(
+      revokedSession === null,
+      'Session Lifecycle: Revoked Session Strictly Rejects Access (Fail-Closed)'
+    );
+
+    // 1.6d: OAuth State Validation & Cryptographic Role Integrity
+    const stateTest = await createSignedOAuthState({ role: 'MENTOR', action: 'signup' });
+    const verifiedState = await verifySignedOAuthState(stateTest.stateToken, stateTest.randomState);
+    assert(
+      verifiedState.valid && verifiedState.role === 'MENTOR' && verifiedState.action === 'signup',
+      'OAuth State: Cryptographic State Verification Preserves Selected Role Across Redirect'
+    );
+
+    const tamperedState = await verifySignedOAuthState(stateTest.stateToken, 'forged-tampered-state-value');
+    assert(
+      !tamperedState.valid,
+      'OAuth State: Forged / Tampered State Strictly Rejected'
+    );
 
     // 1.7: Canonical Role Mapping & Rejection of Malicious Roles
     const canonicalLearner = normalizeRole('STUDENT');
@@ -204,6 +278,106 @@ async function runMasterTestSuite() {
     }
     assert(invalidRoleRejected, 'Role Architecture: Arbitrary / Unknown Roles Strictly Rejected (Fail-Closed)');
     assert(!isValidRole('ATTACKER_ROLE'), 'Role Architecture: isValidRole Helper Returns False for Malicious Role');
+
+    // 1.8: Role Memory & Isolation for All Roles
+    // A. Learner role persistence on login
+    const rememberedLearnerLogin = await AuthService.processGoogleIdentity({
+      googleSub: testGoogleSub,
+      email: testLearnerEmail,
+      name: 'Automated Test Google Learner',
+      action: 'login',
+    });
+    assert(
+      rememberedLearnerLogin.user?.role === 'LEARNER' &&
+      rememberedLearnerLogin.targetDashboard === '/learner/dashboard',
+      'Role Memory: Learner Signup Always Resolves to Learner Role & /learner/dashboard on Login'
+    );
+
+    // B. Freelancer signup and login memory
+    const subFreelancer = `google-sub-free-${Date.now()}`;
+    const emailFreelancer = `test-freelancer-${Date.now()}@growearn-test.internal`;
+    await AuthService.processGoogleIdentity({
+      googleSub: subFreelancer,
+      email: emailFreelancer,
+      name: 'Test Freelancer',
+      role: 'FREELANCER',
+      emailVerified: true,
+    });
+    const rememberedFreelancerLogin = await AuthService.processGoogleIdentity({
+      googleSub: subFreelancer,
+      email: emailFreelancer,
+      name: 'Test Freelancer',
+      action: 'login',
+    });
+    assert(
+      rememberedFreelancerLogin.user?.role === 'FREELANCER' &&
+      rememberedFreelancerLogin.targetDashboard === '/freelancer/dashboard',
+      'Role Memory: Freelancer Signup Always Resolves to Freelancer Role & /freelancer/dashboard on Login'
+    );
+
+    // C. Mentor signup and login memory
+    const subMentor = `google-sub-mentor-${Date.now()}`;
+    const emailMentor = `test-mentor-${Date.now()}@growearn-test.internal`;
+    await AuthService.processGoogleIdentity({
+      googleSub: subMentor,
+      email: emailMentor,
+      name: 'Test Mentor',
+      role: 'MENTOR',
+      emailVerified: true,
+    });
+    const rememberedMentorLogin = await AuthService.processGoogleIdentity({
+      googleSub: subMentor,
+      email: emailMentor,
+      name: 'Test Mentor',
+      action: 'login',
+    });
+    assert(
+      rememberedMentorLogin.user?.role === 'MENTOR' &&
+      rememberedMentorLogin.targetDashboard === '/mentor/dashboard',
+      'Role Memory: Mentor Signup Always Resolves to Mentor Role & /mentor/dashboard on Login'
+    );
+
+    // D. Company signup and login memory
+    const subCompany = `google-sub-comp-${Date.now()}`;
+    const emailCompany = `test-company-${Date.now()}@growearn-test.internal`;
+    await AuthService.processGoogleIdentity({
+      googleSub: subCompany,
+      email: emailCompany,
+      name: 'Test Company',
+      role: 'COMPANY',
+      emailVerified: true,
+    });
+    const rememberedCompanyLogin = await AuthService.processGoogleIdentity({
+      googleSub: subCompany,
+      email: emailCompany,
+      name: 'Test Company',
+      action: 'login',
+    });
+    assert(
+      rememberedCompanyLogin.user?.role === 'COMPANY' &&
+      rememberedCompanyLogin.targetDashboard === '/company/dashboard',
+      'Role Memory: Company Signup Always Resolves to Company Role & /company/dashboard on Login'
+    );
+
+    // E. Role Isolation: Prevent self-service role swapping
+    let selfSwapBlocked = false;
+    try {
+      await AuthService.selectRole(registeredUser!.id, 'MENTOR');
+    } catch (err: any) {
+      selfSwapBlocked = err.message.includes('permanently assigned') || err.message.includes('forbidden') || err.message.includes('Forbidden');
+    }
+    assert(selfSwapBlocked, 'Role Isolation: Self-Service Role Swapping is Strictly Blocked');
+
+    // F. Role Boundaries: Learner cannot access Mentor or Company capabilities
+    const learnerRole = registeredUser!.role;
+    assert(
+      !isRoleAllowed(learnerRole, ['MENTOR', 'ADMIN']),
+      'Role Boundaries: Learner is Strictly Blocked from Mentor Course Creation'
+    );
+    assert(
+      !isRoleAllowed(learnerRole, ['COMPANY', 'EMPLOYER', 'ADMIN']),
+      'Role Boundaries: Learner is Strictly Blocked from Company Job Creation'
+    );
   } catch (err: any) {
     console.error('Suite 1 Error:', err);
   }
