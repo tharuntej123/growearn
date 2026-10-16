@@ -6,7 +6,7 @@ import { OAuth2Client } from 'google-auth-library';
 import prisma from '@/lib/prisma';
 
 // Ensure environment variables from .env / .env.local are loaded if not yet set in process.env
-if (!process.env.AUTH_SECRET && typeof window === 'undefined') {
+if (!process.env.AUTH_SECRET && !process.env.JWT_SECRET && typeof window === 'undefined') {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const dotenv = require('dotenv');
@@ -16,7 +16,7 @@ if (!process.env.AUTH_SECRET && typeof window === 'undefined') {
 }
 
 export function getAuthSecret(): string {
-  const secret = process.env.AUTH_SECRET;
+  const secret = process.env.AUTH_SECRET || process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET;
   if (!secret || secret.trim().length === 0) {
     throw new Error('FATAL SECURITY ERROR: AUTH_SECRET environment variable is missing. Authentication cannot operate without a secure secret.');
   }
@@ -92,8 +92,20 @@ export function isRoleAllowed(userRole: string | undefined, allowedRoles: string
 }
 
 export function getAppBaseUrl(): string {
-  const url = process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
-  return url.replace(/\/$/, '');
+  if (process.env.AUTH_URL && !process.env.AUTH_URL.includes('localhost')) {
+    return process.env.AUTH_URL.replace(/\/$/, '');
+  }
+  if (process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes('localhost')) {
+    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '');
+  }
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`.replace(/\/$/, '');
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`.replace(/\/$/, '');
+  }
+  const fallback = process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  return fallback.replace(/\/$/, '');
 }
 
 export function getGoogleOAuthClient(redirectUri?: string): OAuth2Client {

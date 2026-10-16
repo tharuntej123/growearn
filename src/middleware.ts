@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 
 function getMiddlewareAuthSecret(): Uint8Array {
-  const secret = process.env.AUTH_SECRET;
+  const secret = process.env.AUTH_SECRET || process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET;
   if (!secret || secret.length < 32) {
     return new TextEncoder().encode('__UNCONFIGURED_AUTH_SECRET_FAIL_CLOSED_NO_SESSIONS_VALID__');
   }

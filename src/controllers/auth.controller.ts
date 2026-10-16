@@ -68,6 +68,10 @@ export class AuthController {
       return response;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Google OAuth initiation failed';
+      if (req.headers.get('accept')?.includes('text/html')) {
+        const appBaseUrl = getAppBaseUrl();
+        return NextResponse.redirect(`${appBaseUrl}/login?error=${encodeURIComponent(message)}`);
+      }
       return apiError(message, 'OAUTH_INIT_ERROR', 500);
     }
   }

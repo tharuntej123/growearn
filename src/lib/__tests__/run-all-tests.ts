@@ -183,8 +183,12 @@ async function runMasterTestSuite() {
 
     // 1.6: AUTH_SECRET Mandatory Environment Validation
     const currentSecret = process.env.AUTH_SECRET;
+    const currentJwtSecret = process.env.JWT_SECRET;
+    const currentNextAuthSecret = process.env.NEXTAUTH_SECRET;
     try {
       delete process.env.AUTH_SECRET;
+      delete process.env.JWT_SECRET;
+      delete process.env.NEXTAUTH_SECRET;
       let missingSecretCaught = false;
       try {
         getAuthSecret();
@@ -203,6 +207,8 @@ async function runMasterTestSuite() {
       assert(shortSecretCaught, 'Auth Security: Insecure / Short AUTH_SECRET (<32 chars) Strictly Blocked');
     } finally {
       process.env.AUTH_SECRET = currentSecret;
+      if (currentJwtSecret) process.env.JWT_SECRET = currentJwtSecret;
+      if (currentNextAuthSecret) process.env.NEXTAUTH_SECRET = currentNextAuthSecret;
     }
 
     // 1.6b: Safe Handling of Email Collisions & Secure Account Linking (Takeover Prevention)
