@@ -1,7 +1,5 @@
--- AlterTable MentorshipBooking add paymentId
 ALTER TABLE "MentorshipBooking" ADD COLUMN IF NOT EXISTS "paymentId" TEXT;
 
--- CreateTable PaymentOrder
 CREATE TABLE IF NOT EXISTS "PaymentOrder" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
@@ -21,7 +19,6 @@ CREATE TABLE IF NOT EXISTS "PaymentOrder" (
     CONSTRAINT "PaymentOrder_pkey" PRIMARY KEY ("id")
 );
 
--- Drop old Payment table and Recreate with full Razorpay structure
 DROP TABLE IF EXISTS "Payment" CASCADE;
 
 CREATE TABLE "Payment" (
@@ -52,7 +49,6 @@ CREATE TABLE "Payment" (
     CONSTRAINT "Payment_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable WebhookEvent
 CREATE TABLE IF NOT EXISTS "WebhookEvent" (
     "id" TEXT NOT NULL,
     "eventId" TEXT NOT NULL,
@@ -66,7 +62,6 @@ CREATE TABLE IF NOT EXISTS "WebhookEvent" (
     CONSTRAINT "WebhookEvent_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable CoursePurchase
 CREATE TABLE IF NOT EXISTS "CoursePurchase" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
@@ -80,7 +75,6 @@ CREATE TABLE IF NOT EXISTS "CoursePurchase" (
     CONSTRAINT "CoursePurchase_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
 CREATE UNIQUE INDEX IF NOT EXISTS "PaymentOrder_razorpayOrderId_key" ON "PaymentOrder"("razorpayOrderId");
 CREATE UNIQUE INDEX IF NOT EXISTS "PaymentOrder_idempotencyKey_key" ON "PaymentOrder"("idempotencyKey");
 CREATE UNIQUE INDEX IF NOT EXISTS "PaymentOrder_receipt_key" ON "PaymentOrder"("receipt");
@@ -110,7 +104,6 @@ CREATE INDEX IF NOT EXISTS "CoursePurchase_courseId_idx" ON "CoursePurchase"("co
 
 CREATE UNIQUE INDEX IF NOT EXISTS "MentorshipBooking_paymentId_key" ON "MentorshipBooking"("paymentId");
 
--- AddForeignKey
 ALTER TABLE "PaymentOrder" DROP CONSTRAINT IF EXISTS "PaymentOrder_userId_fkey";
 ALTER TABLE "PaymentOrder" ADD CONSTRAINT "PaymentOrder_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
