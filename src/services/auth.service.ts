@@ -7,6 +7,7 @@ import {
   createDatabaseSession,
   revokeSession,
   getAuthSecretKey,
+  isGoogleOAuthConfigured,
   CanonicalRole,
 } from '@/lib/auth';
 import { SignJWT, jwtVerify } from 'jose';
@@ -40,14 +41,21 @@ export class AuthService {
     action?: 'signup' | 'login';
     redirectUrl?: string;
   }) {
+    if (!isGoogleOAuthConfigured()) {
+      throw new Error(
+        'Google OAuth credentials are not fully configured. Please ensure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are set in environment variables.'
+      );
+    }
+
+    const client = getGoogleOAuthClient();
     const action = options.action || (options.role ? 'signup' : 'login');
     const { stateToken, randomState, codeVerifier, codeChallenge } = await createSignedOAuthState({
       role: options.role,
       action,
       redirectUrl: options.redirectUrl,
+      oauthRedirectUri: (client as any).redirectUri,
     });
 
-    const client = getGoogleOAuthClient();
     const authUrl = client.generateAuthUrl({
       access_type: 'offline',
       scope: ['openid', 'email', 'profile'],
@@ -90,9 +98,10 @@ export class AuthService {
     }
 
     // Exchange authorization code for tokens using PKCE verifier if available
-    const client = getGoogleOAuthClient();
+    const client = getGoogleOAuthClient(stateResult.oauthRedirectUri);
     const { tokens } = await client.getToken({
       code,
+      codeVerifier: stateResult.codeVerifier,
     });
 
     if (!tokens.id_token) {
@@ -100,9 +109,10 @@ export class AuthService {
     }
 
     // Cryptographically verify ID token signature, audience, and issuer using Google public certificates
+    const clientId = (process.env.GOOGLE_CLIENT_ID || '').trim();
     const ticket = await client.verifyIdToken({
       idToken: tokens.id_token,
-      audience: process.env.GOOGLE_CLIENT_ID,
+      audience: clientId || undefined,
     });
 
     const payload = ticket.getPayload();

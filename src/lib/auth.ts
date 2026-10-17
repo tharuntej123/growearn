@@ -95,8 +95,17 @@ export function getAppBaseUrl(): string {
   if (process.env.AUTH_URL && !process.env.AUTH_URL.includes('localhost')) {
     return process.env.AUTH_URL.replace(/\/$/, '');
   }
+  if (process.env.NEXTAUTH_URL && !process.env.NEXTAUTH_URL.includes('localhost')) {
+    return process.env.NEXTAUTH_URL.replace(/\/$/, '');
+  }
   if (process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes('localhost')) {
     return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '');
+  }
+  if (process.env.GOOGLE_REDIRECT_URI) {
+    try {
+      const u = new URL(process.env.GOOGLE_REDIRECT_URI);
+      return u.origin;
+    } catch {}
   }
   if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
     return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`.replace(/\/$/, '');
@@ -104,14 +113,17 @@ export function getAppBaseUrl(): string {
   if (process.env.VERCEL_URL) {
     return `https://${process.env.VERCEL_URL}`.replace(/\/$/, '');
   }
-  const fallback = process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const fallback = process.env.AUTH_URL || process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   return fallback.replace(/\/$/, '');
 }
 
 export function getGoogleOAuthClient(redirectUri?: string): OAuth2Client {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const defaultRedirect = `${getAppBaseUrl()}/api/auth/google/callback`;
+  const clientId = (process.env.GOOGLE_CLIENT_ID || '').trim();
+  const clientSecret = (process.env.GOOGLE_CLIENT_SECRET || '').trim();
+  const defaultRedirect =
+    process.env.GOOGLE_REDIRECT_URI?.trim() ||
+    process.env.GOOGLE_CALLBACK_URL?.trim() ||
+    `${getAppBaseUrl()}/api/auth/google/callback`;
 
   return new OAuth2Client({
     clientId: clientId || 'unconfigured_google_client_id',
@@ -121,15 +133,15 @@ export function getGoogleOAuthClient(redirectUri?: string): OAuth2Client {
 }
 
 export function isGoogleOAuthConfigured(): boolean {
-  const id = process.env.GOOGLE_CLIENT_ID;
-  const sec = process.env.GOOGLE_CLIENT_SECRET;
+  const id = (process.env.GOOGLE_CLIENT_ID || '').trim();
+  const sec = (process.env.GOOGLE_CLIENT_SECRET || '').trim();
   return Boolean(
-    id &&
-    id.trim().length > 0 &&
+    id.length > 0 &&
     !id.includes('your-google-client-id') &&
-    sec &&
-    sec.trim().length > 0 &&
-    !sec.includes('your-google-client-secret')
+    !id.includes('mock-google-client-id') &&
+    sec.length > 0 &&
+    !sec.includes('your-google-client-secret') &&
+    !sec.includes('mock-google-client-secret')
   );
 }
 
@@ -148,6 +160,7 @@ export async function createSignedOAuthState(params: {
   role?: string;
   action: 'signup' | 'login';
   redirectUrl?: string;
+  oauthRedirectUri?: string;
 }): Promise<{ stateToken: string; randomState: string; codeVerifier: string; codeChallenge: string }> {
   const randomState = crypto.randomBytes(24).toString('hex');
   const { codeVerifier, codeChallenge } = generatePKCE();
@@ -158,6 +171,8 @@ export async function createSignedOAuthState(params: {
     role: params.role ? normalizeRole(params.role) : undefined,
     action: params.action,
     redirectUrl: params.redirectUrl || undefined,
+    codeVerifier,
+    oauthRedirectUri: params.oauthRedirectUri || undefined,
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
@@ -171,12 +186,29 @@ export async function createSignedOAuthState(params: {
 export async function verifySignedOAuthState(
   stateToken: string,
   returnedState: string
-): Promise<{ valid: boolean; role?: CanonicalRole; action: 'signup' | 'login'; redirectUrl?: string; error?: string }> {
+): Promise<{
+  valid: boolean;
+  role?: CanonicalRole;
+  action: 'signup' | 'login';
+  redirectUrl?: string;
+  codeVerifier?: string;
+  oauthRedirectUri?: string;
+  error?: string;
+}> {
   try {
     const secretKey = getAuthSecretKey();
     const { payload } = await jwtVerify(stateToken, secretKey, { algorithms: ['HS256'] });
 
-    if (!payload || payload.state !== returnedState) {
+    // Validate state:
+    // If stateToken was passed as state to Google, returnedState matches stateToken.
+    // If randomState was passed or extracted, payload.state matches returnedState.
+    const isStateMatch =
+      payload &&
+      (payload.state === returnedState ||
+        stateToken === returnedState ||
+        (typeof payload.state === 'string' && returnedState.includes(payload.state)));
+
+    if (!isStateMatch) {
       return { valid: false, action: 'login', error: 'OAuth state mismatch: possible CSRF or tampered state parameter' };
     }
 
@@ -195,6 +227,8 @@ export async function verifySignedOAuthState(
       action,
       role,
       redirectUrl: typeof payload.redirectUrl === 'string' ? payload.redirectUrl : undefined,
+      codeVerifier: typeof payload.codeVerifier === 'string' ? payload.codeVerifier : undefined,
+      oauthRedirectUri: typeof payload.oauthRedirectUri === 'string' ? payload.oauthRedirectUri : undefined,
     };
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Invalid state token';
