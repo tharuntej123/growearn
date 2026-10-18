@@ -123,7 +123,7 @@ export function getGoogleOAuthClient(redirectUri?: string): OAuth2Client {
   const defaultRedirect =
     process.env.GOOGLE_REDIRECT_URI?.trim() ||
     process.env.GOOGLE_CALLBACK_URL?.trim() ||
-    `${getAppBaseUrl()}/api/auth/google/callback`;
+    `${getAppBaseUrl()}/api/auth/callback/google`;
 
   return new OAuth2Client({
     clientId: clientId || 'unconfigured_google_client_id',
