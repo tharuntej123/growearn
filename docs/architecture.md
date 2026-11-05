@@ -136,3 +136,15 @@ graph TD
 | **MENTOR** | `/mentor/dashboard` | Course creation studio, student booking requests, earnings telemetry |
 | **COMPANY** | `/company/dashboard` | Job posting studio, ATS candidate pipeline |
 | **ADMIN** | `/admin/dashboard` | System telemetry, user moderation, immutable audit logs |
+
+---
+
+## 4. Containerization & Docker Topology
+
+GroEarn runs as a multi-container orchestrated ecosystem (`docker-compose.yml`):
+- **`app` (`groearn-app`)**: Multi-stage production Alpine Node 20 runner on port `3000`, running as unprivileged `nextjs` user with automated database migrations on startup.
+- **`postgres` (`groearn-postgres`)**: PostgreSQL 16 image with pre-installed `pgvector` extension (`vector(1024)`), HNSW cosine indexes, and persistent volume `postgres_data`.
+- **`embedding-service` (`groearn-embedding-service`)**: Ollama service on port `11434` serving BGE-M3 1024-dimensional dense vectors with volume `ollama_models`.
+- **`model-init` (`groearn-model-init`)**: Automated one-shot model puller that downloads `bge-m3` weights before the app container starts, eliminating cold-start latency.
+- **`groearn-internal`**: Isolated Docker bridge network interconnecting all services.
+
