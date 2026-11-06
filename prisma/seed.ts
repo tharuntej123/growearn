@@ -101,7 +101,7 @@ async function main() {
   await prisma.profile.deleteMany().catch(() => {});
   await prisma.user.deleteMany().catch(() => {});
 
-  const demoPasswordHash = 'google-oauth-seed-account';
+  // Zero-password footprint: Growearn uses exclusive Google OAuth 2.0 & Session tokens
 
   // 1. Technical Skills (30 In-Demand Skills)
   const skillsData = [
@@ -166,7 +166,6 @@ async function main() {
   const demoStudent = await prisma.user.create({
     data: {
       email: 'student@example.com',
-      passwordHash: demoPasswordHash,
       name: 'Alex Chen',
       role: 'LEARNER',
       headline: 'Computer Science Student & Aspiring Full Stack Developer',
@@ -198,7 +197,6 @@ async function main() {
   const demoProfessional = await prisma.user.create({
     data: {
       email: 'professional@example.com',
-      passwordHash: demoPasswordHash,
       name: 'Pooja Verma',
       role: 'FREELANCER',
       headline: 'Senior Mobile & Full Stack Specialist',
@@ -310,7 +308,6 @@ async function main() {
     const profUser = await prisma.user.create({
       data: {
         email: prof.email,
-        passwordHash: demoPasswordHash,
         name: prof.name,
         role: 'FREELANCER',
         headline: prof.headline,
@@ -611,7 +608,6 @@ async function main() {
     const user = await prisma.user.create({
       data: {
         email: c.email,
-        passwordHash: demoPasswordHash,
         name: c.name,
         role: 'COMPANY',
         headline: `[SEED TEST COMPANY] ${c.headline}`,
@@ -862,7 +858,6 @@ async function main() {
     const user = await prisma.user.create({
       data: {
         email: m.email,
-        passwordHash: demoPasswordHash,
         name: m.name,
         role: 'MENTOR',
         headline: `[SEED TEST MENTOR] ${m.title} (Synthetic Development Profile)`,
@@ -1921,7 +1916,6 @@ Community Feed: Cross-role knowledge sharing with verified role badges on every 
   await prisma.user.create({
     data: {
       email: 'admin@growearn.com',
-      passwordHash: demoPasswordHash,
       name: 'System Admin',
       role: 'ADMIN',
       headline: 'Platform Administrator & Trust & Safety',
@@ -1945,7 +1939,6 @@ Community Feed: Cross-role knowledge sharing with verified role badges on every 
   const learnerGrowearn = await prisma.user.create({
     data: {
       email: 'learner@growearn.com',
-      passwordHash: demoPasswordHash,
       name: 'Alex Chen',
       role: 'LEARNER',
       headline: 'Computer Science Student & Aspiring Full Stack Developer',
@@ -1977,7 +1970,6 @@ Community Feed: Cross-role knowledge sharing with verified role badges on every 
   const profGrowearn = await prisma.user.create({
     data: {
       email: 'professional@growearn.com',
-      passwordHash: demoPasswordHash,
       name: 'Pooja Verma',
       role: 'FREELANCER',
       headline: 'Senior Mobile & Full Stack Specialist',
@@ -2011,7 +2003,6 @@ Community Feed: Cross-role knowledge sharing with verified role badges on every 
   const mentorGrowearn = await prisma.user.create({
     data: {
       email: 'mentor@growearn.com',
-      passwordHash: demoPasswordHash,
       name: 'Priya Sharma',
       role: 'MENTOR',
       headline: 'Senior Backend Engineer & Cloud Architect',
@@ -2068,7 +2059,6 @@ Community Feed: Cross-role knowledge sharing with verified role badges on every 
   await prisma.user.create({
     data: {
       email: 'employer@growearn.com',
-      passwordHash: demoPasswordHash,
       name: 'NovaTech Solutions',
       role: 'COMPANY',
       headline: 'Enterprise Cloud Architecture & Distributed Systems',
@@ -2092,12 +2082,13 @@ Community Feed: Cross-role knowledge sharing with verified role badges on every 
     },
   });
 
-  console.log('✨ Seed complete! Demo accounts ready:');
-  console.log('   👨‍🎓 Learner:      learner@growearn.com / student@example.com (Password: Demo1234!)');
-  console.log('   💼 Professional: professional@growearn.com / professional@example.com (Password: Demo1234!)');
-  console.log('   👨‍🏫 Mentor:       mentor@growearn.com / priya.sharma@example.com (Password: Demo1234!)');
-  console.log('   🏢 Employer:     employer@growearn.com / careers@novatech-solutions.io (Password: Demo1234!)');
-  console.log('   🛡️ Admin:        admin@growearn.com (Password: Demo1234!)');
+  console.log('✨ Seed complete! Demo accounts ready (Google OAuth / Session login):');
+  console.log('   👨‍🎓 Learner:      learner@growearn.com / student@example.com');
+  console.log('   💼 Professional: professional@growearn.com / professional@example.com');
+  console.log('   👨‍🏫 Mentor:       mentor@growearn.com / priya.sharma@example.com');
+  console.log('   🏢 Employer:     employer@growearn.com / careers@novatech-solutions.io');
+  console.log('   🛡️ Admin:        admin@growearn.com');
+  console.log('   (Platform enforces zero-password-footprint architecture via OAuth & session tokens)');
 }
 
 main()

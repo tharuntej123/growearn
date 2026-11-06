@@ -154,6 +154,12 @@ export class AuthService {
     const { googleSub, email, name, avatarUrl, emailVerified, role, action, ipAddress, userAgent } = params;
     const normalizedEmail = email.toLowerCase().trim();
 
+    // SECURITY GUARD: Reject any attempt to register or claim ADMIN role via public OAuth
+    const requestedRole = (role || '').toUpperCase();
+    if (requestedRole === 'ADMIN') {
+      throw new Error('Unauthorized role assignment: ADMIN accounts cannot be created via public registration.');
+    }
+
     // Step 1: Check if an Account record already links this Google sub identifier
     const existingAccount = await prisma.account.findUnique({
       where: {

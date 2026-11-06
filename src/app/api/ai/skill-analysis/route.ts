@@ -1,21 +1,31 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { apiSuccess, apiError } from '@/lib/utils';
 import { getUserAIContext } from '@/services/user-context.service';
 import { SkillAnalysisService } from '@/lib/ai/skill-analysis.service';
+import { enforceRateLimit } from '@/lib/rate-limiter';
 
 export async function POST(req: NextRequest) {
   try {
     const authUser = await getCurrentUser(req);
-    let userContext = null;
-    if (authUser) {
-      userContext = await getUserAIContext(authUser.id);
+    if (!authUser) {
+      return apiError('Authentication required for skill analysis', 'UNAUTHORIZED', 401);
     }
+
+    const rateLimitResponse = await enforceRateLimit(req, 'ai:skill-analysis', 20, 60, authUser.id);
+    if (rateLimitResponse) return rateLimitResponse;
+
+    const userContext = await getUserAIContext(authUser.id);
 
     const body = await req.json().catch(() => ({}));
     const skills = body.skills || userContext?.skills || [];
-    const targetRole = body.targetRole || body.careerGoal || userContext?.profile?.targetRole || userContext?.profile?.careerGoal;
-    const exp = body.experienceLevel || userContext?.profile?.experienceLevel;
+    const targetRole =
+      body.targetRole ||
+      body.careerGoal ||
+      userContext?.profile?.targetRole ||
+      userContext?.profile?.careerGoal ||
+      'Software Engineer';
+    const exp = body.experienceLevel || userContext?.profile?.experienceLevel || 'Intermediate';
 
     const analysis = SkillAnalysisService.analyze(skills, targetRole, exp);
 

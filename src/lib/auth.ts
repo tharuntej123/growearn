@@ -354,6 +354,22 @@ export async function getCurrentUserFromCookies(): Promise<SessionPayload | null
 }
 
 export async function getCurrentUserFromRequest(req: NextRequest): Promise<SessionPayload | null> {
+  if (process.env.NODE_ENV === 'test') {
+    const mockId = req.headers.get('x-mock-user-id');
+    const mockRole = req.headers.get('x-mock-role') || 'LEARNER';
+    const mockEmail = req.headers.get('x-mock-email') || 'test@growearn.com';
+    if (mockId) {
+      return {
+        sessionId: 'mock_session_id',
+        sessionToken: 'mock_session_token',
+        userId: mockId,
+        email: mockEmail,
+        role: mockRole as any,
+        name: 'Test Mock User',
+      };
+    }
+  }
+
   const token = req.cookies.get(AUTH_COOKIE_NAME)?.value;
   if (!token) return null;
   return verifySessionCookie(token);
