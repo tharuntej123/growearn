@@ -1,5 +1,13 @@
 import os
 import logging
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from repo root
+_repo_root = Path(__file__).resolve().parent.parent.parent
+load_dotenv(_repo_root / ".env.local")
+load_dotenv(_repo_root / ".env")
+
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from .schemas import RoadmapRequest, RoadmapResponse
