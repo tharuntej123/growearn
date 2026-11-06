@@ -10,6 +10,47 @@ export interface EmbeddingProvider {
   checkHealth(): Promise<{ healthy: boolean; model: string; error?: string }>;
 }
 
+// In-memory LRU Cache for query embeddings
+class EmbeddingLRUCache {
+  private capacity: number;
+  private ttlMs: number;
+  private cache: Map<string, { vector: number[]; expiresAt: number }>;
+
+  constructor(capacity = 250, ttlMs = 15 * 60 * 1000) {
+    this.capacity = capacity;
+    this.ttlMs = ttlMs;
+    this.cache = new Map();
+  }
+
+  get(key: string): number[] | undefined {
+    const entry = this.cache.get(key);
+    if (!entry) return undefined;
+    if (Date.now() > entry.expiresAt) {
+      this.cache.delete(key);
+      return undefined;
+    }
+    this.cache.delete(key);
+    this.cache.set(key, entry);
+    return entry.vector;
+  }
+
+  set(key: string, vector: number[]): void {
+    if (this.cache.has(key)) {
+      this.cache.delete(key);
+    } else if (this.cache.size >= this.capacity) {
+      const oldestKey = this.cache.keys().next().value;
+      if (oldestKey !== undefined) this.cache.delete(oldestKey);
+    }
+    this.cache.set(key, { vector, expiresAt: Date.now() + this.ttlMs });
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+}
+
+const queryEmbeddingCache = new EmbeddingLRUCache();
+
 export class LocalBGE3EmbeddingProvider implements EmbeddingProvider {
   readonly name = 'LOCAL_BGE_M3';
   readonly dimension = EMBEDDING_DIMENSION;
@@ -60,6 +101,11 @@ export class LocalBGE3EmbeddingProvider implements EmbeddingProvider {
     }
 
     const trimmed = text.trim();
+    const cacheKey = `${this.model}:${trimmed}`;
+    const cached = queryEmbeddingCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
 
     try {
       // First try standard Ollama /api/embed (Ollama 0.1.33+)
@@ -78,6 +124,7 @@ export class LocalBGE3EmbeddingProvider implements EmbeddingProvider {
         const rawVector = Array.isArray(data.embeddings) ? data.embeddings[0] : null;
         if (rawVector && Array.isArray(rawVector)) {
           this.validateVector(rawVector);
+          queryEmbeddingCache.set(cacheKey, rawVector);
           return rawVector;
         }
       }
@@ -106,6 +153,7 @@ export class LocalBGE3EmbeddingProvider implements EmbeddingProvider {
       }
 
       this.validateVector(rawVector);
+      queryEmbeddingCache.set(cacheKey, rawVector);
       return rawVector;
     } catch (err: any) {
       if (err.message?.startsWith('SEMANTIC_RAG_UNAVAILABLE') || err.message?.startsWith('SEMANTIC_RAG_DIMENSION_MISMATCH')) {

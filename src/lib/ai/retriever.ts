@@ -9,24 +9,26 @@ export interface VectorRetrieverOptions extends BaseRetrieverInput {
   topK?: number;
   sourceType?: string;
   minSimilarity?: number;
+  mode?: 'vector' | 'hybrid';
 }
 
 export class PgVectorRetriever extends BaseRetriever {
   lc_namespace = ['growearn', 'retrievers', 'pgvector'];
-  
+
   private topK: number;
   private sourceType?: string;
   private minSimilarity: number;
+  public mode: 'vector' | 'hybrid';
 
   constructor(options: VectorRetrieverOptions = {}) {
     super(options);
     this.topK = options.topK ?? 5;
     this.sourceType = options.sourceType;
     this.minSimilarity = options.minSimilarity ?? 0.0;
+    this.mode = options.mode ?? 'hybrid';
   }
 
   // Core LangChain retrieval method.
-  // Embeds the user query and retrieves top K matching chunks from PostgreSQL pgvector.
   async _getRelevantDocuments(query: string): Promise<Document[]> {
     const records = await this.retrieveRecords(query);
 
@@ -45,18 +47,17 @@ export class PgVectorRetriever extends BaseRetriever {
     );
   }
 
-  // Retrieves raw document chunk records with exact cosine similarity scores.
+  // Retrieves raw document chunk records with exact similarity scores.
   async retrieveRecords(query: string): Promise<DocumentChunkRecord[]> {
     if (!query || query.trim().length === 0) {
       return [];
     }
 
     const queryEmbedding = await generateEmbedding(query);
-    const results = await PgVectorStore.similaritySearch(
-      queryEmbedding,
-      this.topK,
-      this.sourceType
-    );
+    const results =
+      this.mode === 'hybrid'
+        ? await PgVectorStore.hybridSearch(query, queryEmbedding, this.topK, this.sourceType)
+        : await PgVectorStore.similaritySearch(queryEmbedding, this.topK, this.sourceType);
 
     if (this.minSimilarity > 0) {
       return results.filter((r) => (r.similarity ?? 0) >= this.minSimilarity);
@@ -74,8 +75,14 @@ export class PgVectorRetriever extends BaseRetriever {
     return docs
       .map((doc, idx) => {
         const content = 'pageContent' in doc ? doc.pageContent : doc.content;
-        const source = 'metadata' in doc && doc.metadata?.source ? doc.metadata.source : (doc as DocumentChunkRecord).source || 'Database';
-        const similarity = 'metadata' in doc && doc.metadata?.similarity !== undefined ? doc.metadata.similarity : (doc as DocumentChunkRecord).similarity;
+        const source =
+          'metadata' in doc && doc.metadata?.source
+            ? doc.metadata.source
+            : (doc as DocumentChunkRecord).source || 'Database';
+        const similarity =
+          'metadata' in doc && doc.metadata?.similarity !== undefined
+            ? doc.metadata.similarity
+            : (doc as DocumentChunkRecord).similarity;
         const scoreInfo = similarity !== undefined ? ` [Similarity: ${similarity}]` : '';
 
         return `[Source ${idx + 1}: ${source}${scoreInfo}]\n${content.trim()}`;
