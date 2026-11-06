@@ -1,0 +1,11 @@
+# Optional Docker Compose Override for Local Development
+# Copy this file to docker-compose.override.yml to customize ports or volumes
+# Example: expose PostgreSQL on 5432 and Ollama on 11434 for local Next.js dev (npm run dev)
+services:
+  postgres:
+    ports:
+      - "5432:5432"
+
+  embedding-service:
+    ports:
+      - "11434:11434"

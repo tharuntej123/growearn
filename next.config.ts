@@ -1,6 +1,20 @@
 import type { NextConfig } from "next";
 
+const cspHeader = `
+  default-src 'self';
+  script-src 'self' 'unsafe-eval' 'unsafe-inline' https://sdk.cashfree.com https://accounts.google.com;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  img-src 'self' data: https: blob:;
+  font-src 'self' https://fonts.gstatic.com;
+  connect-src 'self' https://*.cashfree.com https://api.groq.com https://api.tavily.com https://accounts.google.com http://localhost:11434;
+  frame-src 'self' https://sdk.cashfree.com https://accounts.google.com;
+`.replace(/\s{2,}/g, ' ').trim();
+
 const securityHeaders = [
+  {
+    key: 'Content-Security-Policy',
+    value: cspHeader,
+  },
   {
     key: 'X-DNS-Prefetch-Control',
     value: 'on',
@@ -32,6 +46,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   typescript: {
     ignoreBuildErrors: false,
   },

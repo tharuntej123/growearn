@@ -1,27 +1,28 @@
 services:
   postgres:
     image: pgvector/pgvector:pg16
-    container_name: groearn-postgres
+    container_name: growearn-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-groearn}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-groearn_secure_password}
-      POSTGRES_DB: ${POSTGRES_DB:-groearn}
+      POSTGRES_USER: ${POSTGRES_USER:-growearn}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-growearn_secure_password}
+      POSTGRES_DB: ${POSTGRES_DB:-growearn}
     ports:
       - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-groearn} -d ${POSTGRES_DB:-groearn}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-growearn} -d ${POSTGRES_DB:-growearn}"]
       interval: 5s
       timeout: 5s
       retries: 5
     networks:
-      - groearn-internal
+      - growearn-internal
+    profiles: ["default", "infra", "all"]
 
   embedding-service:
-    image: ollama/ollama:latest
-    container_name: groearn-embedding-service
+    image: ollama/ollama:0.5.4
+    container_name: growearn-embedding-service
     restart: unless-stopped
     volumes:
       - ollama_models:/root/.ollama
@@ -38,12 +39,12 @@ services:
       retries: 5
       start_period: 10s
     networks:
-      - groearn-internal
+      - growearn-internal
+    profiles: ["default", "infra", "all"]
 
-  # Model initializer service to pre-download BGE-M3 without downloading on every request
   model-init:
-    image: ollama/ollama:latest
-    container_name: groearn-model-init
+    image: ollama/ollama:0.5.4
+    container_name: growearn-model-init
     depends_on:
       embedding-service:
         condition: service_healthy
@@ -57,41 +58,98 @@ services:
       - OLLAMA_HOST=http://embedding-service:11434
       - BGE_M3_MODEL=${BGE_M3_MODEL:-bge-m3}
     networks:
-      - groearn-internal
+      - growearn-internal
     restart: "no"
+    profiles: ["default", "infra", "all"]
 
+  # One-shot database migration service
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: deps
+    container_name: growearn-migrate
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["npx", "prisma", "migrate", "deploy"]
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-growearn}:${POSTGRES_PASSWORD:-growearn_secure_password}@postgres:5432/${POSTGRES_DB:-growearn}?schema=public
+    networks:
+      - growearn-internal
+    profiles: ["default", "all"]
+
+  # CrewAI Multi-Agent Service (Researcher, Planner, Reviewer)
+  agents:
+    build:
+      context: ./agents
+      dockerfile: Dockerfile
+    container_name: growearn-agents
+    restart: unless-stopped
+    depends_on:
+      embedding-service:
+        condition: service_healthy
+    expose:
+      - "8000"
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - GROQ_MODEL=${GROQ_MODEL:-llama-3.3-70b-versatile}
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
+      - EMBEDDING_BASE_URL=http://embedding-service:11434
+      - GROWEN_API_BASE=http://app:3000
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - growearn-internal
+    profiles: ["default", "all"]
+
+  # Next.js 16 Web Application
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: groearn-app
+    container_name: growearn-app
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
       embedding-service:
         condition: service_healthy
       model-init:
         condition: service_completed_successfully
+      agents:
+        condition: service_healthy
     ports:
       - "${PORT:-3000}:3000"
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-groearn}:${POSTGRES_PASSWORD:-groearn_secure_password}@postgres:5432/${POSTGRES_DB:-groearn}?schema=public
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-growearn}:${POSTGRES_PASSWORD:-growearn_secure_password}@postgres:5432/${POSTGRES_DB:-growearn}?schema=public
       - AUTH_SECRET=${AUTH_SECRET}
       - AUTH_URL=${AUTH_URL:-http://localhost:3000}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - GROQ_API_KEY=${GROQ_API_KEY}
+      - GROQ_MODEL=${GROQ_MODEL:-llama-3.3-70b-versatile}
       - EMBEDDING_BASE_URL=http://embedding-service:11434
       - BGE_M3_MODEL=${BGE_M3_MODEL:-bge-m3}
       - TAVILY_API_KEY=${TAVILY_API_KEY}
+      - AGENTS_SERVICE_URL=http://agents:8000
+      - HNSW_EF_SEARCH=${HNSW_EF_SEARCH:-64}
       - CASHFREE_CLIENT_ID=${CASHFREE_CLIENT_ID}
       - CASHFREE_CLIENT_SECRET=${CASHFREE_CLIENT_SECRET}
       - CASHFREE_ENVIRONMENT=${CASHFREE_ENVIRONMENT:-sandbox}
       - CASHFREE_API_VERSION=${CASHFREE_API_VERSION:-2023-08-01}
       - PLATFORM_COMMISSION_PERCENT=${PLATFORM_COMMISSION_PERCENT:-10}
+      - STORAGE_PROVIDER=${STORAGE_PROVIDER:-local}
       - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      - MOCK_AI=${MOCK_AI:-false}
       - DEMO_MODE=${DEMO_MODE:-false}
       - NEXT_PUBLIC_DEMO_MODE=${NEXT_PUBLIC_DEMO_MODE:-false}
     healthcheck:
@@ -101,10 +159,11 @@ services:
       retries: 5
       start_period: 25s
     networks:
-      - groearn-internal
+      - growearn-internal
+    profiles: ["default", "all"]
 
 networks:
-  groearn-internal:
+  growearn-internal:
     driver: bridge
 
 volumes:
