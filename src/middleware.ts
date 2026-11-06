@@ -82,6 +82,10 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL('/freelancer/dashboard', req.url));
   }
 
+  if (pathname === '/community' || pathname.startsWith('/community/')) {
+    return NextResponse.redirect(new URL('/feed', req.url));
+  }
+
   // Extract session token from modern HTTP-only session cookie
   const sessionToken = req.cookies.get(AUTH_COOKIE_NAME)?.value;
   let userPayload: { userId: string; email: string; role: string; name: string } | null = null;

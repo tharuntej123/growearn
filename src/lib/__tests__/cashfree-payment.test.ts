@@ -1,5 +1,5 @@
 // Comprehensive Integration and Security Test Suite for Cashfree Marketplace Payments.
-// Covers: Razorpay complete removal, Cashfree config, order creation, pricing tampering prevention,
+// Covers: Unsupported gateway rejection, Cashfree config, order creation, pricing tampering prevention,
 // cryptographic HMAC-SHA256 webhook signatures, replay attack protection, duplicate idempotency,
 // transaction atomicity, IDOR protection, real refunds, free course regression, and database safety.
 

@@ -261,10 +261,9 @@ export class AuthController {
    * Retired endpoints
    */
   static async retiredPasswordEndpoint() {
-    return apiError(
-      'Password authentication has been retired on GroEarn. Please sign in or register exclusively using Google OAuth.',
-      'AUTH_METHOD_RETIRED',
-      410
+    return NextResponse.json(
+      { error: 'Password authentication retired. Use Google OAuth or request a magic link.' },
+      { status: 410 }
     );
   }
 }
