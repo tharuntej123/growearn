@@ -48,7 +48,7 @@ export default function LinkAccountPage() {
               <Link2 className="h-6 w-6" />
             </div>
             <CardTitle className="text-2xl font-bold text-slate-900">
-              Link Your GroEarn Account
+              Link Your Growearn Account
             </CardTitle>
             <CardDescription className="text-xs text-slate-500">
               Existing account detected with your Google email
@@ -68,10 +68,10 @@ export default function LinkAccountPage() {
                 <span>Account Protection Notice</span>
               </div>
               <p>
-                To prevent account takeover risks, GroEarn does not automatically merge accounts based solely on email.
+                To prevent account takeover risks, Growearn does not automatically merge accounts based solely on email.
               </p>
               <p>
-                By clicking confirm below, you verify that you own this Google account and authorize linking it to your existing GroEarn profile. All your existing data, courses, jobs, payments, and role permissions will remain 100% intact.
+                By clicking confirm below, you verify that you own this Google account and authorize linking it to your existing Growearn profile. All your existing data, courses, jobs, payments, and role permissions will remain 100% intact.
               </p>
             </div>
 

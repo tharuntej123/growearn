@@ -63,7 +63,7 @@ function LoginContent() {
             </div>
             <CardTitle className="text-2xl font-bold text-slate-900">Welcome Back</CardTitle>
             <CardDescription className="text-xs text-slate-500">
-              Sign in to your GroEarn account with Google
+              Sign in to your Growearn account with Google
             </CardDescription>
           </CardHeader>
 
@@ -84,7 +84,7 @@ function LoginContent() {
                 <span>Fast, Single-Click Secure Authentication</span>
               </div>
               <p className="text-xs text-slate-500 leading-relaxed">
-                GroEarn utilizes Google OAuth 2.0 with OpenID Connect for zero-password security, identity verification, and fraud protection.
+                Growearn utilizes Google OAuth 2.0 with OpenID Connect for zero-password security, identity verification, and fraud protection.
               </p>
 
               <Button
@@ -101,7 +101,7 @@ function LoginContent() {
             </div>
 
             <p className="text-center text-xs text-slate-500 pt-2">
-              New to GroEarn?{' '}
+              New to Growearn?{' '}
               <Link href="/signup" className="text-emerald-600 font-semibold hover:underline inline-flex items-center gap-1">
                 Choose your role and register <ArrowRight className="h-3 w-3" />
               </Link>
