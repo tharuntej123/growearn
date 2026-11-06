@@ -28,6 +28,8 @@ import {
   RefreshCw,
   Send,
   GraduationCap,
+  Bot,
+  Cpu,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -67,6 +69,36 @@ export default function LearnerDashboardPage() {
 
   // Enrolled courses state
   const [enrolledCourseIds, setEnrolledCourseIds] = useState<Set<string>>(new Set());
+
+  // CrewAI Multi-Agent Roadmap state
+  const [agenticData, setAgenticData] = useState<any>(null);
+  const [isGeneratingAgentic, setIsGeneratingAgentic] = useState(false);
+
+  const handleGenerateAgenticRoadmap = async (skillToSearch = selectedSkill) => {
+    setIsGeneratingAgentic(true);
+    try {
+      const res = await fetch('/api/ai/roadmap/agentic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          role: skillToSearch,
+          current_skills: user?.skills?.map((s: any) => s.skill?.name || s.name || s) || [],
+          target_timeline_weeks: 16,
+        }),
+      });
+      const json = await res.json();
+      if (json.success && json.data) {
+        setAgenticData(json.data);
+        toast.success(`🤖 CrewAI 3-Agent Roadmap generated for "${skillToSearch}"!`);
+      } else {
+        toast.error(json.error?.message || 'Agentic roadmap generation failed');
+      }
+    } catch {
+      toast.error('Network error during agentic roadmap generation');
+    } finally {
+      setIsGeneratingAgentic(false);
+    }
+  };
 
   const executeRAGSearch = async (skillToSearch: string, showToast = true) => {
     if (!skillToSearch || !skillToSearch.trim()) return;
@@ -297,9 +329,111 @@ export default function LearnerDashboardPage() {
                   </button>
                 ))}
               </div>
+              {/* CrewAI Multi-Agent Trigger */}
+              <div className="mt-4 pt-3 border-t border-slate-700/60 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-xs text-slate-300">
+                  <Bot className="h-4 w-4 text-emerald-400 shrink-0" />
+                  <span>CrewAI Multi-Agent System: <strong>Researcher</strong> (Tavily search), <strong>Planner</strong> &amp; <strong>Reviewer</strong> agents</span>
+                </div>
+                <Button
+                  type="button"
+                  onClick={() => handleGenerateAgenticRoadmap(selectedSkill)}
+                  disabled={isGeneratingAgentic}
+                  isLoading={isGeneratingAgentic}
+                  className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-md cursor-pointer flex items-center gap-2"
+                >
+                  <Cpu className="h-4 w-4" />
+                  <span>{isGeneratingAgentic ? 'Agents Collaborating...' : `Run CrewAI Roadmap (${selectedSkill})`}</span>
+                </Button>
+              </div>
             </div>
           </div>
         </section>
+
+        {/* CrewAI Agentic Multi-Agent Section */}
+        {agenticData && (
+          <section className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-slate-900 to-emerald-950 p-4 rounded-2xl text-white border border-emerald-800/40 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400">
+                  <Bot className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-base sm:text-lg font-bold flex items-center gap-2">
+                    <span>CrewAI Multi-Agent Roadmap: {agenticData.target_role}</span>
+                    <Badge variant="outline" className={agenticData.mode === 'agentic' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 text-[11px]' : 'bg-amber-500/20 text-amber-300 border-amber-500/40 text-[11px]'}>
+                      {agenticData.mode === 'agentic' ? '🤖 Live CrewAI Agents' : '⚡ Resilient Fallback'}
+                    </Badge>
+                  </h2>
+                  <p className="text-xs text-slate-300 mt-0.5">
+                    Estimated {agenticData.estimated_weeks} weeks • Status: <span className="font-semibold text-emerald-400">{agenticData.review_status}</span> by Principal Reviewer Agent
+                  </p>
+                </div>
+              </div>
+
+              <div className="text-right text-xs text-slate-400">
+                <span>{agenticData.reviewer_notes || 'Audited for prerequisite pacing and resource legitimacy.'}</span>
+              </div>
+            </div>
+
+            {/* Agent Collaboration Trace Cards */}
+            {agenticData.agent_trace && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {agenticData.agent_trace.map((step: any, idx: number) => (
+                  <Card key={idx} className="p-4 bg-white border border-slate-200 rounded-xl shadow-xs">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-xs font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase">
+                        {step.agent} Agent
+                      </span>
+                    </div>
+                    <p className="text-xs font-semibold text-slate-900 mb-1">{step.action}</p>
+                    <p className="text-[11px] text-slate-600 leading-relaxed">{step.summary}</p>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {/* 4-Phase Curriculum Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {(agenticData.phases || []).map((phase: any, idx: number) => (
+                <div
+                  key={idx}
+                  className="p-4 rounded-xl border border-emerald-200/80 bg-emerald-50/20 hover:bg-emerald-50/50 transition-all flex flex-col justify-between"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-600 text-white uppercase tracking-wider">
+                        Phase {phase.phase_number || idx + 1}
+                      </span>
+                      <span className="text-xs font-medium text-slate-500">{phase.duration_weeks || 4} wks</span>
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-900 leading-snug">{phase.title}</h3>
+                    <p className="text-xs text-slate-600 leading-relaxed line-clamp-3">{phase.objective}</p>
+
+                    {phase.skills && (
+                      <div className="flex flex-wrap gap-1 pt-1">
+                        {phase.skills.slice(0, 3).map((sk: string) => (
+                          <span key={sk} className="text-[10px] px-1.5 py-0.5 rounded bg-white text-slate-700 border border-slate-200">
+                            {sk}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="pt-2 border-t border-slate-200/60 space-y-1">
+                      <p className="text-[11px] font-semibold text-slate-800">Capstone Project:</p>
+                      <p className="text-[11px] text-slate-600 line-clamp-2">{phase.capstone_project}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
+                    <span className="text-emerald-700 font-semibold">{phase.milestone?.slice(0, 30)}...</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Database Roadmap Steps Section */}
         {ragData?.roadmap && (
