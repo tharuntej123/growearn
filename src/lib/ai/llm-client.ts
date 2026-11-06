@@ -58,6 +58,36 @@ export class LLMClient {
     return null;
   }
 
+  static async completeStructured<T>(
+    schema: import('zod').ZodType<T>,
+    prompt: string,
+    systemPrompt?: string
+  ): Promise<T | null> {
+    try {
+      const { getLangChainChatGroq } = await import('./lc-llm');
+      const llm = getLangChainChatGroq({ temperature: 0.1 });
+      const messages = systemPrompt
+        ? [{ role: 'system', content: systemPrompt }, { role: 'user', content: prompt }]
+        : [{ role: 'user', content: prompt }];
+
+      if (typeof (llm as any).withStructuredOutput === 'function') {
+        const structuredLLM = (llm as any).withStructuredOutput(schema);
+        const result = await structuredLLM.invoke(messages);
+        if (result) return result as T;
+      }
+
+      const response = await llm.invoke(messages);
+      const text = typeof response.content === 'string' ? response.content : JSON.stringify(response.content);
+      const cleaned = text.replace(/```(?:json)?\s*/gi, '').replace(/\s*```/gi, '').trim();
+      const parsed = JSON.parse(cleaned);
+      const validated = schema.safeParse(parsed);
+      if (validated.success) return validated.data;
+    } catch (err) {
+      console.warn('[LLMClient:StructuredOutput] LangChain structured output failed, falling back:', err);
+    }
+    return null;
+  }
+
   static async completeJSON<T>(options: LLMCompletionOptions): Promise<{ data: T; provider: string; model: string } | null> {
     const res = await this.complete(options);
     if (!res || !res.text) return null;
@@ -310,4 +340,12 @@ export class LLMClient {
 }
 
 export const GrokLLMClient = LLMClient;
+
+export async function completeStructured<T>(
+  schema: import('zod').ZodType<T>,
+  prompt: string,
+  systemPrompt?: string
+): Promise<T | null> {
+  return LLMClient.completeStructured(schema, prompt, systemPrompt);
+}
 

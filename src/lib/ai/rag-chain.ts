@@ -1,11 +1,12 @@
-// Real LangChain Production RAG Chain using RunnableSequence, pgvector Cosine Search, and LLM Grounding.
-
+import { RunnableSequence, RunnableLambda } from '@langchain/core/runnables';
+import { StringOutputParser } from '@langchain/core/output_parsers';
 import { ragPromptTemplate } from './prompt';
 import { PgVectorRetriever } from './retriever';
 import { IntentClassifier, IntentCategory } from './intent-classifier';
 import { LLMClient } from './llm-client';
 import { isEmbeddingConfigured } from './embeddings';
 import { UserAIContext } from '@/services/user-context.service';
+import { getLangChainChatGroq } from './lc-llm';
 
 export interface GroundedRAGDocument {
   id: string;
@@ -24,8 +25,59 @@ export interface GroundedRAGResult {
   recommendedActions: string[];
 }
 
+export interface RAGChainInput {
+  question: string;
+  userContextSnippet?: string;
+}
+
+/**
+ * Builds a real LangChain RunnableSequence:
+ * Input -> PgVectorRetriever -> format context -> ragPromptTemplate -> ChatGroq -> StringOutputParser
+ */
+export function buildRunnableRAGChain(retriever: PgVectorRetriever) {
+  const model = getLangChainChatGroq({ temperature: 0.2 });
+  const parser = new StringOutputParser();
+  const isTracing = process.env.LANGCHAIN_TRACING_ENABLED === 'true';
+
+  const chain = RunnableSequence.from<RAGChainInput, string>([
+    {
+      context: new RunnableLambda({
+        func: async (input: RAGChainInput) => {
+          const t0 = performance.now();
+          const docs = await retriever.invoke(input.question);
+          const formatted = docs
+            .map((d) => `[Source: ${d.metadata?.source || 'Growearn'}]\n${d.pageContent}`)
+            .join('\n\n');
+          if (isTracing) {
+            console.log(`[LangChain:Trace] Retriever step completed in ${(performance.now() - t0).toFixed(2)}ms`);
+          }
+          return input.userContextSnippet ? `${formatted}\n\n${input.userContextSnippet}` : formatted;
+        },
+      }),
+      question: new RunnableLambda({
+        func: (input: RAGChainInput) => input.question,
+      }),
+    },
+    ragPromptTemplate,
+    model,
+    parser,
+  ]);
+
+  return chain;
+}
+
+export const defaultRetriever = new PgVectorRetriever();
+export const ragChain = buildRunnableRAGChain(defaultRetriever);
+
+export async function executeRAGWithTracing(input: RAGChainInput): Promise<string> {
+  const chain = buildRunnableRAGChain(new PgVectorRetriever());
+  return chain.invoke(input);
+}
+
 export class ProductionRAGChain {
-  // Executes the full production RAG pipeline.
+  /**
+   * Executes the full production RAG pipeline using LangChain RunnableSequence.
+   */
   static async execute(
     question: string,
     userContext?: UserAIContext | null
@@ -45,11 +97,12 @@ export class ProductionRAGChain {
     // 1. Structured Intent Classification
     const { intent } = await IntentClassifier.classify(q);
 
-    // 2. Query pgvector Vector Store (if live embeddings configured) or database fallback
+    // 2. Query pgvector Vector Store via PgVectorRetriever
     let chunkRecords: any[] = [];
+    const retriever = new PgVectorRetriever({ topK: 5 });
+
     if (isEmbeddingConfigured()) {
       try {
-        const retriever = new PgVectorRetriever({ topK: 5 });
         chunkRecords = await retriever.retrieveRecords(q);
       } catch {
         chunkRecords = [];
@@ -67,58 +120,69 @@ export class ProductionRAGChain {
     const avgSimilarity =
       retrievedDocuments.length > 0
         ? Number(
-            (
-              retrievedDocuments.reduce((sum, d) => sum + (d.similarity || 0), 0) /
-              retrievedDocuments.length
-            ).toFixed(4)
-          )
+          (
+            retrievedDocuments.reduce((sum, d) => sum + (d.similarity || 0), 0) /
+            retrievedDocuments.length
+          ).toFixed(4)
+        )
         : 0;
 
     const sources = Array.from(new Set(retrievedDocuments.map((d) => d.source)));
 
-    // 3. Construct Context
-    let contextString = PgVectorRetriever.formatDocsForPrompt(chunkRecords);
-
-    // Append localized user profile context if available
+    // 3. User profile context snippet
+    let userSnippet: string | undefined = undefined;
     if (userContext) {
       const userSkills = userContext.skills?.join(', ') || 'None added yet';
       const targetRole = userContext.profile?.targetRole || userContext.profile?.careerGoal || 'Software Engineer';
-      const userSnippet = `\n[User Profile Context: ${userContext.name}]\n- Target Role: ${targetRole}\n- Verified Skills: ${userSkills}\n- Experience Level: ${userContext.profile?.experienceLevel || 'Intermediate'}`;
-      contextString = `${contextString}\n\n${userSnippet}`;
+      userSnippet = `[User Profile Context: ${userContext.name}]\n- Target Role: ${targetRole}\n- Verified Skills: ${userSkills}\n- Experience Level: ${userContext.profile?.experienceLevel || 'Intermediate'}`;
     }
 
-    // 4. Grounded LLM Generation
+    // 4. Grounded LLM Generation using LangChain RunnableSequence
     let answer = '';
     const isLLMAvailable = LLMClient.isAvailable();
 
     if (isLLMAvailable) {
       try {
-        const formattedPrompt = await ragPromptTemplate.formatMessages({
-          context: contextString,
+        const ragChain = buildRunnableRAGChain(retriever);
+        const t0 = performance.now();
+        answer = await ragChain.invoke({
           question: q,
+          userContextSnippet: userSnippet,
         });
 
-        const systemMessage = formattedPrompt[0]?.content as string;
-        const userMessage = formattedPrompt[1]?.content as string;
-
-        const completion = await LLMClient.complete({
-          messages: [
-            { role: 'system', content: systemMessage },
-            { role: 'user', content: userMessage },
-          ],
-          temperature: 0.2,
-          maxTokens: 1500,
-        });
-
-        if (completion && completion.text) {
-          answer = completion.text;
+        if (process.env.LANGCHAIN_TRACING_ENABLED === 'true') {
+          console.log(`[LangChain:Trace] RunnableSequence total latency: ${(performance.now() - t0).toFixed(2)}ms`);
         }
-      } catch (llmError) {
-        console.error('[ProductionRAGChain] LLM Generation error, generating structured grounded fallback:', llmError);
+      } catch (_chainError) {
+        // Fallback to LLMClient direct call if LangChain sequence fails
+        try {
+          let contextString = PgVectorRetriever.formatDocsForPrompt(chunkRecords);
+          if (userSnippet) contextString = `${contextString}\n\n${userSnippet}`;
+
+          const formattedPrompt = await ragPromptTemplate.formatMessages({
+            context: contextString,
+            question: q,
+          });
+
+          const completion = await LLMClient.complete({
+            messages: [
+              { role: 'system', content: formattedPrompt[0]?.content as string },
+              { role: 'user', content: formattedPrompt[1]?.content as string },
+            ],
+            temperature: 0.2,
+            maxTokens: 1500,
+          });
+
+          if (completion && completion.text) {
+            answer = completion.text;
+          }
+        } catch (llmError) {
+          console.error('[ProductionRAGChain] Generation error, utilizing grounded fallback:', llmError);
+        }
       }
     }
 
-    // Fallback if LLM unavailable or empty
+    // Grounded fallback if LLM unavailable
     if (!answer) {
       if (retrievedDocuments.length > 0) {
         answer = `Based on the GrowEarn platform database:\n\n${retrievedDocuments
