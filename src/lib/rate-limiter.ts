@@ -43,15 +43,15 @@ export class DatabaseRateLimiter {
       const rows = await prisma.$queryRawUnsafe<Array<{ points: number; expires_at: Date }>>(
         `
         INSERT INTO rate_limits (key, points, expires_at)
-        VALUES ($1, 1, $2)
+        VALUES ($1, 1, NOW() + ($2 || ' seconds')::interval)
         ON CONFLICT (key)
         DO UPDATE SET
           points = CASE WHEN rate_limits.expires_at < NOW() THEN 1 ELSE rate_limits.points + 1 END,
-          expires_at = CASE WHEN rate_limits.expires_at < NOW() THEN $2 ELSE rate_limits.expires_at END
+          expires_at = CASE WHEN rate_limits.expires_at < NOW() THEN NOW() + ($2 || ' seconds')::interval ELSE rate_limits.expires_at END
         RETURNING points, expires_at;
         `,
         key,
-        expiresAt
+        windowSeconds.toString()
       );
 
       const record = rows[0];
@@ -127,7 +127,8 @@ export async function enforceRateLimit(
   userId?: string
 ): Promise<NextResponse | null> {
   // In automated test environments only, bypass rate limiting if CI=true is explicitly set
-  if (process.env.NODE_ENV === 'test' && process.env.CI === 'true') {
+  // UNLESS the request is explicitly testing rate limits
+  if (process.env.NODE_ENV === 'test' && process.env.CI === 'true' && !req.headers.has('x-test-rate-limit')) {
     return null;
   }
 

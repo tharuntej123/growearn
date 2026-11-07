@@ -125,7 +125,7 @@ jobs:
       - name: 14. Install Playwright Browsers & OS Dependencies
         run: npx playwright install --with-deps chromium
 
-      - name: 12. Run Playwright End-to-End Browser Tests
+      - name: 15. Run Playwright End-to-End Browser Tests
         run: npx playwright test --reporter=list,github
         env:
           CI: "true"

@@ -36,15 +36,16 @@ export async function runAIRateLimitTests() {
 
   const testIp = `198.51.100.${Math.floor(Math.random() * 200) + 1}`;
 
-  // Helper to construct request
-  function makeReq(path: string, body?: any, method = 'POST') {
+  // Helper to construct request with isolated identity
+  function makeReq(path: string, body?: any, method = 'POST', testUser = userId) {
     return new NextRequest(`http://localhost:3000${path}`, {
       method,
       headers: {
         'content-type': 'application/json',
-        'x-mock-user-id': userId,
+        'x-mock-user-id': testUser,
         'x-mock-role': 'LEARNER',
         'x-forwarded-for': testIp,
+        'x-test-rate-limit': 'true',
       },
       body: body ? JSON.stringify(body) : undefined,
     });
@@ -52,9 +53,10 @@ export async function runAIRateLimitTests() {
 
   // 1. Hammer /api/ai/courses
   {
+    const u1 = 'rate-test-courses-' + Math.random().toString(36).slice(2);
     let saw429 = false;
     for (let i = 0; i < 35; i++) {
-      const res = await coursesGet(makeReq('/api/ai/courses?skill=React', undefined, 'GET'));
+      const res = await coursesGet(makeReq('/api/ai/courses?skill=React', undefined, 'GET', u1));
       if (res.status === 429) {
         saw429 = true;
         break;
@@ -65,9 +67,10 @@ export async function runAIRateLimitTests() {
 
   // 2. Hammer /api/ai/mentors
   {
+    const u2 = 'rate-test-mentors-' + Math.random().toString(36).slice(2);
     let saw429 = false;
     for (let i = 0; i < 35; i++) {
-      const res = await mentorsGet(makeReq('/api/ai/mentors?skill=Next.js', undefined, 'GET'));
+      const res = await mentorsGet(makeReq('/api/ai/mentors?skill=Next.js', undefined, 'GET', u2));
       if (res.status === 429) {
         saw429 = true;
         break;
@@ -78,9 +81,10 @@ export async function runAIRateLimitTests() {
 
   // 3. Hammer /api/ai/message
   {
+    const u3 = 'rate-test-message-' + Math.random().toString(36).slice(2);
     let saw429 = false;
-    for (let i = 0; i < 25; i++) {
-      const res = await messagePost(makeReq('/api/ai/message', { message: 'Hello AI' }));
+    for (let i = 0; i < 35; i++) {
+      const res = await messagePost(makeReq('/api/ai/message', { message: 'Hello AI' }, 'POST', u3));
       if (res.status === 429) {
         saw429 = true;
         break;
@@ -91,10 +95,11 @@ export async function runAIRateLimitTests() {
 
   // 4. Hammer /api/ai/skill-analysis
   {
+    const u4 = 'rate-test-skills-' + Math.random().toString(36).slice(2);
     let saw429 = false;
-    for (let i = 0; i < 25; i++) {
+    for (let i = 0; i < 35; i++) {
       const res = await skillAnalysisPost(
-        makeReq('/api/ai/skill-analysis', { targetRole: 'Backend Engineer' })
+        makeReq('/api/ai/skill-analysis', { targetRole: 'Backend Engineer' }, 'POST', u4)
       );
       if (res.status === 429) {
         saw429 = true;
@@ -106,10 +111,11 @@ export async function runAIRateLimitTests() {
 
   // 5. Hammer /api/ai/roadmap/agentic
   {
+    const u5 = userId;
     let saw429 = false;
-    for (let i = 0; i < 25; i++) {
+    for (let i = 0; i < 35; i++) {
       const res = await agenticPost(
-        makeReq('/api/ai/roadmap/agentic', { targetRole: 'DevOps Engineer' })
+        makeReq('/api/ai/roadmap/agentic', { targetRole: 'DevOps Engineer' }, 'POST', u5)
       );
       if (res.status === 429) {
         saw429 = true;
