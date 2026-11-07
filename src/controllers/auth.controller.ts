@@ -262,7 +262,10 @@ export class AuthController {
    */
   static async retiredPasswordEndpoint() {
     return NextResponse.json(
-      { error: 'Password authentication retired. Use Google OAuth or request a magic link.' },
+      {
+        success: false,
+        error: 'Password authentication retired. Use Google OAuth or request a magic link.',
+      },
       { status: 410 }
     );
   }
