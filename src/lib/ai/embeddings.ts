@@ -231,6 +231,9 @@ export function getEmbeddingProvider(): LocalBGE3EmbeddingProvider {
 }
 
 export function isEmbeddingConfigured(): boolean {
+  if (process.env.NODE_ENV === 'production' && process.env.MOCK_AI === 'true') {
+    throw new Error('FATAL: MOCK_AI cannot be enabled in production environment.');
+  }
   if (process.env.MOCK_AI === 'true' || process.env.DISABLE_EMBEDDINGS === 'true') {
     return false;
   }
