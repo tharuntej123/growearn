@@ -13,7 +13,7 @@ async function testLiveGroq() {
   console.log('\n--- 1. Testing Direct Groq API Completion ---');
   const directResult = await LLMClient.complete({
     messages: [
-      { role: 'system', content: 'You are Growearn AI Assistant.' },
+      { role: 'system', content: 'You are GrowEarn AI Assistant.' },
       { role: 'user', content: 'In 2 sentences, explain what Python is.' },
     ],
     temperature: 0.3,

@@ -1,5 +1,5 @@
 import { logger } from '@/lib/logger';
-// Real-time Multi-RAG Synchronization Service for GroEarn.
+// Real-time Multi-RAG Synchronization Service for GrowEarn.
 // Automatically ingests new/updated Mentors, Jobs, Courses, and Candidates into pgvector (BGE-M3 1024 dims).
 
 import prisma from '@/lib/prisma';
@@ -87,7 +87,7 @@ export class RAGSyncService {
         name: mentor.user.name,
         headline: mentor.user.headline || mentor.title || 'Expert Mentor',
         expertise,
-        bio: mentor.bio || `${mentor.user.name} is an active mentor on GroEarn.`,
+        bio: mentor.bio || `${mentor.user.name} is an active mentor on GrowEarn.`,
         hourlyRate: Number(mentor.hourlyRate),
         yearsExperience: mentor.yearsExperience,
       });

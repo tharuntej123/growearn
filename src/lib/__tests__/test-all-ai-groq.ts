@@ -20,7 +20,7 @@ async function runGroqSuite() {
   console.log('\n2. Testing Live Groq Chat Completion...');
   const directChat = await LLMClient.complete({
     messages: [
-      { role: 'system', content: 'You are an AI assistant on Growearn. Answer concisely.' },
+      { role: 'system', content: 'You are an AI assistant on GrowEarn. Answer concisely.' },
       { role: 'user', content: 'What is Python in 1 sentence?' },
     ],
     temperature: 0.2,

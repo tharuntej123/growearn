@@ -11,7 +11,7 @@ export class S3StorageProvider implements IStorageProvider {
   private secretAccessKey: string;
 
   constructor() {
-    this.bucket = process.env.AWS_S3_BUCKET || 'groearn-resumes';
+    this.bucket = process.env.AWS_S3_BUCKET || 'growearn-resumes';
     this.region = process.env.AWS_REGION || 'us-east-1';
     this.accessKeyId = process.env.AWS_ACCESS_KEY_ID || '';
     this.secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY || '';
@@ -123,7 +123,7 @@ export class R2StorageProvider implements IStorageProvider {
   private publicUrl: string;
 
   constructor() {
-    this.bucket = process.env.R2_BUCKET || 'groearn-resumes';
+    this.bucket = process.env.R2_BUCKET || 'growearn-resumes';
     this.accountId = process.env.R2_ACCOUNT_ID || '';
     this.accessKeyId = process.env.R2_ACCESS_KEY_ID || '';
     this.secretAccessKey = process.env.R2_SECRET_ACCESS_KEY || '';
@@ -225,7 +225,7 @@ export class GCSStorageProvider implements IStorageProvider {
   private bucket: string;
 
   constructor() {
-    this.bucket = process.env.GCS_BUCKET || 'groearn-resumes';
+    this.bucket = process.env.GCS_BUCKET || 'growearn-resumes';
   }
 
   async upload(

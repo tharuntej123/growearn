@@ -2,9 +2,9 @@ name: Continuous Integration & Verification (CI)
 
 on:
   push:
-    branches: [main, master, develop]
+    branches: [main, master, develop, hardening/production]
   pull_request:
-    branches: [main, master]
+    branches: [main, master, hardening/production]
 
 jobs:
   validate-and-build:
@@ -17,27 +17,26 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgrespassword
-          POSTGRES_DB: groearn_test
+          POSTGRES_DB: growearn_test
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U postgres -d groearn_test"
+          --health-cmd "pg_isready -U postgres -d growearn_test"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
 
     env:
-      DATABASE_URL: "postgresql://postgres:postgrespassword@127.0.0.1:5432/groearn_test?sslmode=disable"
-      DIRECT_URL: "postgresql://postgres:postgrespassword@127.0.0.1:5432/groearn_test?sslmode=disable"
+      DATABASE_URL: "postgresql://postgres:postgrespassword@127.0.0.1:5432/growearn_test?sslmode=disable"
+      DIRECT_URL: "postgresql://postgres:postgrespassword@127.0.0.1:5432/growearn_test?sslmode=disable"
       AUTH_SECRET: "ci-test-auth-secret-key-minimum-32-chars-long-secure-random"
       AUTH_URL: "http://127.0.0.1:3000"
       GOOGLE_CLIENT_ID: "mock-ci-google-client-id.apps.googleusercontent.com"
       GOOGLE_CLIENT_SECRET: "mock-ci-google-client-secret"
       INTERNAL_SERVICE_KEY: "ci-internal-service-key-minimum-32-characters-long"
-      MOCK_AI: "true"
+      APP_ENV: "test"
       NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3000"
       STORAGE_PROVIDER: "local"
-      ALLOW_PRODUCTION_SEED: "true"
       CASHFREE_ENVIRONMENT: "sandbox"
       CASHFREE_CLIENT_ID: "test_cashfree_client_id_for_verification"
       CASHFREE_CLIENT_SECRET: "test_secret_for_cryptographic_verification_key"
@@ -69,15 +68,15 @@ jobs:
         run: |
           sudo apt-get update -y && sudo apt-get install -y postgresql-client
           for i in $(seq 1 30); do
-            if pg_isready -h 127.0.0.1 -p 5432 -U postgres -d groearn_test; then
+            if pg_isready -h 127.0.0.1 -p 5432 -U postgres -d growearn_test; then
               echo "PostgreSQL service is ready and accepting connections!"
               break
             fi
             echo "Waiting for PostgreSQL ($i/30)..."
             sleep 1
           done
-          psql "postgresql://postgres:postgrespassword@127.0.0.1:5432/groearn_test?sslmode=disable" -c "CREATE EXTENSION IF NOT EXISTS vector;"
-          psql "postgresql://postgres:postgrespassword@127.0.0.1:5432/groearn_test?sslmode=disable" -c "SELECT extname, extversion FROM pg_extension WHERE extname = 'vector';"
+          psql "postgresql://postgres:postgrespassword@127.0.0.1:5432/growearn_test?sslmode=disable" -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          psql "postgresql://postgres:postgrespassword@127.0.0.1:5432/growearn_test?sslmode=disable" -c "SELECT extname, extversion FROM pg_extension WHERE extname = 'vector';"
 
       - name: 3. Generate Prisma Client
         run: npx prisma generate
@@ -88,7 +87,7 @@ jobs:
       - name: 5. Seed Database for Testing
         run: npx tsx prisma/seed.ts
         env:
-          ALLOW_PRODUCTION_SEED: "true"
+          APP_ENV: "test"
 
       - name: 6. Run Strict TypeScript Typecheck
         run: npm run typecheck
@@ -131,8 +130,9 @@ jobs:
         env:
           CI: "true"
           NODE_ENV: "production"
-          DATABASE_URL: "postgresql://postgres:postgrespassword@127.0.0.1:5432/groearn_test?sslmode=disable"
-          DIRECT_URL: "postgresql://postgres:postgrespassword@127.0.0.1:5432/groearn_test?sslmode=disable"
+          APP_ENV: "test"
+          DATABASE_URL: "postgresql://postgres:postgrespassword@127.0.0.1:5432/growearn_test?sslmode=disable"
+          DIRECT_URL: "postgresql://postgres:postgrespassword@127.0.0.1:5432/growearn_test?sslmode=disable"
           AUTH_SECRET: "ci-test-auth-secret-key-minimum-32-chars-long-secure-random"
           AUTH_URL: "http://127.0.0.1:3000"
           GOOGLE_CLIENT_ID: "mock-ci-google-client-id.apps.googleusercontent.com"

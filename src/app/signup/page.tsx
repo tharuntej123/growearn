@@ -113,7 +113,7 @@ function SignupContent() {
             <Sparkles className="h-6 w-6" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Create Your Growearn Account
+            Create Your GrowEarn Account
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto">
             Choose your role, then continue with Google to unlock your customized workspace.

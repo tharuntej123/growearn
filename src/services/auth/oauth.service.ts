@@ -267,7 +267,7 @@ export class OAuthService {
           mentorProfile: isMentor
             ? {
                 create: {
-                  bio: `${name} is an expert mentor available for guidance on GroEarn.`,
+                  bio: `${name} is an expert mentor available for guidance on GrowEarn.`,
                   expertise: 'Software Engineering, Web Development',
                   hourlyRate: 50,
                   yearsExperience: 5,
@@ -321,7 +321,7 @@ export class OAuthService {
   }
 
   /**
-   * Confirms linking a Google identity to an existing GroEarn account.
+   * Confirms linking a Google identity to an existing GrowEarn account.
    */
   static async confirmAccountLink(params: {
     linkingToken: string;
@@ -363,7 +363,7 @@ export class OAuthService {
 
     if (existingAccount) {
       if (existingAccount.userId !== user.id) {
-        throw new Error('This Google account is already linked to another GroEarn user profile.');
+        throw new Error('This Google account is already linked to another GrowEarn user profile.');
       }
     } else {
       // Create identity mapping

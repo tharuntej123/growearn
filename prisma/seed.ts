@@ -7,7 +7,7 @@ async function main() {
   console.log('🌱 Starting database seed...');
   await seedReferenceData();
 
-  if (process.env.APP_ENV === 'demo' || process.env.APP_ENV === 'development') {
+  if (process.env.APP_ENV === 'demo' || process.env.APP_ENV === 'development' || process.env.APP_ENV === 'test') {
     const { seedFixtures } = await import('./seed/fixtures');
     await seedFixtures();
   }

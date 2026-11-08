@@ -1,4 +1,4 @@
-// Official PaymentProvider interface for GroEarn live Cashfree marketplace payments.
+// Official PaymentProvider interface for GrowEarn live Cashfree marketplace payments.
 
 export type PaymentProviderName = 'CASHFREE';
 

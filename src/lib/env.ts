@@ -10,6 +10,7 @@ const envSchema = z.object({
   DIRECT_URL: z.string().optional(),
   
   // Authentication & Security
+  AUTH_SECRET: z.string().min(32).optional(),
   JWT_SECRET: z.string().min(16).default('development-jwt-secret-minimum-16-characters-long'),
   SESSION_SECRET: z.string().min(16).default('development-session-secret-at-least-16-chars'),
   INTERNAL_SERVICE_KEY: z.string().min(16).default('default-internal-service-key-32-chars-long'),

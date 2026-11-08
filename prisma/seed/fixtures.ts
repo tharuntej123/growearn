@@ -20,6 +20,8 @@ export async function seedFixtures() {
   console.log(`🌱 Seeding demo/staging fixtures for environment: ${env}...`);
   // Ensure reference skills are seeded first
   await seedReferenceData();
+  const { seedFixturesData } = await import('./data/fixtures');
+  await seedFixturesData();
 
   console.log('✅ Demo fixture provisioning completed successfully.');
 }
