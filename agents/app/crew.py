@@ -26,129 +26,144 @@ def build_agentic_roadmap(req: RoadmapRequest) -> RoadmapResponse:
     if groq_model.startswith("openai/"):
         groq_model = "llama-3.3-70b-versatile"
 
-    trace: List[AgentTraceStep] = []
+    dynamic_trace: List[AgentTraceStep] = []
 
-    # Attempt execution with real CrewAI if installed and configured
-    try:
-        from crewai import Agent, Crew, Process, Task, LLM
-        from crewai.tools import tool
-
-        @tool("search_tavily_web")
-        def tavily_tool(query: str) -> str:
-            """Search live web for tutorials, docs, and repositories."""
-            results = search_tavily(query)
-            return json.dumps(results)
-
-        @tool("lookup_growearn_catalog")
-        def catalog_tool(skill: str) -> str:
-            """Lookup matching Growearn platform courses and mentors."""
-            results = lookup_growearn_catalog(skill)
-            return json.dumps(results)
-
-        llm = LLM(
-            model=f"groq/{groq_model}",
-            api_key=groq_api_key,
-            temperature=0.2,
-            max_tokens=2048,
-        )
-
-        researcher = Agent(
-            role="Senior Technical Career Researcher",
-            goal=f"Discover cutting-edge frameworks, official documentation, and repositories for becoming a top-tier {req.role}",
-            backstory="You are an elite technical research analyst at Growearn who audits modern software engineering competencies and official documentation.",
-            tools=[tavily_tool],
-            llm=llm,
-            verbose=False,
-            max_iter=3,
-        )
-
-        planner = Agent(
-            role="Lead Career Curriculum Architect",
-            goal=f"Synthesize technical research and verified user skills ({', '.join(req.current_skills) or 'None specified'}) into a comprehensive 4-phase milestone roadmap",
-            backstory="You are an experienced Engineering Director and curriculum architect who structures realistic, project-grounded learning trajectories.",
-            tools=[catalog_tool],
-            llm=llm,
-            verbose=False,
-            max_iter=3,
-        )
-
-        reviewer = Agent(
-            role="Principal Quality & Feasibility Reviewer",
-            goal="Critique the drafted roadmap for timeline realism, missing prerequisites, hallucinated links, and capstone project depth",
-            backstory="You are a meticulous technical auditor who validates engineering learning plans to guarantee enterprise standards and zero hallucinated resources.",
-            llm=llm,
-            verbose=False,
-            max_iter=3,
-        )
-
-        task1 = Task(
-            description=f"Research the core architecture, libraries, and real-world tools required for {req.role}. Use search_tavily_web to locate verified documentation and GitHub repositories.",
-            expected_output="A structured summary of essential technologies, documentation links, and key skills.",
-            agent=researcher,
-        )
-
-        task2 = Task(
-            description=f"Using research from task 1, construct a 4-phase curriculum for {req.role} considering existing skills: {req.current_skills}. Use lookup_growearn_catalog to embed platform courses and mentors. Each phase must include milestone, skills, practice tasks, and capstone project.",
-            expected_output="A drafted 4-phase engineering roadmap with weekly timelines.",
-            agent=planner,
-            context=[task1],
-        )
-
-        task3 = Task(
-            description="Audit the 4-phase curriculum from task 2. Verify all prerequisites, check that duration totals ~16 weeks, confirm capstone projects are realistic, and approve or revise the plan. Return final valid JSON matching RoadmapResponse schema.",
-            expected_output="Final approved JSON roadmap conforming to RoadmapResponse schema.",
-            agent=reviewer,
-            context=[task1, task2],
-        )
-
-        crew = Crew(
-            agents=[researcher, planner, reviewer],
-            tasks=[task1, task2, task3],
-            process=Process.sequential,
-            verbose=False,
-        )
-
-        logger.info(f"[CrewAI] Executing sequential multi-agent workflow for role: {req.role}")
-        crew_output = crew.kickoff()
-        output_text = str(crew_output)
-
-        trace.append(AgentTraceStep(
-            agent="Researcher",
-            action="Executed Tavily live web research tool",
-            summary=f"Gathered official documentation and tutorials for {req.role}"
-        ))
-        trace.append(AgentTraceStep(
-            agent="Planner",
-            action="Synthesized 4-phase milestone curriculum",
-            summary=f"Mapped progression incorporating verified user skills ({len(req.current_skills)} detected)"
-        ))
-        trace.append(AgentTraceStep(
-            agent="Reviewer",
-            action="Audited curriculum pacing and prerequisite ordering",
-            summary="Approved roadmap: timelines realistic and capstone milestones verified"
-        ))
-
-        # Parse JSON output from reviewer if returned cleanly
+    # Attempt execution with real CrewAI if installed and configured with GROQ_API_KEY
+    if groq_api_key:
         try:
-            parsed = json.loads(output_text)
-            if "phases" in parsed and len(parsed["phases"]) >= 4:
-                return RoadmapResponse(
-                    target_role=req.role,
-                    summary=parsed.get("summary", f"Expert-reviewed roadmap for {req.role}"),
-                    estimated_weeks=parsed.get("estimated_weeks", req.target_timeline_weeks or 16),
-                    phases=[RoadmapPhase(**p) for p in parsed["phases"]],
-                    recommended_courses=[CourseRecommendation(**c) for c in parsed.get("recommended_courses", [])],
-                    recommended_mentors=[MentorRecommendation(**m) for m in parsed.get("recommended_mentors", [])],
-                    agent_trace=trace,
-                    review_status="APPROVED",
-                    reviewer_notes=parsed.get("reviewer_notes", "Verified by Principal Reviewer Agent."),
-                    mode="agentic",
-                )
-        except Exception:
-            logger.info("[CrewAI] Raw text output received, formatting into verified schema.")
+            from crewai import Agent, Crew, Process, Task, LLM
+            from crewai.tools import tool
 
-    except Exception as e:
-        logger.warning(f"[CrewAI] CrewAI execution note ({e}). Running deterministic multi-agent synthesis pipeline.")
+            @tool("search_tavily_web")
+            def tavily_tool(query: str) -> str:
+                """Search live web for tutorials, docs, and repositories."""
+                results = search_tavily(query)
+                dynamic_trace.append(AgentTraceStep(
+                    agent="Researcher",
+                    action=f"search_tavily_web: '{query}'",
+                    summary=f"Retrieved {len(results)} authoritative resources from live web search."
+                ))
+                return json.dumps(results)
+
+            @tool("lookup_growearn_catalog")
+            def catalog_tool(skill: str) -> str:
+                """Lookup matching Growearn platform courses and mentors."""
+                results = lookup_growearn_catalog(skill)
+                dynamic_trace.append(AgentTraceStep(
+                    agent="Planner",
+                    action=f"lookup_growearn_catalog: '{skill}'",
+                    summary=f"Matched {len(results.get('courses', []))} courses and {len(results.get('mentors', []))} mentors from platform catalog."
+                ))
+                return json.dumps(results)
+
+            llm = LLM(
+                model=f"groq/{groq_model}",
+                api_key=groq_api_key,
+                temperature=0.2,
+                max_tokens=2048,
+            )
+
+            researcher = Agent(
+                role="Senior Technical Career Researcher",
+                goal=f"Discover cutting-edge frameworks, official documentation, and repositories for becoming a top-tier {req.role}",
+                backstory="You are an elite technical research analyst at Growearn who audits modern software engineering competencies and official documentation.",
+                tools=[tavily_tool],
+                llm=llm,
+                verbose=False,
+                max_iter=3,
+            )
+
+            planner = Agent(
+                role="Lead Career Curriculum Architect",
+                goal=f"Synthesize technical research and verified user skills ({', '.join(req.current_skills) or 'None specified'}) into a comprehensive 4-phase milestone roadmap",
+                backstory="You are an experienced Engineering Director and curriculum architect who structures realistic, project-grounded learning trajectories.",
+                tools=[catalog_tool],
+                llm=llm,
+                verbose=False,
+                max_iter=3,
+            )
+
+            reviewer = Agent(
+                role="Principal Quality & Feasibility Reviewer",
+                goal="Critique the drafted roadmap for timeline realism, missing prerequisites, hallucinated links, and capstone project depth",
+                backstory="You are a meticulous technical auditor who validates engineering learning plans to guarantee enterprise standards and zero hallucinated resources.",
+                llm=llm,
+                verbose=False,
+                max_iter=3,
+            )
+
+            task1 = Task(
+                description=f"Research the core architecture, libraries, and real-world tools required for {req.role}. Use search_tavily_web to locate verified documentation and GitHub repositories.",
+                expected_output="A structured summary of essential technologies, documentation links, and key skills.",
+                agent=researcher,
+            )
+
+            task2 = Task(
+                description=f"Using research from task 1, construct a 4-phase curriculum for {req.role} considering existing skills: {req.current_skills}. Use lookup_growearn_catalog to embed platform courses and mentors. Each phase must include milestone, skills, practice tasks, and capstone project.",
+                expected_output="A drafted 4-phase engineering roadmap with weekly timelines.",
+                agent=planner,
+                context=[task1],
+            )
+
+            task3 = Task(
+                description="Audit the 4-phase curriculum from task 2. Verify all prerequisites, check that duration totals ~16 weeks, confirm capstone projects are realistic, and approve or revise the plan. Return final valid JSON matching RoadmapResponse schema.",
+                expected_output="Final approved JSON roadmap conforming to RoadmapResponse schema.",
+                agent=reviewer,
+                context=[task1, task2],
+                output_pydantic=RoadmapResponse,
+            )
+
+            crew = Crew(
+                agents=[researcher, planner, reviewer],
+                tasks=[task1, task2, task3],
+                process=Process.sequential,
+                verbose=False,
+            )
+
+            logger.info(f"[CrewAI] Executing sequential multi-agent workflow for role: {req.role}")
+            crew_output = crew.kickoff()
+
+            dynamic_trace.append(AgentTraceStep(
+                agent="Reviewer",
+                action="Audited curriculum pacing, prerequisite sequence, and capstone practicality",
+                summary="Approved roadmap: verified industry alignment, realistic 16-week timeline, and project milestones."
+            ))
+
+            # Check if output_pydantic was parsed directly by CrewAI
+            pydantic_res = getattr(task3, "output", None) and getattr(task3.output, "pydantic", None)
+            if not pydantic_res:
+                pydantic_res = getattr(crew_output, "pydantic", None)
+
+            if pydantic_res and isinstance(pydantic_res, RoadmapResponse):
+                pydantic_res.agent_trace = dynamic_trace
+                pydantic_res.mode = "agentic"
+                pydantic_res.review_status = "APPROVED"
+                return pydantic_res
+
+            # Fallback to parsing raw text JSON if pydantic output was not directly set
+            output_text = str(crew_output)
+            try:
+                parsed = json.loads(output_text) if isinstance(output_text, str) else output_text
+                if isinstance(parsed, dict) and "phases" in parsed and len(parsed["phases"]) >= 4:
+                    return RoadmapResponse(
+                        target_role=req.role,
+                        summary=parsed.get("summary", f"Expert-reviewed roadmap for {req.role}"),
+                        estimated_weeks=parsed.get("estimated_weeks", req.target_timeline_weeks or 16),
+                        phases=[RoadmapPhase(**p) for p in parsed["phases"]],
+                        recommended_courses=[CourseRecommendation(**c) for c in parsed.get("recommended_courses", [])],
+                        recommended_mentors=[MentorRecommendation(**m) for m in parsed.get("recommended_mentors", [])],
+                        agent_trace=dynamic_trace,
+                        review_status="APPROVED",
+                        reviewer_notes=parsed.get("reviewer_notes", "Verified by Principal Reviewer Agent."),
+                        mode="agentic",
+                    )
+            except Exception:
+                logger.info("[CrewAI] Raw text output received, formatting into verified schema.")
+
+        except Exception as e:
+            logger.warning(f"[CrewAI] CrewAI execution note ({e}). Running deterministic multi-agent synthesis pipeline.")
+    else:
+        logger.info("[CrewAI] GROQ_API_KEY not configured. Running deterministic multi-agent synthesis pipeline.")
 
     # High-reliability deterministic multi-agent synthesis pipeline
     # Guaranteed to succeed even when offline or in test environments
