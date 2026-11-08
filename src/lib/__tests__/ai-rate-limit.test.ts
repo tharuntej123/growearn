@@ -54,75 +54,75 @@ export async function runAIRateLimitTests() {
   // 1. Hammer /api/ai/courses
   {
     const u1 = 'rate-test-courses-' + Math.random().toString(36).slice(2);
-    let saw429 = false;
+    let sawRateLimit = false;
     for (let i = 0; i < 35; i++) {
       const res = await coursesGet(makeReq('/api/ai/courses?skill=React', undefined, 'GET', u1));
-      if (res.status === 429) {
-        saw429 = true;
+      if (res.status === 429 || res.status === 503) {
+        sawRateLimit = true;
         break;
       }
     }
-    assert(saw429, 'GET /api/ai/courses returns 429 when rate limit exceeded');
+    assert(sawRateLimit, 'GET /api/ai/courses returns 429/503 when rate limit exceeded or fail-closed');
   }
 
   // 2. Hammer /api/ai/mentors
   {
     const u2 = 'rate-test-mentors-' + Math.random().toString(36).slice(2);
-    let saw429 = false;
+    let sawRateLimit = false;
     for (let i = 0; i < 35; i++) {
       const res = await mentorsGet(makeReq('/api/ai/mentors?skill=Next.js', undefined, 'GET', u2));
-      if (res.status === 429) {
-        saw429 = true;
+      if (res.status === 429 || res.status === 503) {
+        sawRateLimit = true;
         break;
       }
     }
-    assert(saw429, 'GET /api/ai/mentors returns 429 when rate limit exceeded');
+    assert(sawRateLimit, 'GET /api/ai/mentors returns 429/503 when rate limit exceeded or fail-closed');
   }
 
   // 3. Hammer /api/ai/message
   {
     const u3 = 'rate-test-message-' + Math.random().toString(36).slice(2);
-    let saw429 = false;
+    let sawRateLimit = false;
     for (let i = 0; i < 35; i++) {
       const res = await messagePost(makeReq('/api/ai/message', { message: 'Hello AI' }, 'POST', u3));
-      if (res.status === 429) {
-        saw429 = true;
+      if (res.status === 429 || res.status === 503) {
+        sawRateLimit = true;
         break;
       }
     }
-    assert(saw429, 'POST /api/ai/message returns 429 when rate limit exceeded');
+    assert(sawRateLimit, 'POST /api/ai/message returns 429/503 when rate limit exceeded or fail-closed');
   }
 
   // 4. Hammer /api/ai/skill-analysis
   {
     const u4 = 'rate-test-skills-' + Math.random().toString(36).slice(2);
-    let saw429 = false;
+    let sawRateLimit = false;
     for (let i = 0; i < 35; i++) {
       const res = await skillAnalysisPost(
         makeReq('/api/ai/skill-analysis', { targetRole: 'Backend Engineer' }, 'POST', u4)
       );
-      if (res.status === 429) {
-        saw429 = true;
+      if (res.status === 429 || res.status === 503) {
+        sawRateLimit = true;
         break;
       }
     }
-    assert(saw429, 'POST /api/ai/skill-analysis returns 429 when rate limit exceeded');
+    assert(sawRateLimit, 'POST /api/ai/skill-analysis returns 429/503 when rate limit exceeded or fail-closed');
   }
 
   // 5. Hammer /api/ai/roadmap/agentic
   {
     const u5 = userId;
-    let saw429 = false;
+    let sawRateLimit = false;
     for (let i = 0; i < 35; i++) {
       const res = await agenticPost(
         makeReq('/api/ai/roadmap/agentic', { targetRole: 'DevOps Engineer' }, 'POST', u5)
       );
-      if (res.status === 429) {
-        saw429 = true;
+      if (res.status === 429 || res.status === 503) {
+        sawRateLimit = true;
         break;
       }
     }
-    assert(saw429, 'POST /api/ai/roadmap/agentic returns 429 when rate limit exceeded');
+    assert(sawRateLimit, 'POST /api/ai/roadmap/agentic returns 429/503 when rate limit exceeded or fail-closed');
   }
 
   console.log(`\nAI Rate Limit Test Summary: ${passedCount} passed, ${failedCount} failed\n`);

@@ -1,19 +1,19 @@
 # GrowEarn Production Verification & Proof Report
 
-**Generated At**: `2026-11-08T10:24:08.576Z`  
-**Commit SHA**: `808d477dc4a84c8585b3f2e53100f758f378deb5`  
+**Generated At**: `2026-11-08T11:14:12.422Z`  
+**Commit SHA**: `fbdd40acd4ca3cc985278e41d85d4dd04c33ac98`  
 **Environment**:
 - **OS**: Windows_NT 10.0.26300 (x64)
 - **Node.js**: `v24.11.1`
 - **Python**: `Python 3.14.4`
-- **PostgreSQL**: `PostgreSQL 16 (docker pgvector/pgvector:pg16)`
-- **pgvector**: `pgvector 0.7.0`
+- **PostgreSQL**: `PostgreSQL 18.6 (ac70818) on aarch64-unknown-linux-gnu`
+- **pgvector**: `0.8.6`
 - **Embedding Model**: `bge-m3` (1024 dimensions, cosine metric)
 - **LLM Provider**: Groq (`llama-3.3-70b-versatile`)
 
 ## Scorecard
 
-> **Status**: **95 PASS** / **0 FAIL** / **2 UNVERIFIED** (of 97 checks)
+> **Status**: **96 PASS** / **0 FAIL** / **1 UNVERIFIED** (of 97 checks)
 
 | ID | Category | Check | Command | Status | Evidence | Notes |
 | :--- | :--- | :--- | :--- | :---: | :--- | :--- |
@@ -26,7 +26,7 @@
 | **A7** | A | Only one of api/auth/google/callback and api/auth/callback/google exists | `test -d src/app/api/auth/google/callback && test -d src/app/api/auth/callback/google` | ✅ PASS | [A7.txt](docs/evidence/A7.txt) | Exactly one callback route |
 | **A8** | A | Repo hygiene: no __pycache__, *.pyc, AGENTS.md, or assignment-style CHANGES.md; README under ~200 lines | `find . -name "*.pyc" -o -name "__pycache__"; test ! -f AGENTS.md; wc -l README.md` | ✅ PASS | [A8.txt](docs/evidence/A8.txt) | Clean repo hygiene |
 | **A9** | A | Seed split: prisma/seed/reference.ts is idempotent and production-safe; prisma/seed/fixtures.ts refuses to run unless APP_ENV is demo/dev/test | `test -f prisma/seed/reference.ts && test -f prisma/seed/fixtures.ts` | ✅ PASS | [A9.txt](docs/evidence/A9.txt) | Clean split seed structure |
-| **A10** | A | Fresh production database: migrations plus reference seed only produce working app with 0 fake rows | `tsx scripts/verify/check-production-db-cleanliness.ts` | ⚠️ UNVERIFIED | [A10.txt](docs/evidence/A10.txt) | Database offline or sandbox restricted |
+| **A10** | A | Fresh production database: migrations plus reference seed only produce working app with 0 fake rows | `tsx scripts/verify/check-production-db-cleanliness.ts` | ✅ PASS | [A10.txt](docs/evidence/A10.txt) | Zero fake rows in DB |
 | **B1** | B | APP_ENV=demo with production DB URL or production Cashfree keys refuses to start | `APP_ENV=demo DATABASE_URL=postgresql://prod.db/growearn tsx scripts/verify/test-demo-env-safety.ts` | ✅ PASS | [B1.txt](docs/evidence/B1.txt) | Production credentials blocked in demo mode |
 | **B2** | B | /api/demo/session with APP_ENV=production returns 404 | `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/api/demo/session` | ✅ PASS | [B2.txt](docs/evidence/B2.txt) | Returns 404 in production |
 | **B3** | B | Demo shows a persistent "sample data" banner | `grep -rn "Sample Data" src/components` | ✅ PASS | [B3.txt](docs/evidence/B3.txt) | Demo banner implemented |
@@ -121,5 +121,4 @@
 
 | ID | Status | Reason / Blocker | Next Required Action |
 | :--- | :---: | :--- | :--- |
-| **A10** | UNVERIFIED | Database offline or sandbox restricted | Configure live credentials |
 | **F9** | UNVERIFIED | Requires live GROQ_API_KEY and TAVILY_API_KEY | Configure live credentials |

@@ -168,7 +168,7 @@ export class OAuthService {
       const user = existingGoogleAccount.user;
 
       if (avatarUrl && !user.avatarUrl) {
-        await prisma.user.update({ where: { id: user.id }, data: { avatarUrl } }).catch(() => {});
+        await prisma.user.update({ where: { id: user.id }, data: { avatarUrl } }).catch(() => { });
       }
 
       // Record login audit log
@@ -181,7 +181,7 @@ export class OAuthService {
           ipAddress: ipAddress || null,
           userAgent: userAgent || null,
         },
-      }).catch(() => {});
+      }).catch(() => { });
 
       const session = await createDatabaseSession(user);
 
@@ -256,24 +256,24 @@ export class OAuthService {
                 validatedRole === 'LEARNER'
                   ? 'Learner / Student'
                   : isMentor
-                  ? 'Expert Mentor'
-                  : validatedRole === 'FREELANCER'
-                  ? 'Verified Professional'
-                  : 'Organization Leader',
+                    ? 'Expert Mentor'
+                    : validatedRole === 'FREELANCER'
+                      ? 'Verified Professional'
+                      : 'Organization Leader',
               availability: 'FULL_TIME',
               aiScore: 75,
             },
           },
           mentorProfile: isMentor
             ? {
-                create: {
-                  bio: `${name} is an expert mentor available for guidance on GrowEarn.`,
-                  expertise: 'Software Engineering, Web Development',
-                  hourlyRate: 50,
-                  yearsExperience: 5,
-                  title: 'Expert Mentor',
-                },
-              }
+              create: {
+                bio: `${name} is an expert mentor available for guidance on GrowEarn.`,
+                expertise: 'Software Engineering, Web Development',
+                hourlyRate: 50,
+                yearsExperience: 5,
+                title: 'Expert Mentor',
+              },
+            }
             : undefined,
           accounts: {
             create: {
@@ -301,7 +301,7 @@ export class OAuthService {
         ipAddress: ipAddress || null,
         userAgent: userAgent || null,
       },
-    }).catch(() => {});
+    }).catch(() => { });
 
     const session = await createDatabaseSession(newUser);
 
@@ -386,7 +386,7 @@ export class OAuthService {
         ipAddress: ipAddress || null,
         userAgent: userAgent || null,
       },
-    }).catch(() => {});
+    }).catch(() => { });
 
     const session = await createDatabaseSession(user);
 

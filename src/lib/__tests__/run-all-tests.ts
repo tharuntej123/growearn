@@ -594,6 +594,32 @@ async function runMasterTestSuite() {
     );
 
     // 5.3: Top 5 Courses Retrieval
+    const javaCourseCount = await prisma.course.count({
+      where: { isPublished: true, skillsCovered: { contains: 'Java' } },
+    });
+    if (javaCourseCount === 0) {
+      const anyUser = (await prisma.user.findFirst({ where: { role: 'MENTOR' } })) ||
+                      (await prisma.user.findFirst());
+      if (anyUser) {
+        await prisma.course.create({
+          data: {
+            instructorId: anyUser.id,
+            title: 'Modern Java Architecture & Cloud Microservices',
+            slug: `java-arch-${Date.now()}`,
+            description: 'Comprehensive guide to modern Java development.',
+            category: 'Backend',
+            level: 'INTERMEDIATE',
+            price: 49.99,
+            durationHours: 20,
+            skillsCovered: 'Java, Spring Boot, Microservices',
+            isPublished: true,
+            rating: 4.9,
+            reviewsCount: 15,
+          },
+        });
+      }
+    }
+
     const courseSearchResults = await SkillRAGService.searchCourses({ skill: 'Java', limit: 5, offset: 0 });
     const top5Courses = courseSearchResults.courses;
     assert(
@@ -1093,10 +1119,17 @@ async function runMasterTestSuite() {
 
       let mismatchBlocked = false;
       try {
-        await PaymentService.processWebhook(mismatchBody, {
+        const webhookResult = await PaymentService.processWebhook(mismatchBody, {
           'x-webhook-signature': sig,
           'x-webhook-timestamp': ts,
         });
+        if (
+          webhookResult &&
+          (webhookResult.status === 'FAILED' || !webhookResult.processed) &&
+          webhookResult.error?.includes('Webhook amount mismatch')
+        ) {
+          mismatchBlocked = true;
+        }
       } catch (err: any) {
         mismatchBlocked = err.message.includes('Webhook amount mismatch');
       }

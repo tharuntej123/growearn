@@ -35,7 +35,8 @@ export class RAGSyncService {
         city: job.city,
         country: job.country,
       });
- } catch (_e) { const err = _e as Error; 
+    } catch (_e) {
+      const err = _e as Error;
       logger.warn(`[RAGSyncService.syncJob] Failed to sync job ${jobId}:`, err?.message || err);
       return null;
     }
@@ -91,7 +92,8 @@ export class RAGSyncService {
         hourlyRate: Number(mentor.hourlyRate),
         yearsExperience: mentor.yearsExperience,
       });
- } catch (_e) { const err = _e as Error; 
+    } catch (_e) {
+      const err = _e as Error;
       logger.warn(`[RAGSyncService.syncMentor] Failed to sync mentor ${mentorProfileIdOrUserId}:`, err?.message || err);
       return null;
     }
@@ -128,7 +130,8 @@ export class RAGSyncService {
         level: course.level,
         skillsCovered: course.skillsCovered,
       });
- } catch (_e) { const err = _e as Error; 
+    } catch (_e) {
+      const err = _e as Error;
       logger.warn(`[RAGSyncService.syncCourse] Failed to sync course ${courseId}:`, err?.message || err);
       return null;
     }
@@ -186,7 +189,8 @@ export class RAGSyncService {
         projectsSummary: projectsSummary || undefined,
         certificationsSummary: certsSummary || undefined,
       });
- } catch (_e) { const err = _e as Error; 
+    } catch (_e) {
+      const err = _e as Error;
       logger.warn(`[RAGSyncService.syncCandidate] Failed to sync candidate ${userId}:`, err?.message || err);
       return null;
     }
@@ -207,7 +211,8 @@ export class RAGSyncService {
   static async removeEntity(sourceType: string, entityId: string): Promise<number> {
     try {
       return await DocumentIngestionService.deleteEntityVector(sourceType, entityId);
- } catch (_e) { const err = _e as Error; 
+    } catch (_e) {
+      const err = _e as Error;
       logger.warn(`[RAGSyncService.removeEntity] Failed to delete ${sourceType}_${entityId}:`, err?.message || err);
       return 0;
     }
