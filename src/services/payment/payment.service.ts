@@ -298,9 +298,9 @@ export class PaymentService {
     }
 
     const durationMinutes = params.durationMinutes || 60;
-    const hourlyRate = mentorProfile.hourlyRate || 50;
-    const price = Number(((hourlyRate * durationMinutes) / 60).toFixed(2));
-    const amountInPaise = Math.round(price * 100);
+    const hourlyRatePaise = Math.round((mentorProfile.hourlyRate || 50) * 100);
+    const amountInPaise = Math.round((hourlyRatePaise * durationMinutes) / 60);
+    const price = amountInPaise / 100;
     const receipt = `rcpt_m_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const internalOrderId = `ord_m_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
@@ -846,20 +846,30 @@ export class PaymentService {
     });
 
     const commissionPercent = this.getPlatformCommissionPercent();
-    const grossRevenue = payments.reduce((acc, p) => acc + p.amount, 0);
-    const platformFee = Number(((grossRevenue * commissionPercent) / 100).toFixed(2));
-    const gatewayFee = 0;
-    const netEarnings = Number((grossRevenue - platformFee).toFixed(2));
+    const grossRevenuePaise = payments.reduce(
+      (acc, p) => acc + (p.amountInPaise || Math.round(p.amount * 100)),
+      0
+    );
+    const platformFeePaise = Math.round((grossRevenuePaise * commissionPercent) / 100);
+    const gatewayFeePaise = 0;
+    const netEarningsPaise = grossRevenuePaise - platformFeePaise;
+
+    const grossRevenue = grossRevenuePaise / 100;
+    const platformFee = platformFeePaise / 100;
+    const gatewayFee = gatewayFeePaise / 100;
+    const netEarnings = netEarningsPaise / 100;
 
     const courseSalesCount = payments.filter((p) => p.itemType === 'COURSE').length;
     const mentorshipSessionCount = payments.filter((p) => p.itemType === 'MENTORSHIP').length;
 
     const settledPayments = payments.filter((p) => (p.metadata as any)?.settled === true);
-    const settledAmount = settledPayments.reduce(
-      (acc, p) => acc + (p.amount - Number(((p.amount * commissionPercent) / 100).toFixed(2))),
-      0
-    );
-    const unsettledAmount = netEarnings - settledAmount;
+    const settledAmountPaise = settledPayments.reduce((acc, p) => {
+      const itemPaise = p.amountInPaise || Math.round(p.amount * 100);
+      const itemFeePaise = Math.round((itemPaise * commissionPercent) / 100);
+      return acc + (itemPaise - itemFeePaise);
+    }, 0);
+    const settledAmount = settledAmountPaise / 100;
+    const unsettledAmount = (netEarningsPaise - settledAmountPaise) / 100;
     const settlementStatus: MentorEarningsSummary['settlementStatus'] =
       settledPayments.length === payments.length && payments.length > 0
         ? 'SETTLED'
