@@ -33,6 +33,7 @@ jobs:
       AUTH_URL: "http://127.0.0.1:3000"
       GOOGLE_CLIENT_ID: "mock-ci-google-client-id.apps.googleusercontent.com"
       GOOGLE_CLIENT_SECRET: "mock-ci-google-client-secret"
+      INTERNAL_SERVICE_KEY: "ci-internal-service-key-minimum-32-characters-long"
       MOCK_AI: "true"
       NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3000"
       STORAGE_PROVIDER: "local"
@@ -136,6 +137,7 @@ jobs:
           AUTH_URL: "http://127.0.0.1:3000"
           GOOGLE_CLIENT_ID: "mock-ci-google-client-id.apps.googleusercontent.com"
           GOOGLE_CLIENT_SECRET: "mock-ci-google-client-secret"
+          INTERNAL_SERVICE_KEY: "ci-internal-service-key-minimum-32-characters-long"
           NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3000"
 
       - name: Upload Playwright Test Report Artifacts
