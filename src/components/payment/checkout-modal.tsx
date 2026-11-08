@@ -13,6 +13,17 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
+
+interface CashfreeSDKInstance {
+  checkout: (options: { paymentSessionId: string; redirectTarget: string }) => Promise<unknown>;
+}
+
+type CashfreeSDKFactory = (options: { mode: 'production' | 'sandbox' }) => CashfreeSDKInstance;
+
+interface WindowWithCashfree extends Window {
+  Cashfree?: CashfreeSDKFactory;
+}
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -28,7 +39,7 @@ interface CheckoutModalProps {
     message?: string;
     durationMinutes?: number;
   };
-  onSuccess: (paymentResult: any) => void;
+  onSuccess: (paymentResult: Record<string, unknown>) => void;
 }
 
 export function CheckoutModal({
@@ -52,7 +63,7 @@ export function CheckoutModal({
   // Dynamically load official Cashfree Web JS SDK v3
   const loadCashfreeSdk = (): Promise<boolean> => {
     return new Promise((resolve) => {
-      if ((window as any).Cashfree) {
+      if ((window as unknown as WindowWithCashfree).Cashfree) {
         resolve(true);
         return;
       }
@@ -77,8 +88,9 @@ export function CheckoutModal({
 
     try {
       // 1. Create order on the server
-      const idempotencyKey = `idemp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-      const payload: any = {
+      const randomSuffix = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID().slice(0, 8) : Date.now().toString(36);
+      const idempotencyKey = `idemp_${Date.now()}_${randomSuffix}`;
+      const payload: Record<string, unknown> = {
         itemType,
         idempotencyKey,
       };
@@ -115,12 +127,13 @@ export function CheckoutModal({
 
       // 2. Load Cashfree SDK
       const sdkLoaded = await loadCashfreeSdk();
-      if (!sdkLoaded || !(window as any).Cashfree) {
+      const cashfreeFactory = (window as unknown as WindowWithCashfree).Cashfree;
+      if (!sdkLoaded || !cashfreeFactory) {
         throw new Error('Failed to load Cashfree Payment SDK. Please verify your internet connection.');
       }
 
       const isProduction = orderData.checkoutData?.environment === 'production';
-      const cashfree = (window as any).Cashfree({
+      const cashfree = cashfreeFactory({
         mode: isProduction ? 'production' : 'sandbox',
       });
 
@@ -130,16 +143,17 @@ export function CheckoutModal({
           paymentSessionId,
           redirectTarget: '_modal',
         });
-      } catch (sdkError: any) {
-        console.warn('Cashfree checkout modal interaction closed/dismissed:', sdkError);
+      } catch (sdkError: unknown) {
+        logger.warn('Cashfree checkout modal interaction closed/dismissed', { error: sdkError });
       }
 
       // 4. Server-side payment reconciliation: Ask server to verify with Cashfree API
       await verifyOrderOnServer(orderId);
-    } catch (err: any) {
-      console.error('[CashfreeCheckout:Error]', err);
-      setErrorMessage(err.message || 'Payment initiation failed. Please try again.');
-      toast.error(err.message || 'Payment failed');
+    } catch (err: unknown) {
+      const errObj = err as Error;
+      logger.error('[CashfreeCheckout:Error]', { message: errObj.message });
+      setErrorMessage(errObj.message || 'Payment initiation failed. Please try again.');
+      toast.error(errObj.message || 'Payment failed');
     } finally {
       setIsProcessing(false);
     }
@@ -167,8 +181,9 @@ export function CheckoutModal({
       setTimeout(() => {
         onClose();
       }, 1800);
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Payment was not confirmed by Cashfree. If you paid, it will be automatically reconciled.');
+    } catch (err: unknown) {
+      const errObj = err as Error;
+      setErrorMessage(errObj.message || 'Payment was not confirmed by Cashfree. If you paid, it will be automatically reconciled.');
     } finally {
       setIsProcessing(false);
     }

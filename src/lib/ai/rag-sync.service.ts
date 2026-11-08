@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 // Real-time Multi-RAG Synchronization Service for GroEarn.
 // Automatically ingests new/updated Mentors, Jobs, Courses, and Candidates into pgvector (BGE-M3 1024 dims).
 
@@ -34,8 +35,8 @@ export class RAGSyncService {
         city: job.city,
         country: job.country,
       });
-    } catch (err: any) {
-      console.warn(`[RAGSyncService.syncJob] Failed to sync job ${jobId}:`, err?.message || err);
+ } catch (_e) { const err = _e as Error; 
+      logger.warn(`[RAGSyncService.syncJob] Failed to sync job ${jobId}:`, err?.message || err);
       return null;
     }
   }
@@ -46,7 +47,7 @@ export class RAGSyncService {
       try {
         await RAGSyncService.syncJob(jobId);
       } catch (err) {
-        console.warn(`[RAGSyncService.triggerSyncJob] Error syncing job ${jobId}:`, err);
+        logger.warn(`[RAGSyncService.triggerSyncJob] Error syncing job ${jobId}:`, err);
       }
     });
   }
@@ -87,11 +88,11 @@ export class RAGSyncService {
         headline: mentor.user.headline || mentor.title || 'Expert Mentor',
         expertise,
         bio: mentor.bio || `${mentor.user.name} is an active mentor on GroEarn.`,
-        hourlyRate: mentor.hourlyRate,
+        hourlyRate: Number(mentor.hourlyRate),
         yearsExperience: mentor.yearsExperience,
       });
-    } catch (err: any) {
-      console.warn(`[RAGSyncService.syncMentor] Failed to sync mentor ${mentorProfileIdOrUserId}:`, err?.message || err);
+ } catch (_e) { const err = _e as Error; 
+      logger.warn(`[RAGSyncService.syncMentor] Failed to sync mentor ${mentorProfileIdOrUserId}:`, err?.message || err);
       return null;
     }
   }
@@ -102,7 +103,7 @@ export class RAGSyncService {
       try {
         await RAGSyncService.syncMentor(mentorProfileIdOrUserId);
       } catch (err) {
-        console.warn(`[RAGSyncService.triggerSyncMentor] Error syncing mentor ${mentorProfileIdOrUserId}:`, err);
+        logger.warn(`[RAGSyncService.triggerSyncMentor] Error syncing mentor ${mentorProfileIdOrUserId}:`, err);
       }
     });
   }
@@ -127,8 +128,8 @@ export class RAGSyncService {
         level: course.level,
         skillsCovered: course.skillsCovered,
       });
-    } catch (err: any) {
-      console.warn(`[RAGSyncService.syncCourse] Failed to sync course ${courseId}:`, err?.message || err);
+ } catch (_e) { const err = _e as Error; 
+      logger.warn(`[RAGSyncService.syncCourse] Failed to sync course ${courseId}:`, err?.message || err);
       return null;
     }
   }
@@ -139,7 +140,7 @@ export class RAGSyncService {
       try {
         await RAGSyncService.syncCourse(courseId);
       } catch (err) {
-        console.warn(`[RAGSyncService.triggerSyncCourse] Error syncing course ${courseId}:`, err);
+        logger.warn(`[RAGSyncService.triggerSyncCourse] Error syncing course ${courseId}:`, err);
       }
     });
   }
@@ -185,8 +186,8 @@ export class RAGSyncService {
         projectsSummary: projectsSummary || undefined,
         certificationsSummary: certsSummary || undefined,
       });
-    } catch (err: any) {
-      console.warn(`[RAGSyncService.syncCandidate] Failed to sync candidate ${userId}:`, err?.message || err);
+ } catch (_e) { const err = _e as Error; 
+      logger.warn(`[RAGSyncService.syncCandidate] Failed to sync candidate ${userId}:`, err?.message || err);
       return null;
     }
   }
@@ -197,7 +198,7 @@ export class RAGSyncService {
       try {
         await RAGSyncService.syncCandidate(userId);
       } catch (err) {
-        console.warn(`[RAGSyncService.triggerSyncCandidate] Error syncing candidate ${userId}:`, err);
+        logger.warn(`[RAGSyncService.triggerSyncCandidate] Error syncing candidate ${userId}:`, err);
       }
     });
   }
@@ -206,8 +207,8 @@ export class RAGSyncService {
   static async removeEntity(sourceType: string, entityId: string): Promise<number> {
     try {
       return await DocumentIngestionService.deleteEntityVector(sourceType, entityId);
-    } catch (err: any) {
-      console.warn(`[RAGSyncService.removeEntity] Failed to delete ${sourceType}_${entityId}:`, err?.message || err);
+ } catch (_e) { const err = _e as Error; 
+      logger.warn(`[RAGSyncService.removeEntity] Failed to delete ${sourceType}_${entityId}:`, err?.message || err);
       return 0;
     }
   }
@@ -218,7 +219,7 @@ export class RAGSyncService {
       try {
         await RAGSyncService.removeEntity(sourceType, entityId);
       } catch (err) {
-        console.warn(`[RAGSyncService.triggerRemoveEntity] Error removing ${sourceType}_${entityId}:`, err);
+        logger.warn(`[RAGSyncService.triggerRemoveEntity] Error removing ${sourceType}_${entityId}:`, err);
       }
     });
   }
@@ -236,7 +237,7 @@ export class RAGSyncService {
       prisma.course.findMany({ where: { isPublished: true }, select: { id: true } }),
       prisma.user.findMany({
         where: {
-          role: { in: ['PROFESSIONAL', 'FREELANCER', 'STUDENT', 'LEARNER'] },
+          role: { in: ['FREELANCER', 'LEARNER'] },
           profile: { isDiscoverable: true },
         },
         select: { id: true },

@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { PaymentService } from '@/services/payment/payment.service';
 
@@ -45,8 +46,8 @@ export async function POST(req: NextRequest) {
 
     const result = await PaymentService.processWebhook(rawBody, headersObj);
     return NextResponse.json({ received: true, ...result }, { status: 200 });
-  } catch (error: any) {
-    console.error('[PaymentWebhook:Error]', error.message);
+ } catch (_e) { const error = _e as Error; const err = _e as Error; 
+    logger.error('[PaymentWebhook:Error]', err.message);
     if (
       error.message?.includes('Invalid') &&
       error.message?.includes('signature')

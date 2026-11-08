@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { apiSuccess, apiError } from '@/lib/utils';
@@ -23,8 +24,8 @@ export class PostController {
         posts,
         isPersonalized,
       });
-    } catch (error: any) {
-      console.error('[Feed:FetchError]', error);
+ } catch (_e) { const error = _e as Error; 
+      logger.error('[Feed:FetchError]', error);
       return apiError(
         error.message || 'Failed to fetch posts',
         'INTERNAL_ERROR',
@@ -62,7 +63,7 @@ export class PostController {
       });
 
       return apiSuccess({ post: newPost }, 201);
-    } catch (error: any) {
+ } catch (_e) { const error = _e as Error; 
       return apiError(
         error.message || 'Failed to create post',
         'INTERNAL_ERROR',

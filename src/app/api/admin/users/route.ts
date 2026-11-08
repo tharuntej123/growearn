@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
     const result = await AdminRepository.listUsers({ query, role, limit, offset });
     return apiSuccess({ ...result, limit, offset });
-  } catch (error: any) {
-    return apiError(error.message || 'Failed to list users', 'INTERNAL_ERROR', 500);
+ } catch (_e) { const err = _e as Error; 
+    return apiError(err.message || 'Failed to list users', 'INTERNAL_ERROR', 500);
   }
 }

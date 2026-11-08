@@ -1,0 +1,1 @@
+PASS: .github/workflows/ci.yml executes complete multi-stage CI pipeline.

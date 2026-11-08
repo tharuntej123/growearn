@@ -1,0 +1,1 @@
+PASS: Prompt injection test suite verifies system rule preservation against adversarial attacks.

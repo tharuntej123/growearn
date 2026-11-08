@@ -4,10 +4,8 @@ import React from 'react';
 import Link from 'next/link';
 import { Sparkles, Globe, Code2 } from 'lucide-react';
 
-import { isDemoMode } from '@/lib/constants';
-
 export function Footer() {
-  const showDemo = isDemoMode();
+  const showDemo = process.env.NEXT_PUBLIC_APP_ENV === 'demo';
 
   return (
     <footer className="border-t border-slate-200 bg-slate-50 text-slate-600 py-12 px-4 sm:px-6 lg:px-8">

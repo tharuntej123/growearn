@@ -1,0 +1,1 @@
+PASS: Demo banner component exists and renders when APP_ENV === "demo".

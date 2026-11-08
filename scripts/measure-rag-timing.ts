@@ -30,9 +30,10 @@ async function runBenchmark() {
   try {
     await prisma.$queryRaw`SELECT 1`;
     console.log('✅ PostgreSQL Connection: HEALTHY');
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const error = err as Error;
     console.error('❌ DATABASE CONNECTION FAILED: Database must be running to execute real benchmarks.');
-    console.error(err.message);
+    console.error(error?.message);
     process.exit(1);
   }
 

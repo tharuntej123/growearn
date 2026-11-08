@@ -1,9 +1,8 @@
-import { NextRequest } from 'next/server';
 import { checkDatabaseHealth } from '@/lib/prisma';
 import { apiSuccess, apiError } from '@/lib/utils';
 import { prisma } from '@/lib/prisma';
 
-export async function GET(_req: NextRequest) {
+export async function GET() {
   const dbHealth = await checkDatabaseHealth();
 
   if (!dbHealth.connected) {

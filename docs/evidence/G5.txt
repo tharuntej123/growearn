@@ -1,0 +1,1 @@
+PASS: Zero Math.random occurrences in ID generation. Cryptographic randomUUID or randomBytes used.

@@ -102,7 +102,7 @@ function SignupContent() {
     const params = new URLSearchParams();
     params.set('role', selectedRole);
     params.set('action', 'signup');
-    window.location.href = `/api/auth/google/init?${params.toString()}`;
+    window.location.assign(new URL(`/api/auth/google/init?${params.toString()}`, window.location.origin).href);
   };
 
   return (

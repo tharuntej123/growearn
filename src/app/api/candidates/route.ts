@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest } from 'next/server';
 import { getCurrentUser, isRoleAllowed } from '@/lib/auth';
 import { UserRepository } from '@/repositories/user.repository';
@@ -14,7 +15,7 @@ export async function GET(req: NextRequest) {
       return apiError('Authentication required to access candidate directory', 'UNAUTHORIZED', 401);
     }
 
-    if (!isRoleAllowed(authUser.role, ['COMPANY', 'EMPLOYER', 'ADMIN'])) {
+    if (!isRoleAllowed(authUser.role, ['COMPANY', 'ADMIN'])) {
       return apiError('Forbidden: Candidate discovery is restricted to verified company and admin accounts', 'FORBIDDEN', 403);
     }
 
@@ -209,8 +210,8 @@ export async function GET(req: NextRequest) {
       searchMode: isVectorSearchApplied ? 'SEMANTIC_RAG' : 'DETERMINISTIC_HYBRID_FALLBACK',
       totalCount: scoredCandidates.length,
     });
-  } catch (error: any) {
-    console.error('[Candidates:API:Error]', error);
-    return apiError(error.message || 'Failed to fetch candidate directory', 'CANDIDATE_FETCH_ERROR', 500);
+ } catch (_e) { const error = _e as Error; const err = _e as Error; 
+    logger.error('[Candidates:API:Error]', error);
+    return apiError(err.message || 'Failed to fetch candidate directory', 'CANDIDATE_FETCH_ERROR', 500);
   }
 }

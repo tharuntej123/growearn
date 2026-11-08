@@ -14,7 +14,7 @@ export async function GET() {
       },
       { status: 200 }
     );
-  } catch (error: any) {
+ } catch (_e) { const error = _e as Error; 
     return NextResponse.json(
       {
         status: 'UNHEALTHY',

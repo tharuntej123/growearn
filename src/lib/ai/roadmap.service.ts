@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { roadmapSchema, RoadmapOutput, RoadmapPhaseOutput } from './schemas';
 import { SkillAnalysisService } from './skill-analysis.service';
 import { LearnerRoadmapSearchService, TavilySearchResult } from './learner-roadmap-search.service';
@@ -288,8 +289,8 @@ export class CareerRoadmapService {
         experienceLevel: exp,
         maxResults: 6,
       });
-    } catch (err: any) {
-      console.warn(
+ } catch (_e) { const err = _e as Error; 
+      logger.warn(
         '[CareerRoadmapService:Warn] Tavily search error, falling back to curated knowledge:',
         err.message
       );
@@ -366,10 +367,10 @@ Return ONLY a valid JSON object matching this schema:
           });
           return parsed;
         }
-      } catch (llmErr: any) {
-        console.warn(
+ } catch (_e) { const error = _e as Error; 
+        logger.warn(
           '[CareerRoadmapService:Warn] LLM-assisted Tavily roadmap generation failed, falling back to curated template with attached web sources:',
-          llmErr.message
+          error.message
         );
       }
     }

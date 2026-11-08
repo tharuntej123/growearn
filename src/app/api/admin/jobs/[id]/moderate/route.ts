@@ -36,10 +36,10 @@ export async function PUT(
 
     const updated = await AdminRepository.moderateJob(authUser.id, jobId, validated.data.status);
     return apiSuccess({ job: updated, message: `Job status updated to ${validated.data.status}` });
-  } catch (error: any) {
+ } catch (_e) { const error = _e as Error; const err = _e as Error; 
     if (error.message?.includes('not found')) {
-      return apiError(error.message, 'NOT_FOUND', 404);
+      return apiError(err.message, 'NOT_FOUND', 404);
     }
-    return apiError(error.message || 'Failed to moderate job', 'INTERNAL_ERROR', 500);
+    return apiError(err.message || 'Failed to moderate job', 'INTERNAL_ERROR', 500);
   }
 }

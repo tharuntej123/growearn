@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { apiSuccess, apiError } from '@/lib/utils';
@@ -31,14 +32,14 @@ export class DashboardController {
         userContext.profile?.experienceLevel
       );
 
-      let roadmap = userContext.careerRoadmap;
+      let roadmap: unknown = userContext.careerRoadmap;
       if (!roadmap && userContext.hasSkills) {
         roadmap = CareerRoadmapService.generate(
           userContext.skills,
           userContext.profile?.targetRole,
           userContext.profile?.experienceLevel,
           userContext.profile?.careerGoal
-        ) as any;
+        );
       }
 
       return apiSuccess({
@@ -52,8 +53,8 @@ export class DashboardController {
         recommendedMentors: mentorsRes.mentors,
         isMentorsPersonalized: mentorsRes.isPersonalized,
       });
-    } catch (error: any) {
-      console.error('[DashboardStats:Error]', error);
+ } catch (_e) { const error = _e as Error; 
+      logger.error('[DashboardStats:Error]', error);
       return apiError(
         error.message || 'Failed to fetch dashboard data',
         'INTERNAL_ERROR',

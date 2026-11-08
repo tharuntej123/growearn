@@ -48,5 +48,9 @@ prisma/dev.db
 # python
 __pycache__/
 *.py[cod]
+
+# local agent / notes
+AGENTS.md
+CHANGES.md
 .venv/
 .pytest_cache/

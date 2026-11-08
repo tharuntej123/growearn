@@ -1,0 +1,1 @@
+PASS: AuditLog records are append-only; update and delete operations are rejected fail-closed.

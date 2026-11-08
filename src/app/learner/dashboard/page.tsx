@@ -6,28 +6,14 @@ import { useAuth } from '@/context/auth-context';
 import { DashboardSidebar } from '@/components/layout/sidebar';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import {
   Sparkles,
-  BookOpen,
-  CheckCircle2,
   Users,
-  Compass,
   ArrowRight,
   Search,
-  Zap,
-  Layers,
-  Award,
-  Calendar,
-  ShieldCheck,
-  Check,
-  Flame,
-  Plus,
   RefreshCw,
-  Send,
-  GraduationCap,
   Bot,
   Cpu,
 } from 'lucide-react';
@@ -43,16 +29,21 @@ const POPULAR_SKILLS = [
   { name: 'PostgreSQL & Database Optimization', icon: '🗄️', tag: 'Indexing, ACID & Query Tuning' },
 ];
 
+import { CourseUI, MentorUI, AgenticRoadmapDataUI, RAGRoadmapDataUI } from '@/types/ui';
+import { AgenticRoadmapView, DatabaseRoadmapView } from '@/components/learner/learner-roadmap-views';
+import { LearnerCoursesSection } from '@/components/learner/learner-courses-section';
+import { MentorshipRequestModal } from '@/components/learner/mentorship-request-modal';
+
 export default function LearnerDashboardPage() {
   const { user } = useAuth();
   const [selectedSkill, setSelectedSkill] = useState<string>('Java');
   const [customSkillInput, setCustomSkillInput] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
-  const [ragData, setRagData] = useState<any>(null);
+  const [ragData, setRagData] = useState<RAGRoadmapDataUI | null>(null);
 
   // Pagination & duplicate exclusion states
-  const [courses, setCourses] = useState<any[]>([]);
-  const [mentors, setMentors] = useState<any[]>([]);
+  const [courses, setCourses] = useState<CourseUI[]>([]);
+  const [mentors, setMentors] = useState<MentorUI[]>([]);
   const [displayedCourseIds, setDisplayedCourseIds] = useState<string[]>([]);
   const [displayedMentorIds, setDisplayedMentorIds] = useState<string[]>([]);
   const [isLoadingMoreCourses, setIsLoadingMoreCourses] = useState(false);
@@ -61,7 +52,7 @@ export default function LearnerDashboardPage() {
   const [hasMoreMentors, setHasMoreMentors] = useState(true);
 
   // Mentorship request modal state
-  const [selectedMentorForRequest, setSelectedMentorForRequest] = useState<any | null>(null);
+  const [selectedMentorForRequest, setSelectedMentorForRequest] = useState<MentorUI | null>(null);
   const [requestTopic, setRequestTopic] = useState('');
   const [requestMessage, setRequestMessage] = useState('');
   const [requestPreferredTime, setRequestPreferredTime] = useState('');
@@ -71,7 +62,7 @@ export default function LearnerDashboardPage() {
   const [enrolledCourseIds, setEnrolledCourseIds] = useState<Set<string>>(new Set());
 
   // CrewAI Multi-Agent Roadmap state
-  const [agenticData, setAgenticData] = useState<any>(null);
+  const [agenticData, setAgenticData] = useState<AgenticRoadmapDataUI | null>(null);
   const [isGeneratingAgentic, setIsGeneratingAgentic] = useState(false);
 
   const handleGenerateAgenticRoadmap = async (skillToSearch = selectedSkill) => {
@@ -82,7 +73,7 @@ export default function LearnerDashboardPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           role: skillToSearch,
-          current_skills: user?.skills?.map((s: any) => s.skill?.name || s.name || s) || [],
+          current_skills: user?.skills?.map((s: { skill?: { name?: string }; name?: string }) => s.skill?.name || s.name || String(s)) || [],
           target_timeline_weeks: 16,
         }),
       });
@@ -118,8 +109,8 @@ export default function LearnerDashboardPage() {
         const topM = json.data.topMentors || [];
         setCourses(topC);
         setMentors(topM);
-        setDisplayedCourseIds(topC.map((c: any) => c.id));
-        setDisplayedMentorIds(topM.map((m: any) => m.id));
+        setDisplayedCourseIds(topC.map((c: { id: string }) => c.id));
+        setDisplayedMentorIds(topM.map((m: { id: string }) => m.id));
         setHasMoreCourses(topC.length >= 5);
         setHasMoreMentors(topM.length >= 5);
 
@@ -151,7 +142,7 @@ export default function LearnerDashboardPage() {
           toast.info('All relevant courses for this skill are already displayed.');
         } else {
           setCourses((prev) => [...prev, ...nextCourses]);
-          setDisplayedCourseIds((prev) => [...prev, ...nextCourses.map((c: any) => c.id)]);
+          setDisplayedCourseIds((prev) => [...prev, ...nextCourses.map((c: { id: string }) => c.id)]);
           setHasMoreCourses(json.data.hasMore && nextCourses.length === 5);
           toast.success(`Loaded ${nextCourses.length} more verified courses!`);
         }
@@ -178,7 +169,7 @@ export default function LearnerDashboardPage() {
           toast.info('All relevant mentors for this skill are already displayed.');
         } else {
           setMentors((prev) => [...prev, ...nextMentors]);
-          setDisplayedMentorIds((prev) => [...prev, ...nextMentors.map((m: any) => m.id)]);
+          setDisplayedMentorIds((prev) => [...prev, ...nextMentors.map((m: { id: string }) => m.id)]);
           setHasMoreMentors(json.data.hasMore && nextMentors.length === 5);
           toast.success(`Loaded ${nextMentors.length} more verified mentors!`);
         }
@@ -352,269 +343,24 @@ export default function LearnerDashboardPage() {
 
         {/* CrewAI Agentic Multi-Agent Section */}
         {agenticData && (
-          <section className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-slate-900 to-emerald-950 p-4 rounded-2xl text-white border border-emerald-800/40 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400">
-                  <Bot className="h-5 w-5" />
-                </div>
-                <div>
-                  <h2 className="text-base sm:text-lg font-bold flex items-center gap-2">
-                    <span>CrewAI Multi-Agent Roadmap: {agenticData.target_role}</span>
-                    <Badge variant="outline" className={agenticData.mode === 'agentic' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 text-[11px]' : 'bg-amber-500/20 text-amber-300 border-amber-500/40 text-[11px]'}>
-                      {agenticData.mode === 'agentic' ? '🤖 Live CrewAI Agents' : '⚡ Resilient Fallback'}
-                    </Badge>
-                  </h2>
-                  <p className="text-xs text-slate-300 mt-0.5">
-                    Estimated {agenticData.estimated_weeks} weeks • Status: <span className="font-semibold text-emerald-400">{agenticData.review_status}</span> by Principal Reviewer Agent
-                  </p>
-                </div>
-              </div>
-
-              <div className="text-right text-xs text-slate-400">
-                <span>{agenticData.reviewer_notes || 'Audited for prerequisite pacing and resource legitimacy.'}</span>
-              </div>
-            </div>
-
-            {/* Agent Collaboration Trace Cards */}
-            {agenticData.agent_trace && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {agenticData.agent_trace.map((step: any, idx: number) => (
-                  <Card key={idx} className="p-4 bg-white border border-slate-200 rounded-xl shadow-xs">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-xs font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase">
-                        {step.agent} Agent
-                      </span>
-                    </div>
-                    <p className="text-xs font-semibold text-slate-900 mb-1">{step.action}</p>
-                    <p className="text-[11px] text-slate-600 leading-relaxed">{step.summary}</p>
-                  </Card>
-                ))}
-              </div>
-            )}
-
-            {/* 4-Phase Curriculum Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {(agenticData.phases || []).map((phase: any, idx: number) => (
-                <div
-                  key={idx}
-                  className="p-4 rounded-xl border border-emerald-200/80 bg-emerald-50/20 hover:bg-emerald-50/50 transition-all flex flex-col justify-between"
-                >
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-600 text-white uppercase tracking-wider">
-                        Phase {phase.phase_number || idx + 1}
-                      </span>
-                      <span className="text-xs font-medium text-slate-500">{phase.duration_weeks || 4} wks</span>
-                    </div>
-                    <h3 className="text-sm font-bold text-slate-900 leading-snug">{phase.title}</h3>
-                    <p className="text-xs text-slate-600 leading-relaxed line-clamp-3">{phase.objective}</p>
-
-                    {phase.skills && (
-                      <div className="flex flex-wrap gap-1 pt-1">
-                        {phase.skills.slice(0, 3).map((sk: string) => (
-                          <span key={sk} className="text-[10px] px-1.5 py-0.5 rounded bg-white text-slate-700 border border-slate-200">
-                            {sk}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="pt-2 border-t border-slate-200/60 space-y-1">
-                      <p className="text-[11px] font-semibold text-slate-800">Capstone Project:</p>
-                      <p className="text-[11px] text-slate-600 line-clamp-2">{phase.capstone_project}</p>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
-                    <span className="text-emerald-700 font-semibold">{phase.milestone?.slice(0, 30)}...</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
+          <AgenticRoadmapView data={agenticData} selectedSkill={selectedSkill} />
         )}
 
         {/* Database Roadmap Steps Section */}
         {ragData?.roadmap && (
-          <section className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg sm:text-xl font-bold text-slate-900 flex items-center gap-2">
-                  <Layers className="h-5 w-5 text-emerald-600" />
-                  <span>Structured Learning Roadmap for {ragData.roadmap.targetRole || selectedSkill}</span>
-                </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Estimated duration: {ragData.roadmap.estimatedDurationWeeks} weeks • Pacing level: {ragData.roadmap.currentLevel}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Badge
-                  variant="outline"
-                  className={
-                    ragData.ragMetrics?.searchMode === 'SEMANTIC_RAG'
-                      ? 'bg-purple-50 text-purple-800 border-purple-200 text-xs font-semibold'
-                      : 'bg-emerald-50 text-emerald-800 border-emerald-200 text-xs font-semibold'
-                  }
-                >
-                  {ragData.ragMetrics?.searchMode === 'SEMANTIC_RAG' ? '✨ pgvector AI Semantic RAG' : '⚡ Verified Skill Engine'}
-                </Badge>
-                <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-200 text-xs font-semibold">
-                  Database-Backed
-                </Badge>
-              </div>
-            </div>
-
-            <Card className="p-6 bg-white border border-slate-200 rounded-2xl shadow-xs">
-              <p className="text-sm text-slate-700 mb-6 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100">
-                {ragData.roadmap.summary}
-              </p>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {(ragData.roadmap.phases || []).map((phase: any, idx: number) => (
-                  <div
-                    key={idx}
-                    className="p-4 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-emerald-50/40 hover:border-emerald-200 transition-all flex flex-col justify-between"
-                  >
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 uppercase tracking-wider">
-                          Phase {phase.phaseNumber || idx + 1}
-                        </span>
-                        <span className="text-xs font-medium text-slate-500">{phase.durationWeeks || 4} wks</span>
-                      </div>
-
-                      <h3 className="text-sm font-bold text-slate-900 leading-snug">{phase.title}</h3>
-                      <p className="text-xs text-slate-600 leading-relaxed line-clamp-3">{phase.objective}</p>
-
-                      {phase.skills && (
-                        <div className="flex flex-wrap gap-1 pt-1">
-                          {phase.skills.slice(0, 3).map((sk: string) => (
-                            <span key={sk} className="text-[10px] px-1.5 py-0.5 rounded bg-white text-slate-700 border border-slate-200">
-                              {sk}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="mt-4 pt-3 border-t border-slate-200/60 flex items-center gap-1.5 text-xs font-medium text-emerald-700">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                      <span className="truncate">{phase.milestone || 'Phase verified'}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </section>
+          <DatabaseRoadmapView data={ragData} selectedSkill={selectedSkill} />
         )}
 
         {/* Top 5 Verified Courses Section */}
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg sm:text-xl font-bold text-slate-900 flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-emerald-600" />
-                <span>Verified Curriculum Courses for &quot;{selectedSkill}&quot;</span>
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Top real courses retrieved from PostgreSQL with module breakdowns and completion tracking.
-              </p>
-            </div>
-            <Link href="/courses" className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
-              <span>View All Courses</span>
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-
-          {courses.length === 0 ? (
-            <Card className="p-8 text-center bg-white border border-slate-200 rounded-2xl">
-              <p className="text-sm text-slate-500">No courses currently matched for this skill query.</p>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {courses.map((c) => (
-                <Card
-                  key={c.id}
-                  className="overflow-hidden bg-white border border-slate-200 rounded-2xl hover:shadow-md transition-all flex flex-col justify-between"
-                >
-                  <div className="p-5 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Badge variant="outline" className="bg-emerald-50 text-emerald-800 border-emerald-200 text-[11px] font-semibold">
-                        {c.level || 'BEGINNER'}
-                      </Badge>
-                      <span className="text-xs font-bold text-slate-900">
-                        {c.price === 0 ? 'Free' : `$${c.price}`}
-                      </span>
-                    </div>
-
-                    <Link href={`/courses/${c.slug || c.id}`}>
-                      <h3 className="text-base font-bold text-slate-900 hover:text-emerald-600 transition-colors leading-snug line-clamp-2">
-                        {c.title}
-                      </h3>
-                    </Link>
-
-                    <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">{c.description}</p>
-
-                    <div className="flex items-center gap-2 pt-1 text-xs text-slate-500">
-                      <Avatar src={c.instructor?.avatarUrl} fallback={c.instructor?.name || 'I'} size="sm" />
-                      <span className="font-medium truncate">{c.instructor?.name}</span>
-                      <span>•</span>
-                      <span>⭐ {c.rating} ({c.reviewsCount} reviews)</span>
-                    </div>
-                  </div>
-
-                  <div className="p-4 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between gap-2">
-                    <Link href={`/courses/${c.slug || c.id}`} className="flex-1">
-                      <Button variant="outline" size="sm" className="w-full text-xs font-semibold">
-                        View Syllabus
-                      </Button>
-                    </Link>
-                    <Button
-                      size="sm"
-                      onClick={() => handleEnroll(c.id, c.title)}
-                      disabled={enrolledCourseIds.has(c.id)}
-                      className={`text-xs font-semibold ${
-                        enrolledCourseIds.has(c.id)
-                          ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-100'
-                          : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                      }`}
-                    >
-                      {enrolledCourseIds.has(c.id) ? (
-                        <span className="flex items-center gap-1">
-                          <Check className="h-3.5 w-3.5" /> Enrolled
-                        </span>
-                      ) : (
-                        'Enroll Now'
-                      )}
-                    </Button>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )}
-
-          {/* Show Next 5 Courses Pagination */}
-          {hasMoreCourses && (
-            <div className="pt-2 text-center">
-              <Button
-                variant="outline"
-                onClick={loadNext5Courses}
-                disabled={isLoadingMoreCourses}
-                className="px-6 rounded-xl text-xs font-semibold border-slate-300 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300"
-              >
-                {isLoadingMoreCourses ? (
-                  <span className="flex items-center gap-2">
-                    <RefreshCw className="h-3.5 w-3.5 animate-spin" /> Loading next courses...
-                  </span>
-                ) : (
-                  <span>Show Next 5 Courses (Exclude Displayed)</span>
-                )}
-              </Button>
-            </div>
-          )}
-        </section>
+        <LearnerCoursesSection
+          selectedSkill={selectedSkill}
+          courses={courses}
+          enrolledCourseIds={enrolledCourseIds}
+          onEnroll={handleEnroll}
+          hasMoreCourses={hasMoreCourses}
+          isLoadingMoreCourses={isLoadingMoreCourses}
+          onLoadNext5Courses={loadNext5Courses}
+        />
 
         {/* Top 5 Verified Mentors Section */}
         <section className="space-y-4">
@@ -666,7 +412,7 @@ export default function LearnerDashboardPage() {
                     <p className="text-xs text-slate-600 leading-relaxed line-clamp-3">{m.bio}</p>
 
                     <div className="flex flex-wrap gap-1 pt-1">
-                      {(m.expertise || []).slice(0, 4).map((exp: string) => (
+                      {(typeof m.expertise === 'string' ? m.expertise.split(',') : []).slice(0, 4).map((exp: string) => (
                         <span key={exp} className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium">
                           {exp}
                         </span>
@@ -718,83 +464,18 @@ export default function LearnerDashboardPage() {
         </section>
 
         {/* Mentorship Request Modal */}
-        {selectedMentorForRequest && (
-          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-            <Card className="w-full max-w-lg bg-white rounded-2xl shadow-2xl p-6 border border-slate-200">
-              <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-                <div className="flex items-center gap-3">
-                  <Avatar src={selectedMentorForRequest.avatarUrl} fallback={selectedMentorForRequest.name} size="sm" />
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900">Request Mentorship</h3>
-                    <p className="text-xs text-slate-500">with {selectedMentorForRequest.name}</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedMentorForRequest(null)}
-                  className="text-slate-400 hover:text-slate-600 text-lg font-bold"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmitMentorshipRequest} className="space-y-4 pt-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Mentorship Topic / Focus Area</label>
-                  <Input
-                    value={requestTopic}
-                    onChange={(e) => setRequestTopic(e.target.value)}
-                    placeholder="e.g. Architecture review of Spring Boot microservices"
-                    required
-                    className="text-xs"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Message & Learning Goals</label>
-                  <textarea
-                    value={requestMessage}
-                    onChange={(e) => setRequestMessage(e.target.value)}
-                    placeholder="Describe what you want to achieve, questions you have, or code you want reviewed..."
-                    rows={4}
-                    required
-                    className="w-full text-xs p-3 rounded-xl border border-slate-200 bg-white text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Preferred Time / Availability (Optional)</label>
-                  <Input
-                    value={requestPreferredTime}
-                    onChange={(e) => setRequestPreferredTime(e.target.value)}
-                    placeholder="e.g. Weekdays 7 PM IST or Weekends"
-                    className="text-xs"
-                  />
-                </div>
-
-                <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedMentorForRequest(null)}
-                    className="text-xs"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    size="sm"
-                    disabled={isSubmittingRequest}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold"
-                  >
-                    {isSubmittingRequest ? 'Sending...' : 'Submit Request'}
-                  </Button>
-                </div>
-              </form>
-            </Card>
-          </div>
-        )}
+        <MentorshipRequestModal
+          mentor={selectedMentorForRequest}
+          onClose={() => setSelectedMentorForRequest(null)}
+          onSubmit={handleSubmitMentorshipRequest}
+          topic={requestTopic}
+          setTopic={setRequestTopic}
+          message={requestMessage}
+          setMessage={setRequestMessage}
+          preferredTime={requestPreferredTime}
+          setPreferredTime={setRequestPreferredTime}
+          isSubmitting={isSubmittingRequest}
+        />
       </main>
     </div>
   );

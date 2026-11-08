@@ -14,7 +14,6 @@ import { Input } from '@/components/ui/input';
 import {
   Users,
   Sparkles,
-  Calendar,
   DollarSign,
   Star,
   CheckCircle2,
@@ -78,7 +77,7 @@ export default function MentorDashboardPage() {
   const [requests, setRequests] = useState([
     {
       id: 'req-1',
-      student: { name: 'Alex Chen', email: 'student@example.com', avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150' },
+      student: { name: 'Devon Vance', email: 'devon.v@example.com', avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150' },
       topic: 'Full Stack Architecture & Career Roadmap Review',
       message: 'Need help validating microservices stateless filter chain and role authorizations.',
       status: 'ACCEPTED',

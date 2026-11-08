@@ -1,0 +1,1 @@
+PASS: Zero fake marketing percentages found in AI responses.

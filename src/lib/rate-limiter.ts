@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from './prisma';
 
@@ -48,7 +49,7 @@ export class DatabaseRateLimiter {
   private static lastLogTime = 0;
 
   private static readonly FAILURE_THRESHOLD = 5;
-  private static readonly COOLDOWN_MS = 15000; // 15s circuit breaker trial cooldown
+  private static readonly CIRCUIT_COOLDOWN_MS = 15000; // 15s circuit breaker trial cooldown
   private static readonly LOG_THROTTLE_MS = 30000; // Throttle log flooding to once per 30s
 
   /**
@@ -92,7 +93,7 @@ export class DatabaseRateLimiter {
     // Circuit Breaker Evaluation
     const currentTime = Date.now();
     if (this.circuitState === 'OPEN') {
-      if (this.lastFailureTime && currentTime - this.lastFailureTime > this.COOLDOWN_MS) {
+      if (this.lastFailureTime && currentTime - this.lastFailureTime > this.CIRCUIT_COOLDOWN_MS) {
         this.circuitState = 'HALF_OPEN';
       } else {
         // Circuit is open: execute tiered degradation without hammering down DB
@@ -141,7 +142,7 @@ export class DatabaseRateLimiter {
         remaining: Math.max(0, limit - points),
         resetSeconds: remainingTime,
       };
-    } catch (err: any) {
+ } catch (_e) { const err = _e as Error; 
       this.totalFailures += 1;
       this.consecutiveFailures += 1;
       this.lastFailureTime = Date.now();
@@ -154,7 +155,7 @@ export class DatabaseRateLimiter {
       // Throttled high-severity logging to avoid log storms during pooler outages
       if (Date.now() - this.lastLogTime > this.LOG_THROTTLE_MS) {
         this.lastLogTime = Date.now();
-        console.error('[RateLimiter:HighSeverity] Database connection failed; rate limiter operating in degraded mode', {
+        logger.error('[RateLimiter:HighSeverity] Database connection failed; rate limiter operating in degraded mode', {
           error: err?.message || String(err),
           circuitState: this.circuitState,
           consecutiveFailures: this.consecutiveFailures,

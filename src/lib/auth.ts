@@ -56,10 +56,10 @@ export type CanonicalRole = 'LEARNER' | 'FREELANCER' | 'MENTOR' | 'COMPANY' | 'A
 export function normalizeRole(rawRole?: string): CanonicalRole {
   if (!rawRole) return 'LEARNER';
   const r = rawRole.toUpperCase().trim();
-  if (r === 'STUDENT' || r === 'LEARNER') return 'LEARNER';
-  if (r === 'FREELANCER' || r === 'PROFESSIONAL') return 'FREELANCER';
+  if (r === 'LEARNER') return 'LEARNER';
+  if (r === 'FREELANCER') return 'FREELANCER';
   if (r === 'MENTOR') return 'MENTOR';
-  if (r === 'COMPANY' || r === 'EMPLOYER') return 'COMPANY';
+  if (r === 'COMPANY') return 'COMPANY';
   if (r === 'ADMIN') return 'ADMIN';
   throw new Error(`Invalid role '${rawRole}': Must be one of LEARNER, FREELANCER, MENTOR, COMPANY, ADMIN`);
 }
@@ -364,7 +364,7 @@ export async function getCurrentUserFromRequest(req: NextRequest): Promise<Sessi
         sessionToken: 'mock_session_token',
         userId: mockId,
         email: mockEmail,
-        role: mockRole as any,
+        role: mockRole as CanonicalRole,
         name: 'Test Mock User',
       };
     }

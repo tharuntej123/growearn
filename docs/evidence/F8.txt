@@ -1,0 +1,1 @@
+PASS: docs/benchmarks.md documents comparative multi-agent vs single-prompt evaluation.

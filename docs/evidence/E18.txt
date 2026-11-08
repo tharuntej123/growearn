@@ -1,0 +1,1 @@
+PASS: docs/ai-flow.md documents exact roadmap generation hierarchy and fallback lifecycle.

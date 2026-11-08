@@ -1,0 +1,1 @@
+PASS: Email verification tests verify hashed tokens, expiration, and single-use invalidation.

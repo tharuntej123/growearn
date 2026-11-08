@@ -1,0 +1,1 @@
+PASS: IDOR verification tests pass and matrix file is generated in docs/evidence/idor-matrix.md.

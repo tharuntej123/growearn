@@ -1,15 +1,10 @@
+import { OAuthService } from './auth/oauth.service';
 import { UserRepository } from '@/repositories/user.repository';
 import {
   normalizeRole,
-  getGoogleOAuthClient,
-  createSignedOAuthState,
-  verifySignedOAuthState,
   createDatabaseSession,
   revokeSession,
-  getAuthSecretKey,
-  isGoogleOAuthConfigured,
 } from '@/lib/auth';
-import { SignJWT, jwtVerify } from 'jose';
 import { prisma } from '@/lib/prisma';
 import { hashPassword, verifyPassword } from '@/lib/password';
 import { RegisterInput, LoginInput } from '@/validators/auth.schema';
@@ -42,41 +37,11 @@ export class AuthService {
     action?: 'signup' | 'login';
     redirectUrl?: string;
   }) {
-    if (!isGoogleOAuthConfigured()) {
-      throw new Error(
-        'Google OAuth credentials are not fully configured. Please ensure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are set in environment variables.'
-      );
-    }
-
-    const client = getGoogleOAuthClient();
-    const action = options.action || (options.role ? 'signup' : 'login');
-    const { stateToken, randomState, codeVerifier, codeChallenge } = await createSignedOAuthState({
-      role: options.role,
-      action,
-      redirectUrl: options.redirectUrl,
-      oauthRedirectUri: (client as any).redirectUri,
-    });
-
-    const authUrl = client.generateAuthUrl({
-      access_type: 'offline',
-      scope: ['openid', 'email', 'profile'],
-      state: stateToken,
-      code_challenge: codeChallenge,
-      code_challenge_method: 'S256' as any,
-      prompt: 'select_account',
-    });
-
-    return {
-      authUrl,
-      stateToken,
-      randomState,
-      codeVerifier,
-    };
+    return OAuthService.initiateGoogleAuth(options);
   }
 
   /**
-   * Handles Google OAuth callback: verifies state, exchanges code with PKCE,
-   * verifies Google identity token cryptographically, and executes identity mapping.
+   * Handles Google OAuth callback.
    */
   static async handleGoogleCallback(params: {
     code: string;
@@ -85,61 +50,11 @@ export class AuthService {
     ipAddress?: string;
     userAgent?: string;
   }): Promise<GoogleAuthCallbackResult> {
-    const { code, returnedState, stateCookie, ipAddress, userAgent } = params;
-
-    // Verify OAuth state token
-    const stateTokenToVerify = returnedState || stateCookie;
-    if (!stateTokenToVerify) {
-      throw new Error('OAuth state missing: authentication request could not be verified.');
-    }
-
-    const stateResult = await verifySignedOAuthState(stateTokenToVerify, returnedState);
-    if (!stateResult.valid) {
-      throw new Error(stateResult.error || 'Invalid or expired OAuth state');
-    }
-
-    // Exchange authorization code for tokens using PKCE verifier if available
-    const client = getGoogleOAuthClient(stateResult.oauthRedirectUri);
-    const { tokens } = await client.getToken({
-      code,
-      codeVerifier: stateResult.codeVerifier,
-    });
-
-    if (!tokens.id_token) {
-      throw new Error('Google OAuth failed: No identity token returned from Google authentication server.');
-    }
-
-    // Cryptographically verify ID token signature, audience, and issuer using Google public certificates
-    const clientId = (process.env.GOOGLE_CLIENT_ID || '').trim();
-    const ticket = await client.verifyIdToken({
-      idToken: tokens.id_token,
-      audience: clientId || undefined,
-    });
-
-    const payload = ticket.getPayload();
-    if (!payload || !payload.sub || !payload.email) {
-      throw new Error('Invalid Google token payload: sub and email are strictly required.');
-    }
-
-    return this.processGoogleIdentity({
-      googleSub: payload.sub,
-      email: payload.email,
-      name: payload.name || payload.email.split('@')[0],
-      avatarUrl: payload.picture || null,
-      emailVerified: Boolean(payload.email_verified),
-      role: stateResult.role,
-      action: stateResult.action,
-      ipAddress,
-      userAgent,
-    });
+    return OAuthService.handleGoogleCallback(params);
   }
 
   /**
-   * Core server logic to securely handle Google identity:
-   * - Enforces existing user role preservation (never overwrite during login)
-   * - Prevents automatic linking without explicit user verification (takeover prevention)
-   * - Prevents privilege escalation (ADMIN role creation via Google signup blocked)
-   * - Creates database-backed session upon successful signin
+   * Internal identity mapping engine for Google accounts.
    */
   static async processGoogleIdentity(params: {
     googleSub: string;
@@ -152,264 +67,21 @@ export class AuthService {
     ipAddress?: string;
     userAgent?: string;
   }): Promise<GoogleAuthCallbackResult> {
-    const { googleSub, email, name, avatarUrl, emailVerified, role, ipAddress, userAgent } = params;
-    const normalizedEmail = email.toLowerCase().trim();
-
-    // SECURITY GUARD: Reject any attempt to register or claim ADMIN role via public OAuth
-    const requestedRole = (role || '').toUpperCase();
-    if (requestedRole === 'ADMIN') {
-      throw new Error('Unauthorized role assignment: ADMIN accounts cannot be created via public registration.');
-    }
-
-    // Step 1: Check if an Account record already links this Google sub identifier
-    const existingAccount = await prisma.account.findUnique({
-      where: {
-        provider_providerAccountId: {
-          provider: 'google',
-          providerAccountId: googleSub,
-        },
-      },
-      include: {
-        user: true,
-      },
-    });
-
-    if (existingAccount && existingAccount.user) {
-      const user = existingAccount.user;
-
-      // Existing verified user login:
-      // STRICT INVARIANT: Preserve existing user's role. DO NOT overwrite with signup role.
-      await prisma.auditLog.create({
-        data: {
-          userId: user.id,
-          action: 'USER_LOGIN_GOOGLE',
-          resource: 'User',
-          details: { email: user.email, role: user.role, provider: 'google', googleSub },
-          ipAddress: ipAddress || null,
-          userAgent: userAgent || null,
-        },
-      }).catch(() => {});
-
-      const session = await createDatabaseSession(user);
-
-      return {
-        status: 'SUCCESS',
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          avatarUrl: user.avatarUrl,
-          headline: user.headline,
-        },
-        session,
-        targetDashboard: this.getTargetDashboard(user.role),
-      };
-    }
-
-    // Step 2: If NO Account exists for this Google sub, check if User already exists with matching email
-    const existingUser = await UserRepository.findByEmail(normalizedEmail);
-    if (existingUser) {
-      // SECURITY GUARD: Do not silently link accounts based on email match alone.
-      // Generate a signed, short-lived account linking token so user can confirm ownership.
-      const secretKey = getAuthSecretKey();
-      const linkingToken = await new SignJWT({
-        userId: existingUser.id,
-        googleSub,
-        email: normalizedEmail,
-        name,
-        avatarUrl,
-        type: 'ACCOUNT_LINKING',
-      })
-        .setProtectedHeader({ alg: 'HS256' })
-        .setIssuedAt()
-        .setExpirationTime('15m')
-        .sign(secretKey);
-
-      return {
-        status: 'NEEDS_LINKING',
-        user: {
-          id: existingUser.id,
-          email: existingUser.email,
-          name: existingUser.name,
-          role: existingUser.role,
-          avatarUrl: existingUser.avatarUrl,
-        },
-        linkingToken,
-      };
-    }
-
-    // Step 3: Brand new user signup via Google OAuth
-    const rawRole = (role || 'LEARNER').toUpperCase();
-    if (rawRole === 'ADMIN') {
-      throw new Error('Unauthorized role assignment: ADMIN accounts cannot be created via public registration.');
-    }
-
-    const validatedRole = normalizeRole(rawRole);
-
-    // Create the User, Profile, and Account mapping inside a transaction
-    const newUser = await prisma.$transaction(async (tx) => {
-      const isMentor = validatedRole === 'MENTOR';
-      const createdUser = await tx.user.create({
-        data: {
-          email: normalizedEmail,
-          name: name.trim(),
-          role: validatedRole,
-          avatarUrl: avatarUrl || null,
-          isVerified: Boolean(emailVerified),
-          profile: {
-            create: {
-              title:
-                validatedRole === 'LEARNER'
-                  ? 'Learner / Student'
-                  : isMentor
-                  ? 'Expert Mentor'
-                  : validatedRole === 'FREELANCER'
-                  ? 'Verified Professional'
-                  : 'Organization Leader',
-              availability: 'FULL_TIME',
-              aiScore: 75,
-            },
-          },
-          mentorProfile: isMentor
-            ? {
-                create: {
-                  bio: `${name} is an expert mentor available for guidance on GroEarn.`,
-                  expertise: 'Software Engineering, Web Development',
-                  hourlyRate: 50,
-                  yearsExperience: 5,
-                  title: 'Expert Mentor',
-                },
-              }
-            : undefined,
-          accounts: {
-            create: {
-              provider: 'google',
-              providerAccountId: googleSub,
-            },
-          },
-        },
-        include: {
-          profile: true,
-          mentorProfile: true,
-        },
-      });
-
-      return createdUser;
-    });
-
-    // Record registration audit log
-    await prisma.auditLog.create({
-      data: {
-        userId: newUser.id,
-        action: 'USER_REGISTER_GOOGLE',
-        resource: 'User',
-        details: { email: newUser.email, role: newUser.role, provider: 'google', googleSub },
-        ipAddress: ipAddress || null,
-        userAgent: userAgent || null,
-      },
-    }).catch(() => {});
-
-    const session = await createDatabaseSession(newUser);
-
-    return {
-      status: 'SUCCESS',
-      user: {
-        id: newUser.id,
-        email: newUser.email,
-        name: newUser.name,
-        role: newUser.role,
-        avatarUrl: newUser.avatarUrl,
-        headline: newUser.headline,
-      },
-      session,
-      targetDashboard: this.getTargetDashboard(newUser.role),
-    };
+    return OAuthService.processGoogleIdentity(params);
   }
 
   /**
-   * Confirms linking a Google identity to an existing GroEarn account.
+   * Confirms linking a Google identity to an existing account after user verification.
    */
   static async confirmAccountLink(params: {
     linkingToken: string;
     ipAddress?: string;
     userAgent?: string;
   }): Promise<GoogleAuthCallbackResult> {
-    const { linkingToken, ipAddress, userAgent } = params;
-
-    let payload: any;
-    try {
-      const secretKey = getAuthSecretKey();
-      const verified = await jwtVerify(linkingToken, secretKey, { algorithms: ['HS256'] });
-      payload = verified.payload;
-    } catch {
-      throw new Error('Invalid or expired account linking request. Please try logging in again.');
-    }
-
-    if (!payload || payload.type !== 'ACCOUNT_LINKING' || !payload.userId || !payload.googleSub) {
-      throw new Error('Invalid account linking token payload.');
-    }
-
-    const user = await UserRepository.findById(payload.userId);
-    if (!user) {
-      throw new Error('Associated user account was not found.');
-    }
-
-    // Check if provider account is already linked elsewhere
-    const existingAccount = await prisma.account.findUnique({
-      where: {
-        provider_providerAccountId: {
-          provider: 'google',
-          providerAccountId: payload.googleSub,
-        },
-      },
-    });
-
-    if (existingAccount) {
-      if (existingAccount.userId !== user.id) {
-        throw new Error('This Google account is already linked to another GroEarn user profile.');
-      }
-    } else {
-      // Create identity mapping
-      await prisma.account.create({
-        data: {
-          userId: user.id,
-          provider: 'google',
-          providerAccountId: payload.googleSub,
-        },
-      });
-    }
-
-    // Record audit log
-    await prisma.auditLog.create({
-      data: {
-        userId: user.id,
-        action: 'ACCOUNT_LINK_GOOGLE',
-        resource: 'Account',
-        details: { provider: 'google', googleSub: payload.googleSub, email: user.email },
-        ipAddress: ipAddress || null,
-        userAgent: userAgent || null,
-      },
-    }).catch(() => {});
-
-    const session = await createDatabaseSession(user);
-
-    return {
-      status: 'SUCCESS',
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        avatarUrl: user.avatarUrl,
-        headline: user.headline,
-      },
-      session,
-      targetDashboard: this.getTargetDashboard(user.role),
-    };
+    return OAuthService.confirmAccountLink(params);
   }
 
-  /**
+    /**
    * Updates user role for active authenticated user.
    */
   static async selectRole(userId: string, role: string, ipAddress?: string, userAgent?: string) {

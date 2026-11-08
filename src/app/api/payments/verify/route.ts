@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { PaymentService } from '@/services/payment/payment.service';
@@ -38,8 +39,8 @@ export async function POST(req: NextRequest) {
     });
 
     return apiSuccess(result);
-  } catch (error: any) {
-    console.error('[PaymentVerify:Error]', error);
-    return apiError(error.message || 'Payment verification failed', 'VERIFICATION_FAILED', 400);
+ } catch (_e) { const error = _e as Error; const err = _e as Error; 
+    logger.error('[PaymentVerify:Error]', error);
+    return apiError(err.message || 'Payment verification failed', 'VERIFICATION_FAILED', 400);
   }
 }

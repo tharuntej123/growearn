@@ -28,9 +28,6 @@ async function runLiveMultiRAGTest() {
   console.log('--- 1. TESTING REAL-TIME JOB INGESTION & FREELANCER DISCOVERY ---');
   let employer = await prisma.user.findFirst({ where: { role: 'COMPANY' } });
   if (!employer) {
-    employer = await prisma.user.findFirst({ where: { role: 'EMPLOYER' } });
-  }
-  if (!employer) {
     employer = await prisma.user.create({
       data: {
         name: 'Quantum Systems Tech',
@@ -76,9 +73,9 @@ async function runLiveMultiRAGTest() {
   }
 
   // --------------------------------------------------------------------------
-  // 2. TEST REAL-TIME MENTOR INGESTION & STUDENT DISCOVERY
+  // 2. TEST REAL-TIME MENTOR INGESTION & LEARNER DISCOVERY
   // --------------------------------------------------------------------------
-  console.log('\n--- 2. TESTING REAL-TIME MENTOR INGESTION & STUDENT RAG DISCOVERY ---');
+  console.log('\n--- 2. TESTING REAL-TIME MENTOR INGESTION & LEARNER RAG DISCOVERY ---');
   const mentorEmail = `mentor-rust-${timestamp}@test-multirag.internal`;
   const mentorUser = await UserRepository.create({
     name: `Dr. Vikram Shenoy ${timestamp.toString().slice(-4)}`,
@@ -158,7 +155,7 @@ async function runLiveMultiRAGTest() {
   // --------------------------------------------------------------------------
   // 4. TEST REAL-TIME CANDIDATE / FREELANCER INGESTION
   // --------------------------------------------------------------------------
-  console.log('\n--- 4. TESTING REAL-TIME CANDIDATE INGESTION & EMPLOYER RAG MATCHING ---');
+  console.log('\n--- 4. TESTING REAL-TIME CANDIDATE INGESTION & COMPANY RAG MATCHING ---');
   const candidateEmail = `candidate-rust-${timestamp}@test-multirag.internal`;
   const candidateUser = await UserRepository.create({
     name: `Sneha Kulkarni ${timestamp.toString().slice(-4)}`,

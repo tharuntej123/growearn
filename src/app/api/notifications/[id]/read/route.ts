@@ -17,7 +17,7 @@ export async function PUT(
     await NotificationRepository.markAsRead(id, authUser.id);
 
     return apiSuccess({ message: 'Notification marked as read' });
-  } catch (error: any) {
-    return apiError(error.message || 'Failed to update notification', 'INTERNAL_ERROR', 500);
+ } catch (_e) { const err = _e as Error; 
+    return apiError(err.message || 'Failed to update notification', 'INTERNAL_ERROR', 500);
   }
 }

@@ -269,12 +269,12 @@ async function runMasterTestSuite() {
     );
 
     // 1.7: Canonical Role Mapping & Rejection of Malicious Roles
-    const canonicalLearner = normalizeRole('STUDENT');
-    const canonicalFreelancer = normalizeRole('PROFESSIONAL');
-    const canonicalCompany = normalizeRole('EMPLOYER');
+    const canonicalLearner = normalizeRole('LEARNER');
+    const canonicalFreelancer = normalizeRole('FREELANCER');
+    const canonicalCompany = normalizeRole('COMPANY');
     assert(
       canonicalLearner === 'LEARNER' && canonicalFreelancer === 'FREELANCER' && canonicalCompany === 'COMPANY',
-      'Role Architecture: Legacy Database Roles Normalize Cleanly to Canonical Enums'
+      'Role Architecture: Canonical Roles Normalize Cleanly to Canonical Enums'
     );
 
     let invalidRoleRejected = false;
@@ -382,7 +382,7 @@ async function runMasterTestSuite() {
       'Role Boundaries: Learner is Strictly Blocked from Mentor Course Creation'
     );
     assert(
-      !isRoleAllowed(learnerRole, ['COMPANY', 'EMPLOYER', 'ADMIN']),
+      !isRoleAllowed(learnerRole, ['COMPANY', 'ADMIN']),
       'Role Boundaries: Learner is Strictly Blocked from Company Job Creation'
     );
 
@@ -711,11 +711,11 @@ async function runMasterTestSuite() {
     console.error('Suite 5 Error:', err);
   }
 
-  // SUITE 6: PROFESSIONAL & JOB MATCHING
-  console.log('\n💼 SUITE 6: Professional Job Matching & Application Flow...');
+  // SUITE 6: FREELANCER & JOB MATCHING
+  console.log('\n💼 SUITE 6: Freelancer Job Matching & Application Flow...');
   try {
     const professional = await prisma.user.findFirst({
-      where: { role: { in: ['PROFESSIONAL', 'FREELANCER'] } },
+      where: { role: 'FREELANCER' },
     });
 
     const activeJobs = await prisma.job.findMany({ take: 5 });
@@ -807,11 +807,11 @@ async function runMasterTestSuite() {
     console.error('Suite 7 Error:', err);
   }
 
-  // SUITE 8: EMPLOYER PIPELINE & STATUS PERSISTENCE
-  console.log('\n🏢 SUITE 8: Employer Hiring Pipeline & Status Persistence...');
+  // SUITE 8: COMPANY PIPELINE & STATUS PERSISTENCE
+  console.log('\n🏢 SUITE 8: Company Hiring Pipeline & Status Persistence...');
   try {
     const employer = await prisma.user.findFirst({
-      where: { role: { in: ['EMPLOYER', 'COMPANY'] } },
+      where: { role: 'COMPANY' },
     });
 
     if (employer) {
@@ -976,7 +976,7 @@ async function runMasterTestSuite() {
           userId: student.id,
           providerOrderId: testOrderId,
           amount: paidCourse.price,
-          amountInPaise: Math.round(paidCourse.price * 100),
+          amountInPaise: Math.round(Number(paidCourse.price) * 100),
           currency: 'INR',
           status: 'CREATED',
           itemType: 'COURSE',
@@ -995,7 +995,7 @@ async function runMasterTestSuite() {
           providerPaymentId: `cf_pay_${Date.now()}`,
           providerSignature: validSig,
           amount: paidCourse.price,
-          amountInPaise: Math.round(paidCourse.price * 100),
+          amountInPaise: Math.round(Number(paidCourse.price) * 100),
           currency: 'INR',
           status: 'CAPTURED',
           provider: 'CASHFREE',

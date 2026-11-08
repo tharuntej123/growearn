@@ -3,25 +3,19 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth } from '@/context/auth-context';
 import { DashboardSidebar } from '@/components/layout/sidebar';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  Briefcase,
   Building2,
-  MapPin,
-  DollarSign,
   ArrowLeft,
-  Sparkles,
   Send,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function CompanyNewJobPage() {
   const router = useRouter();
-  const { user } = useAuth();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -30,7 +24,7 @@ export default function CompanyNewJobPage() {
   const [experienceLevel, setExperienceLevel] = useState('MID');
   const [minSalary, setMinSalary] = useState<number>(3000);
   const [maxSalary, setMaxSalary] = useState<number>(6000);
-  const [country, setCountry] = useState('India');
+  const [country] = useState('India');
   const [state, setState] = useState('Tamil Nadu');
   const [city, setCity] = useState('Chennai');
   const [skills, setSkills] = useState('React, TypeScript, Next.js, PostgreSQL');

@@ -15,7 +15,7 @@ model User {
   email         String    @unique
   passwordHash  String?
   name          String
-  role          String    @default("LEARNER") // LEARNER, MENTOR, PROFESSIONAL, EMPLOYER, ADMIN
+  role          String    @default("LEARNER") // LEARNER, FREELANCER, MENTOR, COMPANY, ADMIN
   avatarUrl     String?
   headline      String?
   location      String?   // e.g. "Chennai, Tamil Nadu, India"
@@ -72,6 +72,7 @@ model User {
   aiRecommendations     AIRecommendation[]
   aiInteractions        AIInteraction[]
   auditLogs             AuditLog[]
+  aiRuns                AIRun[]
 
   @@index([role])
   @@index([email])
@@ -81,7 +82,7 @@ model Profile {
   id                 String    @id @default(cuid())
   userId             String    @unique
   user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  hourlyRate         Float?
+  hourlyRate         Decimal?  @db.Decimal(10, 2)
   title              String?
   githubUrl          String?
   linkedinUrl        String?
@@ -303,7 +304,7 @@ model Course {
   description   String
   category      String         @default("Development")
   level         String         @default("BEGINNER") // BEGINNER, INTERMEDIATE, ADVANCED
-  price         Float          @default(0)
+  price         Decimal        @default(0) @db.Decimal(10, 2)
   durationHours Float          @default(10)
   thumbnail     String?
   isPublished   Boolean        @default(true)
@@ -408,7 +409,7 @@ model MentorProfile {
   id              String              @id @default(cuid())
   userId          String              @unique
   user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  hourlyRate      Float               @default(50) // In USD or converted INR
+  hourlyRate      Decimal             @default(50) @db.Decimal(10, 2)
   bio             String
   expertise       String              // comma-separated key skills
   yearsExperience Int                 @default(5)
@@ -461,7 +462,7 @@ model MentorshipBooking {
   mentor          MentorProfile     @relation("MentorBookings", fields: [mentorId], references: [id], onDelete: Cascade)
   scheduledAt     DateTime
   durationMinutes Int               @default(60)
-  price           Float             @default(50)
+  price           Decimal           @default(50) @db.Decimal(10, 2)
   status          String            @default("SCHEDULED") // SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED
   meetingUrl      String?           @default("https://meet.jit.si/growearn-mentorship-session")
   feedback        String?
@@ -486,9 +487,9 @@ model Job {
   city            String?       @default("Chennai")
   locationType    String        @default("REMOTE") // REMOTE, ONSITE, HYBRID
   jobType         String        @default("FREELANCE") // FULL_TIME, PART_TIME, CONTRACT, FREELANCE, INTERNSHIP
-  minSalary       Float         @default(1000)
-  maxSalary       Float         @default(3000)
-  currency        String        @default("USD")
+  minSalary       Decimal       @default(1000) @db.Decimal(10, 2)
+  maxSalary       Decimal       @default(3000) @db.Decimal(10, 2)
+  currency        String        @default("INR")
   experienceLevel String        @default("MID") // ENTRY, MID, SENIOR, LEAD
   isLocal         Boolean       @default(false)
   deadline        DateTime?
@@ -547,7 +548,7 @@ model Proposal {
   professionalId String
   professional   User      @relation("ProfessionalProposals", fields: [professionalId], references: [id], onDelete: Cascade)
   coverLetter    String
-  proposedRate   Float
+  proposedRate   Decimal   @db.Decimal(10, 2)
   estimatedDays  Int       @default(7)
   milestonesJson String?
   status         String    @default("PENDING") // PENDING, ACCEPTED, REJECTED
@@ -611,7 +612,7 @@ model Review {
   course       Course?   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   rating       Int       @default(5) // 1 to 5
   comment      String
-  reviewType   String    @default("MENTOR") // MENTOR, PROFESSIONAL, COURSE, EMPLOYER
+  reviewType   String    @default("MENTOR") // MENTOR, FREELANCER, COURSE, COMPANY
   createdAt    DateTime  @default(now())
 
   @@index([targetUserId])
@@ -624,7 +625,7 @@ model PaymentOrder {
   userId          String
   user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   providerOrderId String          @unique
-  amount          Float
+  amount          Decimal         @db.Decimal(10, 2)
   amountInPaise   Int
   currency        String          @default("INR")
   status          String          @default("CREATED") // CREATED, ATTEMPTED, PAID, FAILED, EXPIRED
@@ -653,7 +654,7 @@ model Payment {
   providerOrderId   String              @unique
   providerPaymentId String?             @unique
   providerSignature String?
-  amount            Float
+  amount            Decimal             @db.Decimal(10, 2)
   amountInPaise     Int
   currency          String              @default("INR")
   status            String              @default("PENDING") // CREATED, PENDING, AUTHORIZED, CAPTURED, FAILED, REFUNDED, PARTIALLY_REFUNDED, CANCELLED
@@ -667,7 +668,7 @@ model Payment {
   bookingId         String?             @unique
   booking           MentorshipBooking?  @relation(fields: [bookingId], references: [id], onDelete: SetNull)
   failureReason     String?
-  refundAmount      Float?              @default(0)
+  refundAmount      Decimal?            @default(0) @db.Decimal(10, 2)
   refundStatus      String?
   webhookEventId    String?
   metadata          Json?
@@ -710,7 +711,7 @@ model CoursePurchase {
   payment     Payment       @relation(fields: [paymentId], references: [id], onDelete: Cascade)
   orderId     String?       @unique
   order       PaymentOrder? @relation(fields: [orderId], references: [id], onDelete: SetNull)
-  amountPaid  Float
+  amountPaid  Decimal       @db.Decimal(10, 2)
   currency    String        @default("INR")
   purchasedAt DateTime      @default(now())
 
@@ -843,14 +844,37 @@ model AuditLog {
   @@index([createdAt])
 }
 
+model AIRun {
+  id               String   @id @default(cuid())
+  userId           String?
+  user             User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  runType          String   // RAG_RETRIEVAL, LLM_COMPLETION, CREWAI_ROADMAP, EMBEDDING_GEN
+  model            String
+  promptTokens     Int      @default(0)
+  completionTokens Int      @default(0)
+  totalTokens      Int      @default(0)
+  durationMs       Int      @default(0)
+  status           String   @default("SUCCESS") // SUCCESS, FALLBACK, FAILED
+  metadata         Json?
+  createdAt        DateTime @default(now())
+
+  @@index([userId])
+  @@index([runType])
+  @@index([createdAt])
+  @@map("ai_runs")
+}
+
 model DocumentChunk {
-  id         String   @id @default(cuid())
-  content    String   @db.Text
-  source     String
-  sourceType String   @map("source_type")
-  metadata   Json?
-  embedding  Unsupported("vector(1024)")?
-  createdAt  DateTime @default(now()) @map("created_at")
+  id             String   @id @default(cuid())
+  content        String   @db.Text
+  source         String
+  sourceType     String   @map("source_type")
+  embeddingModel String?  @default("bge-m3") @map("embedding_model")
+  embeddingDim   Int?     @default(1024) @map("embedding_dim")
+  contentHash    String?  @map("content_hash")
+  metadata       Json?
+  embedding      Unsupported("vector(1024)")?
+  createdAt      DateTime @default(now()) @map("created_at")
 
   @@index([sourceType])
   @@map("document_chunks")

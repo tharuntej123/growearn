@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 // LangChain Vector Retriever for PostgreSQL pgvector.
 // Enforces role-based source-type allowlists and candidate retrieval audit logging.
 
@@ -130,7 +131,7 @@ export class PgVectorRetriever extends BaseRetriever {
           },
         });
       } catch (auditErr) {
-        console.error('[PgVectorRetriever] Failed to record candidate retrieval audit:', auditErr);
+        logger.error('[PgVectorRetriever] Failed to record candidate retrieval audit:', auditErr);
       }
     }
 

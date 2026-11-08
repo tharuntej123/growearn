@@ -20,17 +20,17 @@ import {
   FolderCheck,
   FileCheck,
 } from 'lucide-react';
-import { ROLE_INFO } from '@/lib/constants';
+import { ROLE_INFO, UserRole } from '@/lib/constants';
 
 export function DashboardSidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
 
-  const rawRole = (user?.role || 'LEARNER').toUpperCase();
-  const isLearner = rawRole === 'STUDENT' || rawRole === 'LEARNER';
+  const rawRole = ((user?.role || 'LEARNER').toUpperCase()) as UserRole;
+  const isLearner = rawRole === 'LEARNER';
   const isMentor = rawRole === 'MENTOR';
-  const isFreelancer = rawRole === 'FREELANCER' || rawRole === 'PROFESSIONAL';
-  const isCompany = rawRole === 'COMPANY' || rawRole === 'EMPLOYER';
+  const isFreelancer = rawRole === 'FREELANCER';
+  const isCompany = rawRole === 'COMPANY';
   const isAdmin = rawRole === 'ADMIN';
 
   const roleConfig = ROLE_INFO[rawRole] || ROLE_INFO.LEARNER;

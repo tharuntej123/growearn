@@ -15,16 +15,42 @@ import {
   DollarSign,
   CheckCircle2,
   AlertCircle,
-  Send,
   Compass,
 } from 'lucide-react';
 import { QuickPostCard } from '@/components/feed/quick-post-card';
-import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
+
+import { ProposalSubmissionModal, ResumeExtractionModal } from '@/components/freelancer/freelancer-modals';
+import { FreelancerJobListings } from '@/components/freelancer/freelancer-job-listings';
+import { FreelancerJobUI } from '@/types/ui';
+
+interface FreelancerUserContext {
+  id?: string;
+  name?: string;
+  email?: string;
+  location?: string;
+  hasSkills?: boolean;
+  completionPercentage?: number;
+  applications?: unknown[];
+  skills?: Array<{ id?: string; name?: string; skill?: { name?: string } } | string>;
+  profile?: {
+    hourlyRate?: number;
+    title?: string;
+    targetRole?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+interface FreelancerDashboardData {
+  userContext?: FreelancerUserContext;
+  recommendedJobs?: FreelancerJobUI[];
+  [key: string]: unknown;
+}
 
 export default function FreelancerDashboardPage() {
   const { user, refreshUser } = useAuth();
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<FreelancerDashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -36,9 +62,9 @@ export default function FreelancerDashboardPage() {
   const [isParsingResume, setIsParsingResume] = useState(false);
   const [extractedSkills, setExtractedSkills] = useState<string[] | null>(null);
 
-  const [selectedJobForProposal, setSelectedJobForProposal] = useState<any | null>(null);
+  const [selectedJobForProposal, setSelectedJobForProposal] = useState<FreelancerJobUI | null>(null);
   const [isGeneratingProposal, setIsGeneratingProposal] = useState(false);
-  const [proposalData, setProposalData] = useState<any>(null);
+  const [proposalData, setProposalData] = useState<Record<string, unknown> | null>(null);
   const [customCoverLetter, setCustomCoverLetter] = useState('');
   const [proposedRate, setProposedRate] = useState<number>(500);
   const [isSubmittingProposal, setIsSubmittingProposal] = useState(false);
@@ -63,17 +89,17 @@ export default function FreelancerDashboardPage() {
   }, []);
 
   const userContext = data?.userContext;
-  const hasSkills = Boolean(userContext?.hasSkills && userContext.skills.length > 0);
+  const hasSkills = Boolean(userContext?.hasSkills && (userContext.skills?.length || 0) > 0);
   const allJobs = data?.recommendedJobs || [];
 
-  const filteredJobs = allJobs.filter((job: any) => {
+  const filteredJobs = allJobs.filter((job: FreelancerJobUI) => {
     const q = searchQuery.toLowerCase().trim();
     const matchesQuery =
       !q ||
       job.title.toLowerCase().includes(q) ||
       job.description.toLowerCase().includes(q) ||
       job.company?.name?.toLowerCase().includes(q) ||
-      job.skills?.some((s: any) => s.skill?.name?.toLowerCase().includes(q));
+      job.skills?.some((s: { skill?: { name?: string } }) => s.skill?.name?.toLowerCase().includes(q));
 
     const matchesCity =
       !cityFilter ||
@@ -84,8 +110,8 @@ export default function FreelancerDashboardPage() {
     return matchesQuery && matchesCity;
   });
 
-  const freelanceJobs = filteredJobs.filter((j: any) => !j.isLocal || j.locationType === 'REMOTE');
-  const localJobs = filteredJobs.filter((j: any) => j.isLocal || j.locationType !== 'REMOTE');
+  const freelanceJobs = filteredJobs.filter((j: FreelancerJobUI) => !j.isLocal || j.locationType === 'REMOTE');
+  const localJobs = filteredJobs.filter((j: FreelancerJobUI) => j.isLocal || j.locationType !== 'REMOTE');
 
   const handleParseResume = async () => {
     if (!resumeText.trim()) {
@@ -123,10 +149,10 @@ export default function FreelancerDashboardPage() {
     }
   };
 
-  const handleOpenProposalGenerator = async (job: any) => {
+  const handleOpenProposalGenerator = async (job: FreelancerJobUI) => {
     setSelectedJobForProposal(job);
     setIsGeneratingProposal(true);
-    setProposedRate(Math.round((job.minSalary + job.maxSalary) / 2));
+    setProposedRate(Math.round(((job.minSalary || 500) + (job.maxSalary || 1000)) / 2));
     setProposalData(null);
 
     try {
@@ -183,8 +209,21 @@ export default function FreelancerDashboardPage() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <RoleGuard allowedRoles={['FREELANCER', 'ADMIN']} roleName="Freelancer">
+        <div className="flex min-h-[calc(100vh-4rem)] bg-[#F8FAF9]">
+          <DashboardSidebar />
+          <main className="flex-1 p-8 flex items-center justify-center">
+            <p className="text-slate-500 text-sm">Loading freelancer dashboard...</p>
+          </main>
+        </div>
+      </RoleGuard>
+    );
+  }
+
   return (
-    <RoleGuard allowedRoles={['FREELANCER', 'PROFESSIONAL', 'ADMIN']} roleName="Freelancer">
+    <RoleGuard allowedRoles={['FREELANCER', 'ADMIN']} roleName="Freelancer">
       <div className="flex min-h-[calc(100vh-4rem)] bg-[#F8FAF9]">
         <DashboardSidebar />
 
@@ -373,194 +412,12 @@ export default function FreelancerDashboardPage() {
             </div>
           </div>
 
-          {(activeJobTab === 'ALL' || activeJobTab === 'FREELANCE') && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                    <span className="text-xl">🌍</span> Main Freelancing & Global Gigs
-                  </h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Worldwide remote contracts, client projects, and distributed freelance opportunities.
-                  </p>
-                </div>
-                <Badge variant="default" className="text-[11px]">
-                  {freelanceJobs.length} Global {freelanceJobs.length === 1 ? 'Opportunity' : 'Opportunities'}
-                </Badge>
-              </div>
-
-              {freelanceJobs.length === 0 ? (
-                <Card className="p-8 text-center bg-white border border-slate-200 rounded-2xl">
-                  <Briefcase className="h-8 w-8 text-slate-300 mx-auto mb-2" />
-                  <p className="text-sm font-semibold text-slate-700">No freelance listings match your filter</p>
-                  <p className="text-xs text-slate-500 mt-1">Try clearing your search query or switching city filters.</p>
-                </Card>
-              ) : (
-                <div className="space-y-3.5">
-                  {freelanceJobs.map((job: any) => (
-                    <Card
-                      key={job.id}
-                      className="p-5 sm:p-6 bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-md transition-all rounded-2xl"
-                    >
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="space-y-2 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-base sm:text-lg font-bold text-slate-900">{job.title}</h3>
-                            {job.isPersonalized && job.matchScore > 0 && (
-                              <Badge variant="success" className="text-[10px]">
-                                {job.matchScore}% Match
-                              </Badge>
-                            )}
-                            <Badge variant="outline" className="text-[10px] text-emerald-700 bg-emerald-50 border-emerald-200">
-                              🌍 Remote / Freelance
-                            </Badge>
-                            <Badge variant="success" className="text-[10px]">
-                              {job.experienceLevel}
-                            </Badge>
-                          </div>
-
-                          <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
-                            {job.description}
-                          </p>
-
-                          <div className="flex flex-wrap gap-1.5 pt-1">
-                            {job.skills?.map((s: any) => (
-                              <span
-                                key={s.skill.name}
-                                className="px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[11px] text-slate-700 font-medium"
-                              >
-                                {s.skill.name}
-                              </span>
-                            ))}
-                          </div>
-
-                          {job.whyMatches && job.isPersonalized && (
-                            <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800">
-                              {job.whyMatches}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex flex-col sm:items-end justify-between shrink-0 gap-3">
-                          <div className="text-left sm:text-right">
-                            <p className="text-base font-bold text-emerald-700">
-                              {formatCurrency(job.minSalary, job.currency)} - {formatCurrency(job.maxSalary, job.currency)}
-                            </p>
-                            <p className="text-[10px] text-slate-500 font-medium">{job.company?.name}</p>
-                          </div>
-
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => handleOpenProposalGenerator(job)}
-                            className="gap-1.5"
-                          >
-                            <Sparkles className="h-3.5 w-3.5" /> Generate AI Proposal
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {(activeJobTab === 'ALL' || activeJobTab === 'LOCAL') && (
-            <div className="space-y-4 pt-2">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                    <span className="text-xl">📍</span> Local Jobs & Tech Hubs
-                  </h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    On-site and hybrid career positions in Chennai, Bengaluru, Hyderabad, and regional engineering centers.
-                  </p>
-                </div>
-                <Badge variant="purple" className="text-[11px]">
-                  {localJobs.length} Local {localJobs.length === 1 ? 'Job' : 'Jobs'}
-                </Badge>
-              </div>
-
-              {localJobs.length === 0 ? (
-                <Card className="p-8 text-center bg-white border border-slate-200 rounded-2xl">
-                  <Briefcase className="h-8 w-8 text-slate-300 mx-auto mb-2" />
-                  <p className="text-sm font-semibold text-slate-700">No local jobs found matching your filters</p>
-                  <p className="text-xs text-slate-500 mt-1">Try selecting another city like Chennai or clearing the keyword search.</p>
-                </Card>
-              ) : (
-                <div className="space-y-3.5">
-                  {localJobs.map((job: any) => (
-                    <Card
-                      key={job.id}
-                      className="p-5 sm:p-6 bg-white border border-purple-200/80 hover:border-purple-400 hover:shadow-md transition-all rounded-2xl"
-                    >
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="space-y-2 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-base sm:text-lg font-bold text-slate-900">{job.title}</h3>
-                            {job.isPersonalized && job.matchScore > 0 && (
-                              <Badge variant="success" className="text-[10px]">
-                                {job.matchScore}% Match
-                              </Badge>
-                            )}
-                            <Badge variant="purple" className="text-[10px] font-bold">
-                              📍 Local: {job.city || 'Chennai'}
-                            </Badge>
-                            <Badge variant="outline" className="text-[10px]">
-                              {job.locationType}
-                            </Badge>
-                            <Badge variant="success" className="text-[10px]">
-                              {job.experienceLevel}
-                            </Badge>
-                          </div>
-
-                          <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
-                            {job.description}
-                          </p>
-
-                          <div className="flex flex-wrap gap-1.5 pt-1">
-                            {job.skills?.map((s: any) => (
-                              <span
-                                key={s.skill.name}
-                                className="px-2 py-0.5 rounded-md bg-purple-50 border border-purple-200 text-[11px] text-purple-900 font-medium"
-                              >
-                                {s.skill.name}
-                              </span>
-                            ))}
-                          </div>
-
-                          {job.whyMatches && job.isPersonalized && (
-                            <div className="p-2.5 rounded-xl bg-purple-50 border border-purple-200 text-xs text-purple-900">
-                              {job.whyMatches}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex flex-col sm:items-end justify-between shrink-0 gap-3">
-                          <div className="text-left sm:text-right">
-                            <p className="text-base font-bold text-purple-800">
-                              {formatCurrency(job.minSalary, job.currency)} - {formatCurrency(job.maxSalary, job.currency)}
-                            </p>
-                            <p className="text-[10px] text-slate-500 font-medium">{job.company?.name}</p>
-                          </div>
-
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => handleOpenProposalGenerator(job)}
-                            className="gap-1.5 bg-purple-700 hover:bg-purple-800 text-white"
-                          >
-                            <Sparkles className="h-3.5 w-3.5" /> Generate AI Proposal
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+          <FreelancerJobListings
+            activeJobTab={activeJobTab}
+            freelanceJobs={freelanceJobs}
+            localJobs={localJobs}
+            onOpenProposal={handleOpenProposalGenerator}
+          />
 
           <div className="space-y-4 pt-2">
             <div>
@@ -575,116 +432,27 @@ export default function FreelancerDashboardPage() {
             />
           </div>
 
-          {selectedJobForProposal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-              <div className="w-full max-w-2xl bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-                <div className="flex items-start justify-between border-b border-slate-100 pb-3">
-                  <div>
-                    <Badge variant="default" className="mb-1">AI Proposal Generator</Badge>
-                    <h3 className="text-lg font-bold text-slate-900">{selectedJobForProposal.title}</h3>
-                  </div>
-                  <button
-                    onClick={() => setSelectedJobForProposal(null)}
-                    className="text-slate-400 hover:text-slate-700 text-lg"
-                  >
-                    ✕
-                  </button>
-                </div>
+          <ProposalSubmissionModal
+            job={selectedJobForProposal}
+            onClose={() => setSelectedJobForProposal(null)}
+            isGenerating={isGeneratingProposal}
+            proposedRate={proposedRate}
+            setProposedRate={setProposedRate}
+            customCoverLetter={customCoverLetter}
+            setCustomCoverLetter={setCustomCoverLetter}
+            onSubmit={handleSubmitProposal}
+            isSubmitting={isSubmittingProposal}
+          />
 
-                {isGeneratingProposal ? (
-                  <div className="py-12 text-center space-y-2">
-                    <Sparkles className="h-8 w-8 text-emerald-600 animate-spin mx-auto" />
-                    <p className="text-sm text-slate-700 font-semibold">AI is drafting your custom proposal...</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4 text-xs">
-                    <div>
-                      <label className="block font-semibold text-slate-700 mb-1">
-                        Proposed Price ($):
-                      </label>
-                      <input
-                        type="number"
-                        value={proposedRate}
-                        onChange={(e) => setProposedRate(Number(e.target.value))}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-900 text-sm focus:outline-none focus:border-emerald-500 font-bold text-emerald-700"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-semibold text-slate-700 mb-1">
-                        Editable Proposal Content:
-                      </label>
-                      <textarea
-                        rows={10}
-                        value={customCoverLetter}
-                        onChange={(e) => setCustomCoverLetter(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:border-emerald-500 leading-relaxed font-sans text-xs"
-                      />
-                    </div>
-
-                    <div className="flex justify-end gap-2 pt-2">
-                      <Button variant="ghost" size="sm" onClick={() => setSelectedJobForProposal(null)}>
-                        Cancel
-                      </Button>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={handleSubmitProposal}
-                        isLoading={isSubmittingProposal}
-                        className="gap-1.5"
-                      >
-                        <Send className="h-3.5 w-3.5" /> Submit Proposal
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {showResumeModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-              <div className="w-full max-w-xl bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <UploadCloud className="h-5 w-5 text-emerald-600" /> Resume Skill Extractor
-                  </h3>
-                  <button onClick={() => setShowResumeModal(false)} className="text-slate-400 hover:text-slate-700 text-lg">✕</button>
-                </div>
-
-                <div className="space-y-3 text-xs">
-                  <p className="text-slate-600">
-                    Paste your resume text below. Our AI will automatically identify technical competencies and save them directly to your profile:
-                  </p>
-                  <textarea
-                    rows={6}
-                    placeholder="Paste your resume work history, technical skills (e.g. React, Next.js, Java, Spring Boot, PostgreSQL, Docker)..."
-                    value={resumeText}
-                    onChange={(e) => setResumeText(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:border-emerald-500"
-                  />
-
-                  {extractedSkills && (
-                    <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 space-y-2">
-                      <p className="font-bold text-emerald-800">AI Detected Skills Saved to Profile:</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {extractedSkills.map((sk) => (
-                          <Badge key={sk} variant="success">{sk}</Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex justify-end gap-2 pt-2">
-                    <Button variant="ghost" size="sm" onClick={() => setShowResumeModal(false)}>Close</Button>
-                    <Button variant="default" size="sm" onClick={handleParseResume} isLoading={isParsingResume}>
-                      Analyze & Save Skills with AI
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          <ResumeExtractionModal
+            isOpen={showResumeModal}
+            onClose={() => setShowResumeModal(false)}
+            resumeText={resumeText}
+            setResumeText={setResumeText}
+            extractedSkills={extractedSkills}
+            onParseResume={handleParseResume}
+            isParsingResume={isParsingResume}
+          />
         </main>
       </div>
     </RoleGuard>

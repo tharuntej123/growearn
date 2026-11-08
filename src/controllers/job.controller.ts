@@ -31,7 +31,7 @@ export class JobController {
       const authUser = await getCurrentUser(req);
       const targetCompanyId = mine && authUser ? authUser.id : companyId;
 
-      const where: any = { status: 'OPEN' };
+      const where: Record<string, unknown> = { status: 'OPEN' };
       if (targetCompanyId) {
         where.companyId = targetCompanyId;
       }
@@ -91,8 +91,8 @@ export class JobController {
         limit,
         offset,
       });
-    } catch (error: any) {
-      return apiError(error.message || 'Failed to fetch jobs', 'INTERNAL_ERROR', 500);
+ } catch (_e) { const err = _e as Error; 
+      return apiError(err.message || 'Failed to fetch jobs', 'INTERNAL_ERROR', 500);
     }
   }
 
@@ -175,8 +175,8 @@ export class JobController {
         application,
         matchResult,
       });
-    } catch (error: any) {
-      return apiError(error.message || 'Failed to fetch job details', 'INTERNAL_ERROR', 500);
+ } catch (_e) { const err = _e as Error; 
+      return apiError(err.message || 'Failed to fetch job details', 'INTERNAL_ERROR', 500);
     }
   }
 
@@ -187,8 +187,8 @@ export class JobController {
         return apiError('Authentication required to post job opportunities', 'UNAUTHORIZED', 401);
       }
 
-      if (!isRoleAllowed(authUser.role, ['EMPLOYER', 'COMPANY', 'ADMIN'])) {
-        return apiError('Forbidden: Only Employer accounts can post job opportunities.', 'FORBIDDEN', 403);
+      if (!isRoleAllowed(authUser.role, ['COMPANY', 'ADMIN'])) {
+        return apiError('Forbidden: Only Company accounts can post job opportunities.', 'FORBIDDEN', 403);
       }
 
       const body = await req.json();
@@ -216,7 +216,7 @@ export class JobController {
       }).catch(() => {});
 
       return apiSuccess({ job: newJob }, 201);
-    } catch (err: any) {
+ } catch (_e) { const err = _e as Error; 
       return apiError(err.message || 'Failed to create job listing', 'JOB_CREATE_ERROR', 500);
     }
   }
@@ -304,7 +304,7 @@ export class JobController {
         message: 'Application submitted successfully',
         application,
       }, 201);
-    } catch (err: any) {
+ } catch (_e) { const err = _e as Error; 
       return apiError(err.message || 'Failed to submit application', 'APPLICATION_ERROR', 500);
     }
   }
@@ -412,7 +412,7 @@ export class JobController {
       });
 
       return apiSuccess({ job, applications });
-    } catch (err: any) {
+ } catch (_e) { const err = _e as Error; 
       return apiError(err.message || 'Failed to fetch applications', 'INTERNAL_ERROR', 500);
     }
   }
@@ -465,7 +465,7 @@ export class JobController {
         message: `Application status updated to ${status}`,
         application: updated,
       });
-    } catch (err: any) {
+ } catch (_e) { const err = _e as Error; 
       return apiError(err.message || 'Failed to update application status', 'INTERNAL_ERROR', 500);
     }
   }

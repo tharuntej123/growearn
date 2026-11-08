@@ -36,13 +36,13 @@ export async function PUT(
 
     const updated = await AdminRepository.updateUserRole(authUser.id, targetUserId, validated.data.role);
     return apiSuccess({ user: updated, message: `Role updated to ${validated.data.role}` });
-  } catch (error: any) {
+ } catch (_e) { const error = _e as Error; const err = _e as Error; 
     if (error.message?.includes('Forbidden') || error.message?.includes('prohibited')) {
-      return apiError(error.message, 'FORBIDDEN', 403);
+      return apiError(err.message, 'FORBIDDEN', 403);
     }
     if (error.message?.includes('not found')) {
-      return apiError(error.message, 'NOT_FOUND', 404);
+      return apiError(err.message, 'NOT_FOUND', 404);
     }
-    return apiError(error.message || 'Failed to update user role', 'INTERNAL_ERROR', 500);
+    return apiError(err.message || 'Failed to update user role', 'INTERNAL_ERROR', 500);
   }
 }

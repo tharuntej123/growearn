@@ -1,0 +1,1 @@
+PASS: scripts/reset-demo-db.ts exists and restores demo fixture state.

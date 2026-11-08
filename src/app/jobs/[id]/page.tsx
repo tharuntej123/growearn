@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/auth-context';
@@ -8,19 +8,14 @@ import { DashboardSidebar } from '@/components/layout/sidebar';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar } from '@/components/ui/avatar';
 import {
   Briefcase,
   Building2,
   MapPin,
-  DollarSign,
-  Clock,
-  CheckCircle2,
   Sparkles,
   ArrowLeft,
   Send,
   FileText,
-  ShieldCheck,
   Check,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -42,13 +37,8 @@ export default function JobDetailPage() {
   const [isApplying, setIsApplying] = useState(false);
   const [showApplyModal, setShowApplyModal] = useState(false);
 
-  useEffect(() => {
-    if (id) {
-      fetchJobDetail();
-    }
-  }, [id]);
-
-  const fetchJobDetail = async () => {
+  const fetchJobDetail = useCallback(async () => {
+    if (!id) return;
     setIsLoading(true);
     try {
       const res = await fetch(`/api/jobs/${id}`);
@@ -66,7 +56,11 @@ export default function JobDetailPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    fetchJobDetail();
+  }, [fetchJobDetail]);
 
   const handleApply = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -172,12 +166,12 @@ export default function JobDetailPage() {
 
               {/* Required Skills */}
               <div className="flex flex-wrap gap-1.5 pt-2">
-                {(job.skills || []).map((js: any) => (
+                {(job.skills || []).map((js: { id?: string; skill?: { name: string }; name?: string }, idx: number) => (
                   <span
-                    key={js.id || js.skill.name}
+                    key={js.id || js.skill?.name || js.name || idx}
                     className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200"
                   >
-                    {js.skill.name}
+                    {js.skill?.name || js.name}
                   </span>
                 ))}
               </div>

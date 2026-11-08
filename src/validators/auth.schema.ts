@@ -11,7 +11,15 @@ export const registerSchema = z
       .regex(/[0-9]/, 'Password must contain at least one number'),
     confirmPassword: z.string(),
     role: z
-      .enum(['LEARNER', 'PROFESSIONAL', 'MENTOR', 'EMPLOYER', 'STUDENT', 'FREELANCER', 'COMPANY'])
+      .string()
+      .refine(
+        (val) => val.toUpperCase() !== 'ADMIN',
+        { message: 'Public registration cannot grant the ADMIN role' }
+      )
+      .refine(
+        (val) => ['LEARNER', 'FREELANCER', 'MENTOR', 'COMPANY'].includes(val.toUpperCase()),
+        { message: 'Invalid role selection' }
+      )
       .optional()
       .default('LEARNER'),
   })
@@ -26,7 +34,16 @@ export const loginSchema = z.object({
 });
 
 export const roleSelectSchema = z.object({
-  role: z.enum(['LEARNER', 'PROFESSIONAL', 'MENTOR', 'EMPLOYER', 'STUDENT', 'FREELANCER', 'COMPANY']),
+  role: z
+    .string()
+    .refine(
+      (val) => val.toUpperCase() !== 'ADMIN',
+      { message: 'Public registration cannot grant the ADMIN role' }
+    )
+    .refine(
+      (val) => ['LEARNER', 'FREELANCER', 'MENTOR', 'COMPANY'].includes(val.toUpperCase()),
+      { message: 'Invalid role selection' }
+    ),
 });
 
 export const updateProfileSchema = z.object({

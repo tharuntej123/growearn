@@ -7,7 +7,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'LEARNER' | 'PROFESSIONAL' | 'MENTOR' | 'EMPLOYER' | 'ADMIN' | 'STUDENT' | 'FREELANCER' | 'COMPANY';
+  role: 'LEARNER' | 'FREELANCER' | 'MENTOR' | 'COMPANY' | 'ADMIN';
   avatarUrl?: string | null;
   headline?: string | null;
   location?: string | null;
@@ -72,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (role) params.set('role', role);
     if (redirectUrl) params.set('redirect', redirectUrl);
     const queryString = params.toString();
-    window.location.href = `/api/auth/google/init${queryString ? `?${queryString}` : ''}`;
+    window.location.assign(new URL(`/api/auth/google/init${queryString ? `?${queryString}` : ''}`, window.location.origin).href);
   };
 
   const selectRole = async (role: string) => {
@@ -83,7 +83,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ role }),
       });
 
-      let data: any = null;
+      let data: {
+        success?: boolean;
+        error?: string | { message?: string };
+        message?: string;
+        data?: { user?: User };
+      } | null = null;
       try {
         data = await res.json();
       } catch {

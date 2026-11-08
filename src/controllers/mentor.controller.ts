@@ -26,7 +26,7 @@ export class MentorController {
       const excludeIdsParam = searchParams.get('excludeIds');
       const excludeIds = excludeIdsParam ? excludeIdsParam.split(',').filter(Boolean) : [];
 
-      const where: any = { isAvailable: true };
+      const where: Record<string, unknown> = { isAvailable: true };
       if (excludeIds.length > 0) {
         where.id = { notIn: excludeIds };
       }
@@ -79,8 +79,8 @@ export class MentorController {
         limit,
         offset,
       });
-    } catch (error: any) {
-      return apiError(error.message || 'Failed to fetch mentors', 'INTERNAL_ERROR', 500);
+ } catch (_e) { const err = _e as Error; 
+      return apiError(err.message || 'Failed to fetch mentors', 'INTERNAL_ERROR', 500);
     }
   }
 
@@ -120,8 +120,8 @@ export class MentorController {
       }
 
       return apiSuccess({ mentor });
-    } catch (error: any) {
-      return apiError(error.message || 'Failed to fetch mentor details', 'INTERNAL_ERROR', 500);
+ } catch (_e) { const err = _e as Error; 
+      return apiError(err.message || 'Failed to fetch mentor details', 'INTERNAL_ERROR', 500);
     }
   }
 
@@ -200,8 +200,8 @@ export class MentorController {
         },
         201
       );
-    } catch (error: any) {
-      return apiError(error.message || 'Failed to submit mentorship request', 'INTERNAL_ERROR', 500);
+ } catch (_e) { const err = _e as Error; 
+      return apiError(err.message || 'Failed to submit mentorship request', 'INTERNAL_ERROR', 500);
     }
   }
 
@@ -238,8 +238,8 @@ export class MentorController {
       });
 
       return apiSuccess({ requests });
-    } catch (error: any) {
-      return apiError(error.message || 'Failed to fetch mentor requests', 'INTERNAL_ERROR', 500);
+ } catch (_e) { const err = _e as Error; 
+      return apiError(err.message || 'Failed to fetch mentor requests', 'INTERNAL_ERROR', 500);
     }
   }
 
@@ -328,8 +328,8 @@ export class MentorController {
         message: `Request status updated to ${status}`,
         request: updated,
       });
-    } catch (error: any) {
-      return apiError(error.message || 'Failed to update request status', 'INTERNAL_ERROR', 500);
+ } catch (_e) { const err = _e as Error; 
+      return apiError(err.message || 'Failed to update request status', 'INTERNAL_ERROR', 500);
     }
   }
 
@@ -353,8 +353,8 @@ export class MentorController {
       });
 
       return apiSuccess({ mentorProfile });
-    } catch (error: any) {
-      return apiError(error.message || 'Failed to update mentor profile', 'INTERNAL_ERROR', 500);
+ } catch (_e) { const err = _e as Error; 
+      return apiError(err.message || 'Failed to update mentor profile', 'INTERNAL_ERROR', 500);
     }
   }
 }

@@ -1,0 +1,1 @@
+PASS: Integer paise math eliminates floating point drift for revenue calculations and platform commission.

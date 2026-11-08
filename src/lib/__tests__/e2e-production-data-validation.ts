@@ -194,7 +194,7 @@ async function runEndToEndProductionValidation() {
   console.log('💼 SECTION 5: Verifying Freelancer Job Matching Flow (Skills + Exp + Projects + Certs)...');
   try {
     const freelancerUser = await prisma.user.findFirst({
-      where: { role: { in: ['FREELANCER', 'PROFESSIONAL'] } },
+      where: { role: 'FREELANCER' },
       include: { profile: true, skills: { include: { skill: true } } },
     });
 
@@ -240,7 +240,7 @@ async function runEndToEndProductionValidation() {
   console.log('🏢 SECTION 6: Verifying Company Dashboard Flow (Job Postings & Candidate Retrieval)...');
   try {
     const companyUser = await prisma.user.findFirst({
-      where: { role: { in: ['EMPLOYER', 'COMPANY', 'RECRUITER'] } },
+      where: { role: 'COMPANY' },
       include: {
         jobPostings: {
           include: {

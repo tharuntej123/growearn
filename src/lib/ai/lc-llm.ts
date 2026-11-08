@@ -20,8 +20,12 @@ export function getLangChainChatGroq(options?: LangChainLLMOptions) {
     primaryModel = 'llama-3.3-70b-versatile';
   }
 
+  if (!apiKey && process.env.NODE_ENV === 'production') {
+    throw new Error('GROQ_API_KEY is required and cannot be empty in production environment.');
+  }
+
   const primary = new ChatGroq({
-    apiKey: apiKey || 'mock-key-for-initialization',
+    apiKey: apiKey || 'unconfigured-key',
     model: primaryModel,
     temperature: options?.temperature ?? 0.3,
     maxTokens: options?.maxTokens ?? 1500,
@@ -37,7 +41,7 @@ export function getLangChainChatGroq(options?: LangChainLLMOptions) {
   const fallbacks = fallbackCandidates.map(
     (modelName) =>
       new ChatGroq({
-        apiKey: apiKey || 'mock-key-for-initialization',
+        apiKey: apiKey || 'unconfigured-key',
         model: modelName,
         temperature: options?.temperature ?? 0.3,
         maxTokens: options?.maxTokens ?? 1500,

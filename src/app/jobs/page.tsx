@@ -1,31 +1,25 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { useAuth } from '@/context/auth-context';
 import { DashboardSidebar } from '@/components/layout/sidebar';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
-  Briefcase,
   Search,
   MapPin,
   Sparkles,
-  Filter,
-  DollarSign,
-  Building2,
-  CheckCircle2,
   AlertCircle,
   Send,
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
+import { JobUI } from '@/types/ui';
 
 export default function JobsPage() {
-  const { user } = useAuth();
-  const [jobs, setJobs] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<JobUI[]>([]);
   const [isPersonalized, setIsPersonalized] = useState(false);
   const [emptyReason, setEmptyReason] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,12 +30,12 @@ export default function JobsPage() {
   const [jobType, setJobType] = useState('ALL');
   const [scopeFilter, setScopeFilter] = useState<'ALL' | 'FREELANCE' | 'LOCAL'>('ALL');
 
-  const [selectedJob, setSelectedJob] = useState<any>(null);
+  const [selectedJob, setSelectedJob] = useState<{ id: string; title: string; description?: string; [key: string]: unknown } | null>(null);
   const [isGeneratingProposal, setIsGeneratingProposal] = useState(false);
   const [customProposal, setCustomProposal] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const fetchJobs = async () => {
+  const fetchJobs = useCallback(async () => {
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
@@ -64,13 +58,13 @@ export default function JobsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [query, cityFilter, locationType, jobType, scopeFilter]);
 
   useEffect(() => {
     fetchJobs();
-  }, [locationType, jobType, scopeFilter]);
+  }, [fetchJobs]);
 
-  const handleOpenProposal = async (job: any) => {
+  const handleOpenProposal = async (job: JobUI) => {
     setSelectedJob(job);
     setIsGeneratingProposal(true);
 
@@ -271,7 +265,7 @@ export default function JobsPage() {
                   <div className="space-y-2.5 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="text-lg font-bold text-slate-900">{job.title}</h3>
-                      {job.isPersonalized && job.matchScore > 0 && (
+                      {job.isPersonalized && Number(job.matchScore || 0) > 0 && (
                         <Badge variant="success" className="text-xs font-bold">
                           {job.matchScore}% Match
                         </Badge>
@@ -290,18 +284,19 @@ export default function JobsPage() {
                     </p>
 
                     <div className="flex flex-wrap gap-1.5 pt-1">
-                      {job.skills?.map((s: any) => {
-                        const isMatched = job.matchedSkills?.includes(s.skill.name);
+                      {job.skills?.map((s: { skill?: { name?: string }; name?: string }, sIdx: number) => {
+                        const skillName = s.skill?.name || s.name || '';
+                        const isMatched = Array.isArray(job.matchedSkills) && job.matchedSkills.includes(skillName);
                         return (
                           <span
-                            key={s.skill.name}
+                            key={skillName || sIdx}
                             className={`px-2.5 py-0.5 rounded-md text-xs font-medium ${
                               isMatched
                                 ? 'bg-emerald-100 border border-emerald-300 text-emerald-800'
                                 : 'bg-slate-100 border border-slate-200 text-slate-700'
                             }`}
                           >
-                            {isMatched ? `✓ ${s.skill.name}` : s.skill.name}
+                            {isMatched ? `✓ ${skillName}` : skillName}
                           </span>
                         );
                       })}
@@ -318,9 +313,9 @@ export default function JobsPage() {
                   <div className="flex flex-col sm:items-end justify-between shrink-0 gap-3">
                     <div className="text-left sm:text-right">
                       <p className="text-lg font-extrabold text-emerald-700">
-                        {formatCurrency(job.minSalary, job.currency)} - {formatCurrency(job.maxSalary, job.currency)}
+                        {formatCurrency(job.minSalary || 0, job.currency)} - {formatCurrency(job.maxSalary || 0, job.currency)}
                       </p>
-                      <p className="text-xs text-slate-500 mt-0.5">{job.company?.name}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{job.company?.name || job.companyName || 'Verified Employer'}</p>
                     </div>
 
                     <Button

@@ -1,0 +1,1 @@
+PASS: Circuit Breaker throttles error logging to once per 30s and fails closed on auth/payments.

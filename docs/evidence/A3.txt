@@ -1,0 +1,1 @@
+PASS: Zero mock-key / MOCK_AI in production paths

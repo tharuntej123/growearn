@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/auth-context';
@@ -13,20 +13,18 @@ import {
   BookOpen,
   CheckCircle2,
   Clock,
-  Users,
   Award,
   ChevronDown,
   ChevronUp,
   PlayCircle,
-  FileText,
   Star,
   Check,
   ShieldCheck,
   ArrowLeft,
-  Share2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { CheckoutModal } from '@/components/payment/checkout-modal';
+import { CourseUI } from '@/types/ui';
 
 export default function CourseDetailPage() {
   const params = useParams();
@@ -34,21 +32,16 @@ export default function CourseDetailPage() {
   const slug = params?.slug as string;
   const { user } = useAuth();
 
-  const [course, setCourse] = useState<any | null>(null);
+  const [course, setCourse] = useState<CourseUI | null>(null);
   const [isEnrolled, setIsEnrolled] = useState(false);
-  const [enrollment, setEnrollment] = useState<any | null>(null);
+  const [enrollment, setEnrollment] = useState<Record<string, unknown> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [openModuleIndex, setOpenModuleIndex] = useState<number | null>(0);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
 
-  useEffect(() => {
-    if (slug) {
-      fetchCourseDetail();
-    }
-  }, [slug]);
-
-  const fetchCourseDetail = async () => {
+  const fetchCourseDetail = useCallback(async () => {
+    if (!slug) return;
     setIsLoading(true);
     try {
       const res = await fetch(`/api/courses/${slug}`);
@@ -65,7 +58,11 @@ export default function CourseDetailPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [slug]);
+
+  useEffect(() => {
+    fetchCourseDetail();
+  }, [fetchCourseDetail]);
 
   const handleEnroll = async () => {
     if (!user) {
@@ -74,7 +71,9 @@ export default function CourseDetailPage() {
       return;
     }
 
-    if (course.price > 0) {
+    if (!course) return;
+
+    if ((course.price ?? 0) > 0) {
       setShowCheckoutModal(true);
       return;
     }
@@ -130,9 +129,9 @@ export default function CourseDetailPage() {
     );
   }
 
-  const skillsList = course.skillsCovered ? course.skillsCovered.split(',').map((s: string) => s.trim()) : [];
+  const skillsList = typeof course.skillsCovered === 'string' ? course.skillsCovered.split(',').map((s: string) => s.trim()) : [];
   const totalLessons = (course.modules || []).reduce(
-    (acc: number, m: any) => acc + (m.lessons?.length || 0),
+    (acc: number, m: { lessons?: unknown[] }) => acc + (m.lessons?.length || 0),
     0
   );
 
@@ -222,7 +221,7 @@ export default function CourseDetailPage() {
                     <span>Enrolled in Course</span>
                   </div>
                   <p className="text-[11px] text-emerald-800">
-                    Progress: {enrollment?.progressPercent || 0}% completed
+                    Progress: {String(enrollment?.progressPercent || 0)}% completed
                   </p>
                 </div>
               ) : (
@@ -263,12 +262,12 @@ export default function CourseDetailPage() {
           </div>
 
           <div className="space-y-3">
-            {(course.modules || []).map((module: any, mIdx: number) => {
+            {(course.modules || []).map((module: { id?: string; title: string; description?: string; lessons?: Array<{ id?: string; title: string; durationMinutes?: number }> }, mIdx: number) => {
               const isOpen = openModuleIndex === mIdx;
 
               return (
                 <div
-                  key={module.id}
+                  key={module.id || mIdx}
                   className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs"
                 >
                   <button
@@ -295,9 +294,9 @@ export default function CourseDetailPage() {
 
                   {isOpen && (
                     <div className="border-t border-slate-100 divide-y divide-slate-100 bg-slate-50/40">
-                      {(module.lessons || []).map((lesson: any, lIdx: number) => (
+                      {(module.lessons || []).map((lesson, lIdx: number) => (
                         <div
-                          key={lesson.id}
+                          key={lesson.id || lIdx}
                           className="p-3.5 pl-6 flex items-center justify-between hover:bg-white transition-colors"
                         >
                           <div className="flex items-center gap-3">
@@ -324,8 +323,8 @@ export default function CourseDetailPage() {
           <section className="space-y-4">
             <h2 className="text-xl font-bold text-slate-900">Student Reviews</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {course.reviews.map((rev: any) => (
-                <Card key={rev.id} className="p-4 bg-white border border-slate-200 rounded-xl space-y-2">
+              {(course.reviews || []).map((rev: { id?: string; rating: number; comment: string; author?: { name?: string; avatarUrl?: string } }, rIdx: number) => (
+                <Card key={rev.id || rIdx} className="p-4 bg-white border border-slate-200 rounded-xl space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Avatar src={rev.author?.avatarUrl} fallback={rev.author?.name || 'A'} size="sm" />
@@ -350,7 +349,7 @@ export default function CourseDetailPage() {
           itemType="COURSE"
           itemId={course.id}
           title={course.title}
-          price={course.price}
+          price={course.price ?? 0}
           instructorOrMentorName={course.instructor?.name}
           onSuccess={handlePaymentSuccess}
         />

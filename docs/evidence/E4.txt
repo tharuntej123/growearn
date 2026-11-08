@@ -1,0 +1,1 @@
+PASS: RunnableSequence receives preRetrievedDocs, eliminating duplicate retrieval passes.

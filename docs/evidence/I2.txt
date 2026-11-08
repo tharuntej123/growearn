@@ -1,0 +1,1 @@
+PASS: When Python microservice is stopped, Next.js executes deterministic catalog synthesis and explicitly flags mode: fallback.

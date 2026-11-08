@@ -118,7 +118,7 @@ export const PRODUCTION_ROADMAPS_CATALOG: CareerRoadmapCatalogItem[] = [
         ],
         practiceTasks: [
           'Implement event-driven asynchronous notification and audit logging using Kafka',
-          'Complete 1-on-1 mock technical interview with senior mentor Priya Sharma',
+          'Complete 1-on-1 mock technical interview with a verified senior mentor',
         ],
         projects: ['Production-Grade High-Throughput FinTech Payment Gateway Capstone'],
         milestone: 'Job-Ready Professional Java & Spring Boot Developer',
@@ -512,7 +512,7 @@ export const PRODUCTION_ROADMAPS_CATALOG: CareerRoadmapCatalogItem[] = [
           'Google Play Store & Apple App Store Guidelines & Submission',
           'Mobile Architecture Mock Interviews with Senior Mentor',
         ],
-        practiceTasks: ['Set up automated Fastlane build pipeline for iOS and Android', 'Complete 1-on-1 code audit with mentor Pooja Verma'],
+        practiceTasks: ['Set up automated Fastlane build pipeline for iOS and Android', 'Complete 1-on-1 code audit with a verified mobile mentor'],
         projects: ['Production Published Mobile App on App Store & Google Play'],
         milestone: 'Job-Ready Mobile Application Architect',
       },

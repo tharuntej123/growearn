@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { DashboardSidebar } from '@/components/layout/sidebar';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,6 @@ import {
   ExternalLink,
   Building2,
   MapPin,
-  DollarSign,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -27,7 +26,7 @@ export default function AdminJobsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const fetchJobs = async () => {
+  const fetchJobs = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -49,11 +48,11 @@ export default function AdminJobsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, search, statusFilter]);
 
   useEffect(() => {
     fetchJobs();
-  }, [page, statusFilter]);
+  }, [fetchJobs]);
 
   const handleModerate = async (jobId: string, status: string, isFeatured?: boolean) => {
     setUpdatingId(jobId);
@@ -224,6 +223,15 @@ export default function AdminJobsPage() {
               </tbody>
             </table>
           </div>
+          {totalPages > 1 && (
+            <div className="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+              <span>Page {page} of {totalPages}</span>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Previous</Button>
+                <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>Next</Button>
+              </div>
+            </div>
+          )}
         </Card>
       </main>
     </div>

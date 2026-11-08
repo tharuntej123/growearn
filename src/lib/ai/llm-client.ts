@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 export interface LLMMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
@@ -70,8 +71,8 @@ export class LLMClient {
         ? [{ role: 'system', content: systemPrompt }, { role: 'user', content: prompt }]
         : [{ role: 'user', content: prompt }];
 
-      if (typeof (llm as any).withStructuredOutput === 'function') {
-        const structuredLLM = (llm as any).withStructuredOutput(schema);
+      if ('withStructuredOutput' in (llm as unknown as Record<string, unknown>) && typeof (llm as unknown as { withStructuredOutput?: unknown }).withStructuredOutput === 'function') {
+        const structuredLLM = (llm as unknown as { withStructuredOutput: (s: unknown) => { invoke: (m: unknown) => Promise<unknown> } }).withStructuredOutput(schema);
         const result = await structuredLLM.invoke(messages);
         if (result) return result as T;
       }
@@ -83,7 +84,7 @@ export class LLMClient {
       const validated = schema.safeParse(parsed);
       if (validated.success) return validated.data;
     } catch (err) {
-      console.warn('[LLMClient:StructuredOutput] LangChain structured output failed, falling back:', err);
+      logger.warn('[LLMClient:StructuredOutput] LangChain structured output failed, falling back:', err);
     }
     return null;
   }
@@ -122,7 +123,7 @@ export class LLMClient {
       const parsed = JSON.parse(cleaned) as T;
       return { data: parsed, provider: res.provider, model: res.model };
     } catch (err) {
-      console.warn('[GrokLLMClient] Failed to parse JSON completion:', err, '\nRaw text was:\n', res.text);
+      logger.warn('[GrokLLMClient] Failed to parse JSON completion:', { error: String(err), rawText: res.text });
       return null;
     }
   }
@@ -170,10 +171,10 @@ export class LLMClient {
           }
         } else {
           const errText = await response.text();
-          console.warn(`[GrokLLMClient] Groq model ${candidateModel} error (${response.status}):`, errText);
+          logger.warn(`[GrokLLMClient] Groq model ${candidateModel} error (${response.status}):`, errText);
         }
       } catch (err) {
-        console.warn(`[GrokLLMClient] Groq fetch error on model ${candidateModel}:`, err);
+        logger.warn(`[GrokLLMClient] Groq fetch error on model ${candidateModel}:`, err);
       }
     }
 
@@ -204,7 +205,7 @@ export class LLMClient {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.warn(`[GrokLLMClient] xAI Grok API error (${response.status}):`, errorText);
+        logger.warn(`[GrokLLMClient] xAI Grok API error (${response.status}):`, errorText);
         if (model !== 'grok-beta') {
           return this.callGrokFallback(options, apiKey, 'grok-beta');
         }
@@ -218,7 +219,7 @@ export class LLMClient {
       }
       return null;
     } catch (err) {
-      console.warn('[GrokLLMClient] Grok network/fetch error:', err);
+      logger.warn('[GrokLLMClient] Grok network/fetch error:', err);
       return null;
     }
   }
@@ -277,7 +278,7 @@ export class LLMClient {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.warn(`[GrokLLMClient] OpenAI API error (${response.status}):`, errorText);
+        logger.warn(`[GrokLLMClient] OpenAI API error (${response.status}):`, errorText);
         return null;
       }
 
@@ -288,7 +289,7 @@ export class LLMClient {
       }
       return null;
     } catch (err) {
-      console.warn('[GrokLLMClient] OpenAI fetch error:', err);
+      logger.warn('[GrokLLMClient] OpenAI fetch error:', err);
       return null;
     }
   }
@@ -309,7 +310,7 @@ export class LLMClient {
           parts: [{ text: m.content }],
         }));
 
-      const body: any = { contents: userContents };
+      const body: Record<string, unknown> = { contents: userContents };
       if (systemInstruction) {
         body.systemInstruction = { parts: [{ text: systemInstruction }] };
       }
@@ -322,7 +323,7 @@ export class LLMClient {
 
       if (!response.ok) {
         const errText = await response.text();
-        console.warn(`[GrokLLMClient] Gemini error (${response.status}):`, errText);
+        logger.warn(`[GrokLLMClient] Gemini error (${response.status}):`, errText);
         return null;
       }
 
@@ -333,7 +334,7 @@ export class LLMClient {
       }
       return null;
     } catch (err) {
-      console.warn('[LLMClient] Gemini fetch error:', err);
+      logger.warn('[LLMClient] Gemini fetch error:', err);
       return null;
     }
   }

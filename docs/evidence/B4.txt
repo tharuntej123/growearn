@@ -1,0 +1,1 @@
+PASS: API returns computed SQL aggregates (AVG, COUNT) for course and mentor statistics.

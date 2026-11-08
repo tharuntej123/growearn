@@ -1,6 +1,9 @@
+import { logger } from '@/lib/logger';
 // Production Document and Entity Ingestion Pipeline using BGE-M3 (1024 dims).
 
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
+import { Prisma } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { PgVectorStore, IngestChunkInput } from './vector-store';
 import { generateEmbeddings, isEmbeddingConfigured } from './embeddings';
 
@@ -39,7 +42,7 @@ export class DocumentIngestionService {
 
     if (input.sourceType === 'pdf' || input.filename.toLowerCase().endsWith('.pdf')) {
       const pdfModule = await import('pdf-parse');
-      const PDFParseClass = (pdfModule as any).PDFParse || (pdfModule as any).default || pdfModule;
+      const PDFParseClass = ((pdfModule as unknown as { PDFParse?: unknown; default?: unknown }).PDFParse || (pdfModule as unknown as { default?: unknown }).default || pdfModule) as new (opts: unknown) => { getText: () => Promise<{ text?: string }> };
       const parser = new PDFParseClass({ data: input.buffer });
       const parsed = await parser.getText();
       return parsed.text || '';
@@ -73,9 +76,6 @@ export class DocumentIngestionService {
         };
       }
 
-      // Delete existing chunks for this source if re-indexing
-      await PgVectorStore.deleteChunksBySource(input.filename);
-
       // Split text into chunks
       const chunks = await this.splitter.splitText(rawText);
       if (chunks.length === 0) {
@@ -103,7 +103,14 @@ export class DocumentIngestionService {
         embedding: embeddings[idx],
       }));
 
-      const inserted = await PgVectorStore.insertChunks(chunkInputs);
+      // Atomic transactional replacement: deletes existing chunks and inserts new ones within a single transaction
+      let inserted = 0;
+      await prisma.$transaction(async (tx) => {
+        await tx.$executeRaw(
+          Prisma.sql`DELETE FROM document_chunks WHERE source = ${input.filename}`
+        );
+        inserted = await PgVectorStore.insertChunks(chunkInputs);
+      });
 
       return {
         source: input.filename,
@@ -111,8 +118,8 @@ export class DocumentIngestionService {
         chunkCount: inserted,
         success: true,
       };
-    } catch (err: any) {
-      console.error(`[DocumentIngestionService] Failed to ingest ${input.filename}:`, err);
+ } catch (_e) { const err = _e as Error; 
+      logger.error(`[DocumentIngestionService] Failed to ingest ${input.filename}:`, err);
       return {
         source: input.filename,
         sourceType: input.sourceType,

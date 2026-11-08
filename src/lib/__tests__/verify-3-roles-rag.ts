@@ -10,14 +10,14 @@ async function verifyAllThreeRoles() {
   console.log('🚀 TESTING EMBEDDINGS SEARCH -> RAG -> GROQ LLM -> DASHBOARD FOR ALL 3 ROLES');
   console.log('================================================================================\n');
 
-  console.log('--- 1. STUDENT ROLE (Skill Selection -> Vector Search -> Roadmap + Top 5 Courses & Mentors) ---');
+  console.log('--- 1. LEARNER ROLE (Skill Selection -> Vector Search -> Roadmap + Top 5 Courses & Mentors) ---');
   const studentRag = await SkillRAGService.querySkillRAG('Next.js Full Stack');
   console.log('  Roadmap Target Role:', studentRag.roadmap.targetRole, `(${studentRag.roadmap.phases.length} phases)`);
   console.log('  Top Matched Course:', studentRag.topCourses[0]?.title, `(Score: ${studentRag.topCourses[0]?.matchScore}%)`);
   console.log('  Top Matched Mentor:', studentRag.topMentors[0]?.name, `(Score: ${studentRag.topMentors[0]?.matchScore}%)`);
 
   console.log('\n--- 2. FREELANCER ROLE (Profile Skills/Projects/Certs -> RAG Job Matching & Proposals) ---');
-  const freelancer = await prisma.user.findFirst({ where: { role: { in: ['FREELANCER', 'PROFESSIONAL'] } } });
+  const freelancer = await prisma.user.findFirst({ where: { role: 'FREELANCER' } });
   if (freelancer) {
     const userContext = await getUserAIContext(freelancer.id);
     if (userContext) {
@@ -30,7 +30,7 @@ async function verifyAllThreeRoles() {
 
   console.log('\n--- 3. COMPANY ROLE (Job Description -> RAG Candidate Matching & Scoring) ---');
   const candidate = await prisma.user.findFirst({
-    where: { role: { in: ['FREELANCER', 'PROFESSIONAL'] } },
+    where: { role: 'FREELANCER' },
     include: { profile: true, skills: { include: { skill: true } } },
   });
   if (candidate) {

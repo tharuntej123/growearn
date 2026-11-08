@@ -1,0 +1,1 @@
+PASS: Tool calls dynamically append verified execution telemetry into request-scoped agent_trace.

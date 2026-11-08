@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/auth-context';
@@ -13,18 +13,9 @@ import { Input } from '@/components/ui/input';
 import {
   Sparkles,
   Star,
-  Users,
-  Calendar,
   Briefcase,
-  GraduationCap,
-  Award,
-  BookOpen,
   ArrowLeft,
-  MessageSquare,
-  CheckCircle2,
-  Clock,
   MapPin,
-  Send,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -44,13 +35,8 @@ export default function MentorDetailPage() {
   const [preferredTime, setPreferredTime] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (id) {
-      fetchMentorDetail();
-    }
-  }, [id]);
-
-  const fetchMentorDetail = async () => {
+  const fetchMentorDetail = useCallback(async () => {
+    if (!id) return;
     setIsLoading(true);
     try {
       const res = await fetch(`/api/mentors/${id}`);
@@ -65,7 +51,11 @@ export default function MentorDetailPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    fetchMentorDetail();
+  }, [fetchMentorDetail]);
 
   const handleRequestMentorship = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -238,8 +228,8 @@ export default function MentorDetailPage() {
               <span>Industry Experience</span>
             </h2>
             <div className="space-y-4">
-              {u.experiences.map((exp: any) => (
-                <div key={exp.id} className="p-4 rounded-xl border border-slate-100 bg-slate-50/60 space-y-1">
+              {u.experiences.map((exp: { id?: string; title?: string; company?: string; location?: string; description?: string }, idx: number) => (
+                <div key={exp.id || idx} className="p-4 rounded-xl border border-slate-100 bg-slate-50/60 space-y-1">
                   <h3 className="text-sm font-bold text-slate-900">{exp.title}</h3>
                   <p className="text-xs font-medium text-emerald-700">{exp.company} • {exp.location || 'Remote'}</p>
                   {exp.description && (
@@ -256,8 +246,8 @@ export default function MentorDetailPage() {
           <section className="space-y-4">
             <h2 className="text-xl font-bold text-slate-900">Student Reviews & Endorsements</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {u.receivedReviews.map((rev: any) => (
-                <Card key={rev.id} className="p-4 bg-white border border-slate-200 rounded-xl space-y-2">
+              {u.receivedReviews.map((rev: { id?: string; rating: number; comment?: string; author?: { name?: string; avatarUrl?: string } }, idx: number) => (
+                <Card key={rev.id || idx} className="p-4 bg-white border border-slate-200 rounded-xl space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Avatar src={rev.author?.avatarUrl} fallback={rev.author?.name || 'S'} size="sm" />

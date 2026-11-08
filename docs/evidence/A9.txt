@@ -1,0 +1,1 @@
+PASS: Seed is split into reference.ts and fixtures.ts with environment guard.

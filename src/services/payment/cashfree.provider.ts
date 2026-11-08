@@ -192,7 +192,7 @@ export class CashfreePaymentProvider implements IPaymentProvider {
         body: JSON.stringify(orderPayload),
         signal: AbortSignal.timeout(12000),
       });
-    } catch (netErr: any) {
+ } catch (_e) { const netErr = _e as Error;
       throw new Error(`Cashfree Gateway Connection Timeout/Error: ${netErr.message}`);
     }
 
@@ -313,15 +313,33 @@ export class CashfreePaymentProvider implements IPaymentProvider {
       throw new Error('Invalid Cashfree webhook cryptographic signature');
     }
 
-    let parsedEvent: any;
+    let parsedEvent: {
+      type?: string;
+      event?: string;
+      event_id?: string;
+      id?: string;
+      data?: {
+        order?: { order_id?: string; order_amount?: number };
+        order_id?: string;
+        payment?: {
+          payment_status?: string;
+          payment_amount?: number;
+          cf_payment_id?: string;
+          payment_id?: string;
+          payment_message?: string;
+        };
+        error_details?: { error_description?: string };
+        refund?: { refund_status?: string; refund_amount?: number };
+      };
+    };
     try {
       parsedEvent = JSON.parse(rawBody);
     } catch {
       throw new Error('Malformed Cashfree webhook JSON payload');
     }
 
-    const eventType = parsedEvent.type || parsedEvent.event || 'UNKNOWN';
-    const eventId = parsedEvent.event_id || parsedEvent.id || `cf_evt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const eventType = String(parsedEvent.type || parsedEvent.event || 'UNKNOWN');
+    const eventId = String(parsedEvent.event_id || parsedEvent.id || `cf_evt_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`);
     const data = parsedEvent.data || {};
 
     let status: 'CAPTURED' | 'FAILED' | 'REFUNDED' | 'UNKNOWN' = 'UNKNOWN';
@@ -385,7 +403,7 @@ export class CashfreePaymentProvider implements IPaymentProvider {
         body: JSON.stringify(refundPayload),
         signal: AbortSignal.timeout(12000),
       });
-    } catch (netErr: any) {
+ } catch (_e) { const netErr = _e as Error;
       throw new Error(`Cashfree Refund Connection Error: ${netErr.message}`);
     }
 
@@ -425,7 +443,7 @@ export class CashfreePaymentProvider implements IPaymentProvider {
           signal: AbortSignal.timeout(10000),
         }).catch(() => null),
       ]);
-    } catch (netErr: any) {
+ } catch (_e) { const netErr = _e as Error;
       throw new Error(`Cashfree Order Status Query Connection Error: ${netErr.message}`);
     }
 
@@ -435,7 +453,7 @@ export class CashfreePaymentProvider implements IPaymentProvider {
     }
 
     const orderData = await orderRes.json();
-    let paymentsList: any[] = [];
+    let paymentsList: Array<Record<string, unknown>> = [];
     if (paymentsRes && paymentsRes.ok) {
       paymentsList = await paymentsRes.json().catch(() => []);
     }
@@ -459,9 +477,9 @@ export class CashfreePaymentProvider implements IPaymentProvider {
       payments: Array.isArray(paymentsList)
         ? paymentsList.map((p) => ({
             paymentId: String(p.cf_payment_id || p.payment_id || ''),
-            status: p.payment_status || 'UNKNOWN',
+            status: String(p.payment_status || 'UNKNOWN'),
             amount: Number(p.payment_amount || 0),
-            paymentTime: p.payment_time,
+            paymentTime: p.payment_time ? String(p.payment_time) : undefined,
           }))
         : [],
     };

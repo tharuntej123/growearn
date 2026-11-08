@@ -2,85 +2,81 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/auth-context';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
 import { Footer } from '@/components/layout/footer';
 import {
   Sparkles,
   ArrowRight,
-  GraduationCap,
-  Briefcase,
   Users,
-  Building2,
-  TrendingUp,
   BrainCircuit,
-  MapPin,
-  Zap,
   ShieldCheck,
+  Search,
 } from 'lucide-react';
-import { DEMO_USERS, isDemoMode } from '@/lib/constants';
-import { toast } from 'sonner';
 
 export default function LandingPage() {
-  const router = useRouter();
-  const [activeRoleTab, setActiveRoleTab] = useState<'student' | 'professional' | 'mentor' | 'company'>('student');
-  const showDemo = isDemoMode();
+  const [activeRoleTab, setActiveRoleTab] = useState<'learner' | 'freelancer' | 'mentor' | 'company' | 'admin'>('learner');
 
   const roleJourneys = {
-    student: {
-      title: 'Learner & Student Journey',
+    learner: {
+      title: 'Learner Journey',
       badge: 'Learn & Accelerate',
-      description: 'Start with raw passion, follow personalized AI career roadmaps, complete verified course modules, and get mentored by industry veterans.',
+      description: 'Start with ambitious career goals, follow multi-agent AI career roadmaps, complete verified course modules, and book 1-on-1 sessions with industry mentors.',
       steps: [
-        { title: 'AI Skill Gap Analysis', desc: 'Input your target role; our AI identifies exact gaps in your current stack.' },
-        { title: 'Interactive Learning', desc: 'Enroll in structured video courses and track module completion.' },
-        { title: '1-on-1 Mentorship', desc: 'Book live architecture reviews and mock interviews with senior engineers.' },
-        { title: 'Portfolio Capstone', desc: 'Build verifiable production projects and earn automated completion certificates.' },
-        { title: 'First Contract / Role', desc: 'Get matched directly to entry-level roles and local internship opportunities.' },
+        { title: 'AI Career Roadmaps', desc: 'CrewAI researcher, planner, and reviewer agents generate personalized curricula with Tavily live market data.' },
+        { title: 'Structured Courses', desc: 'Enroll in verified learning tracks and track practical milestone progress.' },
+        { title: '1-on-1 Mentorship', desc: 'Book direct architecture reviews and career guidance sessions with verified mentors.' },
+        { title: 'Portfolio Projects', desc: 'Build verifiable production projects to showcase proven technical skills.' },
       ],
       dashboard: '/learner/dashboard',
     },
-    professional: {
-      title: 'Verified Professional Journey',
+    freelancer: {
+      title: 'Freelancer Journey',
       badge: 'Work & Deliver',
-      description: 'Find high-paying local and global contract gigs. Use the 5-factor explainable AI matching engine and generate tailored proposals in seconds.',
+      description: 'Find verified contract milestones and client projects. Utilize multi-signal semantic search to match opportunities aligned with your technical capabilities.',
       steps: [
-        { title: 'Resume Skill Extraction', desc: 'Upload resume text to automatically extract verified skills and portfolio metadata.' },
-        { title: 'Smart Job Matching', desc: 'Hybrid algorithm scores jobs (Skills 50%, Exp 20%, Location 10%, Goal 10%, AI 10%).' },
-        { title: 'AI Proposal Assistant', desc: 'Generate high-converting custom proposals with milestone breakdowns.' },
-        { title: 'Contract Execution', desc: 'Deliver projects, communicate with hiring companies, and receive verified 5-star ratings.' },
-        { title: 'Evolve to Mentor', desc: 'Unlock coaching and mentorship capabilities as your industry reputation grows.' },
+        { title: 'Skill Profile', desc: 'Maintain verified skills and project achievements in your portfolio.' },
+        { title: 'Smart Project Matching', desc: 'Hybrid vector search and full-text ranking match high-fit client contracts.' },
+        { title: 'Proposal Management', desc: 'Submit structured milestone deliverables and track proposal reviews.' },
+        { title: 'Contract Execution', desc: 'Deliver production-ready solutions and build verifiable marketplace reputation.' },
       ],
       dashboard: '/freelancer/dashboard',
     },
     mentor: {
-      title: 'Expert Mentor & Instructor',
+      title: 'Mentor Journey',
       badge: 'Teach & Monetize',
-      description: 'Monetize your hard-earned engineering insights. Host 1-on-1 coaching sessions, publish paid courses, and guide ambitious developers.',
+      description: 'Share proven engineering expertise. Host 1-on-1 coaching sessions, author structured courses, and guide ambitious developers.',
       steps: [
-        { title: 'Create Mentor Profile', desc: 'Set your hourly rate, availability calendar, and core architectural domain.' },
-        { title: 'Receive Student Requests', desc: 'Review student roadmaps and accept tailored coaching sessions.' },
-        { title: 'Conduct Video Sessions', desc: 'Lead architecture audits and deep-dive code reviews with integrated sessions.' },
-        { title: 'Publish Courses', desc: 'Build rich video lessons, share downloadable assets, and generate passive revenue.' },
-        { title: 'Earn & Build Reputation', desc: 'Receive verified student reviews and grow your personal industry brand.' },
+        { title: 'Mentor Profile', desc: 'Set your hourly rate, availability slots, and core technical domain.' },
+        { title: 'Manage Bookings', desc: 'Accept mentorship requests and conduct targeted architecture reviews.' },
+        { title: 'Author Courses', desc: 'Create curriculum modules and distribute learning materials to enrolled students.' },
+        { title: 'Marketplace Impact', desc: 'Earn verified reviews and support the next generation of engineers.' },
       ],
       dashboard: '/mentor/dashboard',
     },
     company: {
-      title: 'Company & Talent Recruiter',
+      title: 'Company Journey',
       badge: 'Hire & Scale',
-      description: 'Post full-time, contract, or local project jobs. Use AI candidate ranking to shortlist pre-vetted professionals with pinpoint accuracy.',
+      description: 'Post full-time and contract engineering roles. Use semantic talent discovery to shortlist pre-vetted professionals with explainable scoring.',
       steps: [
-        { title: 'Post Job Listing', desc: 'Specify required skills, experience level, salary range, and local/remote mode.' },
-        { title: 'AI Talent Search', desc: 'Query candidates with natural language to automatically filter by verified skills.' },
-        { title: 'Candidate Match Scores', desc: 'Inspect transparent match breakdowns before scheduling interviews.' },
-        { title: 'Unified Pipeline', desc: 'Manage applicants from Applied → Shortlisted → Interview → Hired.' },
-        { title: 'Direct Messaging', desc: 'Communicate with candidates and polish interview messages using AI.' },
+        { title: 'Post Opportunities', desc: 'Define skill requirements, experience levels, and compensation parameters.' },
+        { title: 'Talent Discovery', desc: 'Search opt-in candidate profiles using hybrid vector similarity and verified skill overlap.' },
+        { title: 'Candidate Pipeline', desc: 'Manage applicants from initial review through technical interview to contract offer.' },
+        { title: 'Direct Collaboration', desc: 'Coordinate project deliverables with contract freelancers and full-time hires.' },
       ],
       dashboard: '/company/dashboard',
+    },
+    admin: {
+      title: 'Admin Governance',
+      badge: 'Monitor & Reconcile',
+      description: 'Full marketplace telemetry, payment audit logs, Cashfree transaction reconciliation, and dispute resolution.',
+      steps: [
+        { title: 'Payment Reconciliation', desc: 'Inspect internal ledger vs Cashfree gateway statuses with automatic discrepancy detection.' },
+        { title: 'Audit Trail', desc: 'Review append-only administrative audit logs across all critical operations.' },
+        { title: 'Marketplace Metrics', desc: 'Track real-time platform telemetry computed directly from PostgreSQL tables.' },
+        { title: 'Dispute Resolution', desc: 'Process verified refunds and enforce role permission policies.' },
+      ],
+      dashboard: '/admin',
     },
   };
 
@@ -90,7 +86,7 @@ export default function LandingPage() {
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-800 mb-8 shadow-xs">
           <Sparkles className="h-4 w-4 text-emerald-600 animate-pulse" />
           <span className="text-xs font-semibold">
-            Growearn — The Unified Career & Talent Ecosystem
+            GrowEarn — Unified AI Career & Talent Ecosystem
           </span>
         </div>
 
@@ -100,7 +96,7 @@ export default function LandingPage() {
         </h1>
 
         <p className="mt-6 text-lg sm:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed font-normal">
-          A modern professional platform connecting learning, mentorship, contract gigs, and AI-powered hiring into one continuous career journey.
+          An enterprise platform connecting learning, mentorship, freelance contracts, and hiring across 5 verified roles with CrewAI multi-agent intelligence and hybrid semantic RAG search.
         </p>
 
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -116,126 +112,106 @@ export default function LandingPage() {
           </Link>
         </div>
 
-        {showDemo && (
-          <div className="mt-12 p-4 rounded-2xl border border-slate-200 bg-white shadow-xs max-w-4xl mx-auto">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-2 text-slate-700 font-semibold">
-                <Zap className="h-4 w-4 text-emerald-600" />
-                <span>Explore Workspaces by Role:</span>
-              </div>
-              <div className="flex flex-wrap gap-2 justify-center">
-                {DEMO_USERS.map((demo) => (
-                  <button
-                    key={demo.email}
-                    onClick={() => router.push(`/signup?role=${demo.role}`)}
-                    className="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800 font-medium transition-all hover:border-emerald-400 flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <span className="font-bold text-emerald-700">{demo.role}:</span> {demo.name.split(' ')[0]}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
+        {/* Feature Highlights Grid */}
         <div className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-left">
-          <div className="bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-md transition-all p-5 rounded-2xl relative overflow-hidden group shadow-xs">
+          <div className="bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-md transition-all p-5 rounded-2xl shadow-xs">
             <div className="flex items-center justify-between mb-3">
               <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200">
-                <GraduationCap className="h-5 w-5" />
+                <BrainCircuit className="h-5 w-5" />
               </div>
-              <Badge variant="success">94% AI Match</Badge>
+              <Badge variant="success">CrewAI Microservice</Badge>
             </div>
-            <h4 className="font-bold text-slate-900 text-base">Spring Boot 3 & Microservices</h4>
-            <p className="text-xs text-slate-500 mt-1">Recommended for Backend Engineer goal</p>
+            <h4 className="font-bold text-slate-900 text-base">Multi-Agent Roadmaps</h4>
+            <p className="text-xs text-slate-500 mt-1">Researcher, Planner, and Reviewer agents orchestrate tailored technical milestones.</p>
             <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span className="text-emerald-700 font-semibold">4.9 ★ (84 reviews)</span>
-              <span className="text-slate-500">By Priya Sharma</span>
+              <span className="text-emerald-700 font-semibold">Tavily Search Grounded</span>
+              <span className="text-slate-500">Live Web Validation</span>
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-md transition-all p-5 rounded-2xl relative overflow-hidden group shadow-xs">
+          <div className="bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-md transition-all p-5 rounded-2xl shadow-xs">
             <div className="flex items-center justify-between mb-3">
               <div className="p-2.5 rounded-xl bg-teal-50 text-teal-700 border border-teal-200">
-                <Briefcase className="h-5 w-5" />
+                <Search className="h-5 w-5" />
               </div>
-              <Badge variant="purple">Local Match</Badge>
+              <Badge variant="purple">Hybrid RAG</Badge>
             </div>
-            <h4 className="font-bold text-slate-900 text-base">Next.js & AI Web Engineer</h4>
-            <p className="text-xs text-slate-500 mt-1">NovaTech Solutions • Bangalore / Remote</p>
+            <h4 className="font-bold text-slate-900 text-base">BGE-M3 & pgvector</h4>
+            <p className="text-xs text-slate-500 mt-1">1024-dim dense embeddings + PostgreSQL HNSW cosine index + GIN full-text search.</p>
             <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span className="text-slate-800 font-semibold">$4,500 - $7,500</span>
-              <span className="text-emerald-700 font-medium">95% Match Score</span>
+              <span className="text-slate-800 font-semibold">RRF k=60 Fusion</span>
+              <span className="text-emerald-700 font-medium">Explainable Scoring</span>
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-md transition-all p-5 rounded-2xl relative overflow-hidden group shadow-xs">
+          <div className="bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-md transition-all p-5 rounded-2xl shadow-xs">
             <div className="flex items-center justify-between mb-3">
               <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200">
                 <Users className="h-5 w-5" />
               </div>
-              <Badge variant="success">Verified Mentor</Badge>
+              <Badge variant="success">1-on-1 Sessions</Badge>
             </div>
-            <h4 className="font-bold text-slate-900 text-base">Priya Sharma</h4>
-            <p className="text-xs text-slate-500 mt-1">Senior Backend Engineer @ NovaTech Solutions</p>
+            <h4 className="font-bold text-slate-900 text-base">Industry Mentorship</h4>
+            <p className="text-xs text-slate-500 mt-1">Book personalized coaching, code audits, and architectural reviews with verified mentors.</p>
             <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span className="text-slate-700">$65/hr • 142 Students</span>
-              <span className="text-amber-600 font-semibold">4.95 ★</span>
+              <span className="text-slate-700">Calendar Integration</span>
+              <span className="text-slate-500">Hourly Bookings</span>
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-md transition-all p-5 rounded-2xl relative overflow-hidden group shadow-xs">
+          <div className="bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-md transition-all p-5 rounded-2xl shadow-xs">
             <div className="flex items-center justify-between mb-3">
               <div className="p-2.5 rounded-xl bg-slate-100 text-slate-800 border border-slate-200">
-                <Building2 className="h-5 w-5" />
+                <ShieldCheck className="h-5 w-5" />
               </div>
-              <Badge variant="warning">AI Candidate Ranking</Badge>
+              <Badge variant="warning">Cashfree Verified</Badge>
             </div>
-            <h4 className="font-bold text-slate-900 text-base">Pooja Verma</h4>
-            <p className="text-xs text-slate-500 mt-1">Senior Mobile & Full Stack Specialist</p>
+            <h4 className="font-bold text-slate-900 text-base">Marketplace Payments</h4>
+            <p className="text-xs text-slate-500 mt-1">Server-verified orders, raw HMAC-SHA256 webhook signatures, and transactional fulfillment.</p>
             <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span className="text-slate-600">Flutter, React Native, TypeScript</span>
-              <span className="text-emerald-700 font-semibold">98% Fit</span>
+              <span className="text-slate-600">INR Decimal Precision</span>
+              <span className="text-emerald-700 font-semibold">Idempotent</span>
             </div>
           </div>
         </div>
       </section>
 
+      {/* Dynamic Metric Telemetry */}
       <section className="border-y border-slate-200 bg-white py-10 px-4">
         <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           <div>
-            <p className="text-3xl sm:text-4xl font-extrabold text-slate-900">30+</p>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">Technical Skills Indexed</p>
+            <p className="text-3xl sm:text-4xl font-extrabold text-slate-900">5</p>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">Canonical User Roles</p>
           </div>
           <div>
-            <p className="text-3xl sm:text-4xl font-extrabold text-emerald-600">95%</p>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">AI Match Accuracy</p>
+            <p className="text-3xl sm:text-4xl font-extrabold text-emerald-600">1024</p>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">BGE-M3 Embedding Dims</p>
           </div>
           <div>
-            <p className="text-3xl sm:text-4xl font-extrabold text-teal-600">100%</p>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">Verified Growth Progression</p>
+            <p className="text-3xl sm:text-4xl font-extrabold text-teal-600">3-Agent</p>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">CrewAI Workflow</p>
           </div>
           <div>
-            <p className="text-3xl sm:text-4xl font-extrabold text-emerald-700">5-Factor</p>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">Explainable Hybrid Scoring</p>
+            <p className="text-3xl sm:text-4xl font-extrabold text-emerald-700">100%</p>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">Containerized Stack</p>
           </div>
         </div>
       </section>
 
+      {/* Role Journey Tabs */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="text-center max-w-3xl mx-auto mb-12">
           <Badge variant="default" className="mb-3">Connected Lifecycle</Badge>
           <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
-            One Account. Infinite Career Possibilities.
+            One Account. Continuous Career Progression.
           </h2>
           <p className="mt-3 text-slate-600 text-sm sm:text-base leading-relaxed">
-            You don’t switch apps as you grow. Learn skills as a student, take freelance contracts,
-            become a verified mentor, and hire talent as a company — all with one unified profile.
+            Progress seamlessly as your technical journey advances: learn skills, deliver contract gigs, mentor aspiring developers, or recruit engineering talent.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center justify-center gap-2 mb-10">
-          {(['student', 'professional', 'mentor', 'company'] as const).map((tab) => (
+          {(['learner', 'freelancer', 'mentor', 'company', 'admin'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveRoleTab(tab)}
@@ -245,10 +221,11 @@ export default function LandingPage() {
                   : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200'
               }`}
             >
-              {tab === 'student' && '👨‍🎓 Learner Journey'}
-              {tab === 'professional' && '💼 Professional Journey'}
-              {tab === 'mentor' && '👨‍🏫 Mentor Journey'}
-              {tab === 'company' && '🏢 Company Journey'}
+              {tab === 'learner' && 'Learner'}
+              {tab === 'freelancer' && 'Freelancer'}
+              {tab === 'mentor' && 'Mentor'}
+              {tab === 'company' && 'Company'}
+              {tab === 'admin' && 'Admin'}
             </button>
           ))}
         </div>
@@ -258,181 +235,61 @@ export default function LandingPage() {
           return (
             <div className="bg-white p-8 rounded-3xl border border-slate-200 max-w-5xl mx-auto shadow-sm">
               <div className="flex flex-col lg:flex-row gap-8 items-start justify-between">
-                <div className="lg:w-1/3">
-                  <Badge variant="success" className="mb-3">{activeJourney.badge}</Badge>
+                <div className="max-w-xl">
+                  <div className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 mb-3 border border-emerald-200">
+                    {activeJourney.badge}
+                  </div>
                   <h3 className="text-2xl font-bold text-slate-900">{activeJourney.title}</h3>
-                  <p className="text-sm text-slate-600 mt-3 leading-relaxed">
-                    {activeJourney.description}
-                  </p>
-                  <div className="mt-6">
+                  <p className="text-sm text-slate-600 mt-2 leading-relaxed">{activeJourney.description}</p>
+
+                  <div className="mt-8 space-y-4">
+                    {activeJourney.steps.map((step, idx) => (
+                      <div key={idx} className="flex items-start gap-3.5">
+                        <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                          {idx + 1}
+                        </div>
+                        <div>
+                          <h5 className="text-sm font-semibold text-slate-900">{step.title}</h5>
+                          <p className="text-xs text-slate-500 mt-0.5 leading-normal">{step.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-8">
                     <Link href={activeJourney.dashboard}>
                       <Button variant="default" className="gap-2">
-                        Open Hub <ArrowRight className="h-4 w-4" />
+                        Explore {activeRoleTab} Workspace <ArrowRight className="h-4 w-4" />
                       </Button>
                     </Link>
                   </div>
                 </div>
 
-                <div className="lg:w-2/3 space-y-4 w-full">
-                  {activeJourney.steps.map((step, idx) => (
-                    <div
-                      key={idx}
-                      className="p-4 rounded-xl border border-slate-200 bg-slate-50/60 flex items-start gap-4 hover:border-emerald-300 transition-colors"
-                    >
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs">
-                        {idx + 1}
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-semibold text-slate-900">{step.title}</h4>
-                        <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">{step.desc}</p>
-                      </div>
+                <div className="w-full lg:w-80 bg-slate-50 p-6 rounded-2xl border border-slate-200 space-y-4">
+                  <h4 className="font-semibold text-xs text-slate-500 uppercase tracking-wider">Key Architecture Attributes</h4>
+                  <div className="space-y-3 text-xs">
+                    <div className="flex items-center justify-between py-2 border-b border-slate-200">
+                      <span className="text-slate-600">Authentication</span>
+                      <span className="font-semibold text-slate-900">Google OAuth / Jose</span>
                     </div>
-                  ))}
+                    <div className="flex items-center justify-between py-2 border-b border-slate-200">
+                      <span className="text-slate-600">Access Control</span>
+                      <span className="font-semibold text-slate-900">Strict Server RBAC</span>
+                    </div>
+                    <div className="flex items-center justify-between py-2 border-b border-slate-200">
+                      <span className="text-slate-600">Data Isolation</span>
+                      <span className="font-semibold text-slate-900">Role-gated Retrieval</span>
+                    </div>
+                    <div className="flex items-center justify-between py-2 border-b border-slate-200">
+                      <span className="text-slate-600">Audit Logging</span>
+                      <span className="font-semibold text-slate-900">PostgreSQL Append-Only</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           );
         })()}
-      </section>
-
-      <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-slate-200">
-        <div className="text-center max-w-3xl mx-auto mb-14">
-          <Badge variant="default" className="mb-3">Unified Features</Badge>
-          <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
-            Engineered for Modern Software Professionals
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="p-6 bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-md transition-all shadow-xs">
-            <div className="p-3 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 w-fit mb-4">
-              <BrainCircuit className="h-6 w-6" />
-            </div>
-            <h3 className="text-lg font-bold text-slate-900">Explainable AI Match Engine</h3>
-            <p className="text-sm text-slate-600 mt-2 leading-relaxed">
-              No black-box scores. Understand exactly why a job or candidate matches across Skills (50%),
-              Experience (20%), Location (10%), Goal (10%), and AI Semantic Relevance (10%).
-            </p>
-          </Card>
-
-          <Card className="p-6 bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-md transition-all shadow-xs">
-            <div className="p-3 rounded-xl bg-teal-50 text-teal-700 border border-teal-200 w-fit mb-4">
-              <MapPin className="h-6 w-6" />
-            </div>
-            <h3 className="text-lg font-bold text-slate-900">Local & Global Job Discovery</h3>
-            <p className="text-sm text-slate-600 mt-2 leading-relaxed">
-              Find on-site and hybrid contract projects in your exact city alongside remote worldwide opportunities using our extensible JobProvider architecture.
-            </p>
-          </Card>
-
-          <Card className="p-6 bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-md transition-all shadow-xs">
-            <div className="p-3 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 w-fit mb-4">
-              <ShieldCheck className="h-6 w-6" />
-            </div>
-            <h3 className="text-lg font-bold text-slate-900">Verified Reputation & Reviews</h3>
-            <p className="text-sm text-slate-600 mt-2 leading-relaxed">
-              Build lasting professional trust. Reviews and 5-star ratings are strictly guarded by verified completed transactions (courses, mentorship bookings, and project contracts).
-            </p>
-          </Card>
-        </div>
-      </section>
-
-      {/* 🌟 Verified Platform Testimonials */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-slate-200">
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <Badge variant="default" className="mb-3">Verified Stories</Badge>
-          <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
-            Trusted by Learners, Mentors & Engineering Teams
-          </h2>
-          <p className="mt-2 text-sm text-slate-600">
-            Real outcomes across learning roadmaps, 1-on-1 mentorship, and contract engineering.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="p-6 bg-white border border-slate-200 rounded-2xl shadow-xs flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="flex items-center gap-1 text-amber-500 text-sm">
-                {'★'.repeat(5)}
-              </div>
-              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed italic">
-                &ldquo;The 4-phase AI career roadmap and Spring Boot 3 course gave me the exact distributed backend foundations I needed to build my first enterprise microservices.&rdquo;
-              </p>
-            </div>
-            <div className="mt-5 pt-4 border-t border-slate-100 flex items-center gap-3">
-              <div className="h-9 w-9 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center">
-                AC
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-slate-900">Alex Chen</h4>
-                <p className="text-[11px] text-slate-500">Learner • Backend Developer Path</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-6 bg-white border border-slate-200 rounded-2xl shadow-xs flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="flex items-center gap-1 text-amber-500 text-sm">
-                {'★'.repeat(5)}
-              </div>
-              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed italic">
-                &ldquo;Mentoring developers on GrowEarn is seamless. The platform connects learners with real architectural questions, and the verified session reviews build genuine professional credibility.&rdquo;
-              </p>
-            </div>
-            <div className="mt-5 pt-4 border-t border-slate-100 flex items-center gap-3">
-              <div className="h-9 w-9 rounded-full bg-teal-100 text-teal-800 font-bold text-xs flex items-center justify-center">
-                PS
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-slate-900">Priya Sharma</h4>
-                <p className="text-[11px] text-slate-500">Senior Backend Engineer • NovaTech Solutions</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-6 bg-white border border-slate-200 rounded-2xl shadow-xs flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="flex items-center gap-1 text-amber-500 text-sm">
-                {'★'.repeat(5)}
-              </div>
-              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed italic">
-                &ldquo;The explainable AI job matching and verified skill badges allowed our team to source verified full-stack talent and execute contract deliverables 2x faster.&rdquo;
-              </p>
-            </div>
-            <div className="mt-5 pt-4 border-t border-slate-100 flex items-center gap-3">
-              <div className="h-9 w-9 rounded-full bg-slate-100 text-slate-800 font-bold text-xs flex items-center justify-center">
-                AN
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-slate-900">Arjun Nair</h4>
-                <p className="text-[11px] text-slate-500">Principal Cloud Architect • CloudVista Systems</p>
-              </div>
-            </div>
-          </Card>
-        </div>
-      </section>
-
-      <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto text-center">
-        <div className="p-10 sm:p-14 rounded-3xl border border-emerald-200 bg-white shadow-sm relative overflow-hidden">
-          <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">
-            Ready to accelerate your professional journey?
-          </h2>
-          <p className="mt-4 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto">
-            Join thousands of developers, mentors, professionals, and high-growth companies thriving in one connected ecosystem.
-          </p>
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/signup">
-              <Button size="lg" variant="default" className="px-8 h-12 text-base font-semibold">
-                Create Free Account
-              </Button>
-            </Link>
-            <Link href="/feed">
-              <Button size="lg" variant="outline" className="px-8 h-12 text-base">
-                Browse Live Feed
-              </Button>
-            </Link>
-          </div>
-        </div>
       </section>
 
       <Footer />

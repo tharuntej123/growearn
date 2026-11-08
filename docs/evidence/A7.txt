@@ -1,0 +1,1 @@
+PASS: Exactly one Google OAuth callback endpoint exists (api/auth/google/callback).

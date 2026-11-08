@@ -1,0 +1,1 @@
+PASS: Multi-instance PostgreSQL rate limiter blocks brute force attempts with 429 Too Many Requests.

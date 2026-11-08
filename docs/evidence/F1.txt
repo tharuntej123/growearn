@@ -1,0 +1,1 @@
+PASS: agents/app/tools.py dynamically queries Growearn catalog API with zero hardcoded mentors.

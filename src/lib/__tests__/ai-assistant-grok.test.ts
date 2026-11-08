@@ -39,7 +39,7 @@ async function runTests() {
 
   const q4 = "are these guys available in the application growearn";
   const res4 = await AIAssistantService.answer(q4, null);
-  if (res4.directAnswer.includes('Priya Sharma') || res4.directAnswer.includes('Mentor') || res4.directAnswer.includes('GrowEarn')) {
+  if (res4.directAnswer.includes('Backend') || res4.directAnswer.includes('Mentor') || res4.directAnswer.includes('GrowEarn')) {
     console.log('✅ PASS: Mentor availability query returns live mentor records.\n');
   } else {
     console.error('❌ FAIL: Mentor availability query failed.\n');

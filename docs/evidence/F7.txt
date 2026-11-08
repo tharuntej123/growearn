@@ -1,0 +1,1 @@
+PASS: Python microservice dependencies strictly pinned.

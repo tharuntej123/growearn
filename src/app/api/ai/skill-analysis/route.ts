@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { apiSuccess, apiError } from '@/lib/utils';
@@ -30,8 +31,8 @@ export async function POST(req: NextRequest) {
     const analysis = SkillAnalysisService.analyze(skills, targetRole, exp);
 
     return apiSuccess({ analysis });
-  } catch (error: any) {
-    console.error('Skill analysis error:', error);
+ } catch (_e) { const error = _e as Error; 
+    logger.error('Skill analysis error:', error);
     return apiError(
       error.message || 'Failed to analyze skills',
       'INTERNAL_ERROR',

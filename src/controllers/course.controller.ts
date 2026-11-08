@@ -50,7 +50,7 @@ export class CourseController {
       const excludeIdsParam = searchParams.get('excludeIds');
       const excludeIds = excludeIdsParam ? excludeIdsParam.split(',').filter(Boolean) : [];
 
-      const where: any = { isPublished: true };
+      const where: Record<string, unknown> = { isPublished: true };
       if (excludeIds.length > 0) {
         where.id = { notIn: excludeIds };
       }
@@ -103,8 +103,8 @@ export class CourseController {
         limit,
         offset,
       });
-    } catch (error: any) {
-      return apiError(error.message || 'Failed to fetch courses', 'INTERNAL_ERROR', 500);
+ } catch (_e) { const err = _e as Error; 
+      return apiError(err.message || 'Failed to fetch courses', 'INTERNAL_ERROR', 500);
     }
   }
 
@@ -178,8 +178,8 @@ export class CourseController {
         isEnrolled: Boolean(enrollment),
         enrollment,
       });
-    } catch (error: any) {
-      return apiError(error.message || 'Failed to fetch course details', 'INTERNAL_ERROR', 500);
+ } catch (_e) { const err = _e as Error; 
+      return apiError(err.message || 'Failed to fetch course details', 'INTERNAL_ERROR', 500);
     }
   }
 
@@ -249,8 +249,8 @@ export class CourseController {
       RAGSyncService.triggerSyncCourse(course.id);
 
       return apiSuccess({ course }, 201);
-    } catch (error: any) {
-      return apiError(error.message || 'Failed to create course', 'INTERNAL_ERROR', 500);
+ } catch (_e) { const err = _e as Error; 
+      return apiError(err.message || 'Failed to create course', 'INTERNAL_ERROR', 500);
     }
   }
 
@@ -278,7 +278,7 @@ export class CourseController {
       }
 
       // Check if this is a paid course
-      if (course.price > 0 && authUser.role !== 'ADMIN' && course.instructorId !== authUser.id) {
+      if (Number(course.price) > 0 && authUser.role !== 'ADMIN' && course.instructorId !== authUser.id) {
         const purchase = await prisma.coursePurchase.findUnique({
           where: {
             userId_courseId: {
@@ -314,8 +314,8 @@ export class CourseController {
         message: `Successfully enrolled in ${course.title}`,
         enrollment,
       });
-    } catch (error: any) {
-      return apiError(error.message || 'Enrollment failed', 'INTERNAL_ERROR', 500);
+ } catch (_e) { const err = _e as Error; 
+      return apiError(err.message || 'Enrollment failed', 'INTERNAL_ERROR', 500);
     }
   }
 }

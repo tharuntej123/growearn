@@ -1,8 +1,10 @@
+import { logger } from '@/lib/logger';
 import { RunnableSequence, RunnableLambda } from '@langchain/core/runnables';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import { Document } from '@langchain/core/documents';
 import { ragPromptTemplate } from './prompt';
 import { PgVectorRetriever } from './retriever';
+import { DocumentChunkRecord } from './vector-store';
 import { IntentClassifier, IntentCategory } from './intent-classifier';
 import { LLMClient } from './llm-client';
 import { isEmbeddingConfigured } from './embeddings';
@@ -51,7 +53,7 @@ export function buildRunnableRAGChain(retriever: PgVectorRetriever) {
             .map((d) => `[Source: ${d.metadata?.source || 'Growearn'}]\n${d.pageContent}`)
             .join('\n\n');
           if (isTracing) {
-            console.log(`[LangChain:Trace] Retriever step completed in ${(performance.now() - t0).toFixed(2)}ms`);
+            logger.info(`[LangChain:Trace] Retriever step completed in ${(performance.now() - t0).toFixed(2)}ms`);
           }
           return input.userContextSnippet ? `${formatted}\n\n${input.userContextSnippet}` : formatted;
         },
@@ -112,7 +114,7 @@ export class ProductionRAGChain {
     const { intent } = await IntentClassifier.classify(q);
 
     // 2. Query pgvector Vector Store via PgVectorRetriever with role-based isolation
-    let chunkRecords: any[] = [];
+    let chunkRecords: DocumentChunkRecord[] = [];
     const retriever = new PgVectorRetriever({
       topK: 5,
       userRole: userContext?.role,
@@ -157,6 +159,23 @@ export class ProductionRAGChain {
 
     // 4. Grounded LLM Generation using LangChain RunnableSequence
     let answer = '';
+    const hasGroqApiKey = Boolean(process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.trim().length > 0);
+
+    if (!hasGroqApiKey) {
+      const formattedCatalog = retrievedDocuments.length > 0
+        ? retrievedDocuments.map((d, i) => `[Result ${i + 1}] (${d.source}): ${d.content}`).join('\n\n')
+        : 'No direct database matches found.';
+
+      return {
+        answer: `[DEGRADED: GROQ_API_KEY unconfigured] Grounded platform matches:\n\n${formattedCatalog}`,
+        intent,
+        retrievedDocuments,
+        similarity: avgSimilarity,
+        sources,
+        recommendedActions: ['Configure GROQ_API_KEY in .env', 'Explore Courses', 'Browse Mentors'],
+      };
+    }
+
     const isLLMAvailable = LLMClient.isAvailable();
 
     if (isLLMAvailable) {
@@ -184,7 +203,7 @@ export class ProductionRAGChain {
         });
 
         if (process.env.LANGCHAIN_TRACING_ENABLED === 'true') {
-          console.log(`[LangChain:Trace] RunnableSequence total latency: ${(performance.now() - t0).toFixed(2)}ms`);
+          logger.info(`[LangChain:Trace] RunnableSequence total latency: ${(performance.now() - t0).toFixed(2)}ms`);
         }
       } catch {
         // Fallback to LLMClient direct call if LangChain sequence fails
@@ -210,7 +229,7 @@ export class ProductionRAGChain {
             answer = completion.text;
           }
         } catch (llmError) {
-          console.error('[ProductionRAGChain] Generation error, utilizing grounded fallback:', llmError);
+          logger.error('[ProductionRAGChain] Generation error, utilizing grounded fallback:', llmError);
         }
       }
     }

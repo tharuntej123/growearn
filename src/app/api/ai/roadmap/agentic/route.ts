@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { getCurrentUser } from '@/lib/auth';
@@ -95,7 +96,7 @@ export async function POST(req: NextRequest) {
     const internalSecret = process.env.INTERNAL_SERVICE_KEY;
 
     if (process.env.NODE_ENV === 'production' && (!internalSecret || internalSecret.length < 32)) {
-      console.error('[AgentsGateway] FATAL: INTERNAL_SERVICE_KEY must be configured with >= 32 characters in production.');
+      logger.error('[AgentsGateway] FATAL: INTERNAL_SERVICE_KEY must be configured with >= 32 characters in production.');
     }
 
     let agenticData: AgenticRoadmapPayload | null = null;
@@ -237,8 +238,8 @@ export async function POST(req: NextRequest) {
           },
         });
       }
-    } catch (dbErr: any) {
-      console.warn('[AgenticRoadmap] Database persistence skipped/failed:', dbErr.message);
+ } catch (_e) { const dbErr = _e as Error; 
+      logger.warn('[AgenticRoadmap] Database persistence skipped/failed:', dbErr.message);
     }
 
     return apiSuccess({
@@ -249,7 +250,7 @@ export async function POST(req: NextRequest) {
       mode,
       fallbackReason,
     });
-  } catch (err: any) {
+ } catch (_e) { const err = _e as Error; 
     return apiError(err.message || 'Internal error in agentic roadmap route', 'INTERNAL_ERROR', 500);
   }
 }

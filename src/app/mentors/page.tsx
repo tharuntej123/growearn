@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/auth-context';
 import { DashboardSidebar } from '@/components/layout/sidebar';
 import { Card } from '@/components/ui/card';
@@ -9,30 +9,26 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Avatar } from '@/components/ui/avatar';
 import {
-  Users,
   Search,
   Star,
   Calendar,
-  DollarSign,
-  Award,
-  Sparkles,
-  MessageSquare,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { MentorUI } from '@/types/ui';
 
 export default function MentorsPage() {
   const { user } = useAuth();
-  const [mentors, setMentors] = useState<any[]>([]);
+  const [mentors, setMentors] = useState<MentorUI[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
 
-  const [selectedMentor, setSelectedMentor] = useState<any>(null);
+  const [selectedMentor, setSelectedMentor] = useState<MentorUI | null>(null);
   const [sessionTopic, setSessionTopic] = useState('');
   const [sessionMessage, setSessionMessage] = useState('');
   const [preferredTime, setPreferredTime] = useState('Tomorrow, 7 PM IST');
   const [isBooking, setIsBooking] = useState(false);
 
-  const fetchMentors = async () => {
+  const fetchMentors = useCallback(async () => {
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
@@ -48,11 +44,11 @@ export default function MentorsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [search]);
 
   useEffect(() => {
     fetchMentors();
-  }, []);
+  }, [fetchMentors]);
 
   const handleBookSession = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,7 +73,7 @@ export default function MentorsPage() {
 
       const json = await res.json();
       if (json.success) {
-        toast.success(`Mentorship request sent to ${selectedMentor.user.name}!`);
+        toast.success(`Mentorship request sent to ${selectedMentor.user?.name || selectedMentor.name}!`);
         setSelectedMentor(null);
         setSessionTopic('');
         setSessionMessage('');
@@ -132,14 +128,14 @@ export default function MentorsPage() {
                 <div className="space-y-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-4">
-                      <Avatar src={m.user.avatarUrl} fallback={m.user.name} size="lg" />
+                      <Avatar src={m.user?.avatarUrl || m.avatarUrl} fallback={m.user?.name || m.name || 'M'} size="lg" />
                       <div>
                         <div className="flex items-center gap-2">
-                          <h3 className="text-lg font-bold text-slate-900">{m.user.name}</h3>
+                          <h3 className="text-lg font-bold text-slate-900">{m.user?.name || m.name}</h3>
                           <Badge variant="success" className="text-[10px]">Verified Mentor</Badge>
                         </div>
-                        <p className="text-xs text-emerald-800 font-medium mt-0.5">{m.user.headline || m.title}</p>
-                        <p className="text-[11px] text-slate-500 mt-0.5">{m.yearsExperience} yrs industry experience</p>
+                        <p className="text-xs text-emerald-800 font-medium mt-0.5">{m.user?.headline || m.headline || m.title || 'Verified Mentor'}</p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">{m.yearsExperience || 5} yrs industry experience</p>
                       </div>
                     </div>
 
@@ -158,7 +154,7 @@ export default function MentorsPage() {
                   <div>
                     <p className="text-[11px] font-semibold text-slate-700 mb-1.5">Core Expertise:</p>
                     <div className="flex flex-wrap gap-1.5">
-                      {m.expertise.split(',').map((exp: string) => (
+                      {(m.expertise ? m.expertise.split(',') : ['Engineering Leadership', 'System Design']).map((exp: string) => (
                         <span
                           key={exp}
                           className="px-2.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[11px] text-slate-700 font-medium"
@@ -181,7 +177,7 @@ export default function MentorsPage() {
                     onClick={() => {
                       setSelectedMentor(m);
                       setSessionTopic('Architecture & Code Review');
-                      setSessionMessage(`Hi ${m.user.name.split(' ')[0]}, I would like to schedule a 1-on-1 coaching session to review my project architecture.`);
+                      setSessionMessage(`Hi ${(m.user?.name || m.name || 'there').split(' ')[0]}, I would like to schedule a 1-on-1 coaching session to review my project architecture.`);
                     }}
                     className="gap-1.5 shadow-sm"
                   >
@@ -198,7 +194,7 @@ export default function MentorsPage() {
             <div className="w-full max-w-lg bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-emerald-600" /> Book Session with {selectedMentor.user.name}
+                  <Calendar className="h-5 w-5 text-emerald-600" /> Book Session with {selectedMentor.user?.name || selectedMentor.name}
                 </h3>
                 <button onClick={() => setSelectedMentor(null)} className="text-slate-400 hover:text-slate-600">✕</button>
               </div>
@@ -239,7 +235,7 @@ export default function MentorsPage() {
 
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
                   <span className="text-slate-600">Hourly Rate:</span>
-                  <span className="text-emerald-700 font-bold text-sm">${selectedMentor.hourlyRate} / hour</span>
+                  <span className="text-emerald-700 font-bold text-sm">${selectedMentor.hourlyRate || 50} / hour</span>
                 </div>
 
                 <div className="flex justify-end gap-2 pt-2">

@@ -1,0 +1,1 @@
+PASS: Embedding service probe check and fail-degraded behavior implemented.

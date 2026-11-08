@@ -10,7 +10,7 @@ import { Send, Image as ImageIcon, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface QuickPostCardProps {
-  onPostCreated?: (post: any) => void;
+  onPostCreated?: (post: Record<string, unknown>) => void;
   placeholder?: string;
 }
 
@@ -24,7 +24,7 @@ export function QuickPostCard({ onPostCreated, placeholder }: QuickPostCardProps
 
   if (!user) return null;
 
-  const roleDisplay = user.role === 'EMPLOYER' ? 'Company' : user.role.charAt(0) + user.role.slice(1).toLowerCase();
+  const roleDisplay = user.role.charAt(0) + user.role.slice(1).toLowerCase();
 
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,11 +64,11 @@ export function QuickPostCard({ onPostCreated, placeholder }: QuickPostCardProps
   };
 
   const defaultPlaceholder =
-    user.role === 'LEARNER' || (user.role as string) === 'STUDENT'
+    user.role === 'LEARNER'
       ? 'Share what you are learning today, ask a technical question, or post a milestone...'
       : user.role === 'MENTOR'
       ? 'Share an architectural tip, mentorship availability, or technical insight...'
-      : user.role === 'EMPLOYER' || (user.role as string) === 'COMPANY'
+      : user.role === 'COMPANY'
       ? 'Announce open job roles, company culture updates, or project opportunities...'
       : 'Share a contract win, technical case study, or open availability...';
 

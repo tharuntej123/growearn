@@ -9,6 +9,9 @@ export interface DocumentChunkRecord {
   sourceType: string;
   metadata: Record<string, any> | null;
   similarity?: number;
+  vectorScore?: number;
+  keywordScore?: number;
+  rrfScore?: number;
   createdAt?: Date;
 }
 
@@ -26,7 +29,7 @@ interface RawSimilarityRow {
   content: string;
   source: string;
   source_type: string;
-  metadata: any;
+  metadata: Record<string, unknown> | null;
   similarity: number;
 }
 
@@ -321,11 +324,24 @@ export class PgVectorStore {
       this.keywordSearch(queryText, fetchLimit, filterSourceType).catch(() => []),
     ]);
 
-    const rrfMap = new Map<string, { doc: DocumentChunkRecord; rrfScore: number }>();
+    const rrfMap = new Map<
+      string,
+      {
+        doc: DocumentChunkRecord;
+        rrfScore: number;
+        vectorScore?: number;
+        keywordScore?: number;
+      }
+    >();
 
     vectorResults.forEach((doc, rank) => {
       const score = 1 / (k + rank + 1);
-      rrfMap.set(doc.id, { doc, rrfScore: score });
+      rrfMap.set(doc.id, {
+        doc,
+        rrfScore: score,
+        vectorScore: doc.similarity,
+        keywordScore: undefined,
+      });
     });
 
     keywordResults.forEach((doc, rank) => {
@@ -333,34 +349,27 @@ export class PgVectorStore {
       const existing = rrfMap.get(doc.id);
       if (existing) {
         existing.rrfScore += additional;
+        existing.keywordScore = doc.similarity;
       } else {
-        rrfMap.set(doc.id, { doc, rrfScore: additional });
+        rrfMap.set(doc.id, {
+          doc,
+          rrfScore: additional,
+          vectorScore: undefined,
+          keywordScore: doc.similarity,
+        });
       }
     });
 
-    const merged = Array.from(rrfMap.values())
+    return Array.from(rrfMap.values())
       .sort((a, b) => b.rrfScore - a.rrfScore)
       .slice(0, topK)
-      .map(({ doc, rrfScore }) => ({
+      .map(({ doc, rrfScore, vectorScore, keywordScore }) => ({
         ...doc,
-        similarity: doc.similarity ?? Number(rrfScore.toFixed(4)),
+        similarity: vectorScore ?? doc.similarity ?? Number(rrfScore.toFixed(4)),
+        vectorScore: vectorScore !== undefined ? Number(vectorScore.toFixed(4)) : undefined,
+        keywordScore: keywordScore !== undefined ? Number(keywordScore.toFixed(4)) : undefined,
+        rrfScore: Number(rrfScore.toFixed(6)),
       }));
-
-    return this.maybeRerank(queryText, merged);
-  }
-
-  /**
-   * Optional lightweight reranker step behind process.env.ENABLE_RERANKER flag.
-   */
-  private static async maybeRerank(
-    _query: string,
-    documents: DocumentChunkRecord[]
-  ): Promise<DocumentChunkRecord[]> {
-    if (process.env.ENABLE_RERANKER !== 'true') {
-      return documents;
-    }
-    // Reranker hook: preserves top documents or cross-encoder ranking if enabled
-    return documents;
   }
 
   /**

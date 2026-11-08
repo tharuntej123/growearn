@@ -5,10 +5,10 @@ export class AdminRepository {
   // Get real-time platform metrics.
   static async getPlatformStats() {
     const totalUsers = await prisma.user.count();
-    const learnersCount = await prisma.user.count({ where: { role: { in: ['LEARNER', 'STUDENT'] } } });
+    const learnersCount = await prisma.user.count({ where: { role: 'LEARNER' } });
     const mentorsCount = await prisma.user.count({ where: { role: 'MENTOR' } });
-    const professionalsCount = await prisma.user.count({ where: { role: { in: ['PROFESSIONAL', 'FREELANCER'] } } });
-    const employersCount = await prisma.user.count({ where: { role: { in: ['EMPLOYER', 'COMPANY'] } } });
+    const professionalsCount = await prisma.user.count({ where: { role: 'FREELANCER' } });
+    const employersCount = await prisma.user.count({ where: { role: 'COMPANY' } });
     const totalCourses = await prisma.course.count();
     const totalEnrollments = await prisma.enrollment.count();
     const totalJobs = await prisma.job.count();

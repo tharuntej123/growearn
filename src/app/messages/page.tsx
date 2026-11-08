@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/context/auth-context';
 import { DashboardSidebar } from '@/components/layout/sidebar';
 import { Card } from '@/components/ui/card';
@@ -15,7 +15,6 @@ import {
   Wand2,
   RefreshCw,
   Inbox,
-  User,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -70,7 +69,7 @@ export default function MessagesPage() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const fetchConversations = async () => {
+  const fetchConversations = useCallback(async () => {
     try {
       const res = await fetch('/api/messages/conversations');
       const json = await res.json();
@@ -86,7 +85,7 @@ export default function MessagesPage() {
     } finally {
       setLoadingConversations(false);
     }
-  };
+  }, [activeConvId]);
 
   const fetchMessages = async (convId: string) => {
     setLoadingMessages(true);
@@ -107,7 +106,7 @@ export default function MessagesPage() {
 
   useEffect(() => {
     fetchConversations();
-  }, []);
+  }, [fetchConversations]);
 
   useEffect(() => {
     if (activeConvId) {

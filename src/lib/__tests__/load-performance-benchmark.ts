@@ -124,7 +124,7 @@ async function runPerformanceBenchmarks() {
   // 4. Freelancer RAG Recommendation Pipeline
   console.log('4. Running Benchmark: Freelancer Job RAG Pipeline...');
   const freelancerUser = await prisma.user.findFirst({
-    where: { OR: [{ role: 'FREELANCER' }, { role: 'PROFESSIONAL' }] },
+    where: { role: 'FREELANCER' },
   });
   const freelancerContext = freelancerUser ? await getUserAIContext(freelancerUser.id) : null;
   const freelancerMetric = await concurrentBenchmark('Freelancer Job Matching', async () => {

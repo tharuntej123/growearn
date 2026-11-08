@@ -26,13 +26,13 @@ export default function RoleSelectPage() {
   React.useEffect(() => {
     if (user?.role) {
       const canonical = user.role.toUpperCase();
-      if (canonical === 'LEARNER' || canonical === 'STUDENT') {
+      if (canonical === 'LEARNER') {
         router.replace('/learner/dashboard');
-      } else if (canonical === 'FREELANCER' || canonical === 'PROFESSIONAL') {
+      } else if (canonical === 'FREELANCER') {
         router.replace('/freelancer/dashboard');
       } else if (canonical === 'MENTOR') {
         router.replace('/mentor/dashboard');
-      } else if (canonical === 'COMPANY' || canonical === 'EMPLOYER') {
+      } else if (canonical === 'COMPANY') {
         router.replace('/company/dashboard');
       } else if (canonical === 'ADMIN') {
         router.replace('/admin/dashboard');
@@ -82,13 +82,13 @@ export default function RoleSelectPage() {
 
     if (res.success) {
       toast.success(`Active profile set to ${selectedRole}`);
-      if (selectedRole === ROLES.LEARNER || (selectedRole as string) === 'STUDENT') {
+      if (selectedRole === ROLES.LEARNER) {
         router.push('/onboarding');
-      } else if (selectedRole === ROLES.FREELANCER || (selectedRole as string) === 'PROFESSIONAL') {
+      } else if (selectedRole === ROLES.FREELANCER) {
         router.push('/freelancer/dashboard');
       } else if (selectedRole === ROLES.MENTOR) {
         router.push('/mentor/dashboard');
-      } else if (selectedRole === ROLES.COMPANY || (selectedRole as string) === 'EMPLOYER') {
+      } else if (selectedRole === ROLES.COMPANY) {
         router.push('/company/dashboard');
       } else {
         router.push('/feed');
