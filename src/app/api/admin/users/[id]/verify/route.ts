@@ -18,7 +18,7 @@ export async function PUT(
 
     const updated = await AdminRepository.verifyUser(authUser.id, targetUserId, Boolean(isVerified));
     return apiSuccess({ user: updated, message: `Verification status updated to ${isVerified}` });
-  } catch (error: any) {
-    return apiError(error.message || 'Failed to update user verification', 'INTERNAL_ERROR', 500);
+ } catch (_e) { const err = _e as Error; 
+    return apiError(err.message || 'Failed to update user verification', 'INTERNAL_ERROR', 500);
   }
 }

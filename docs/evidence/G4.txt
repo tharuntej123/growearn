@@ -1,0 +1,1 @@
+PASS: src/lib/env.ts validates environment schema using Zod.

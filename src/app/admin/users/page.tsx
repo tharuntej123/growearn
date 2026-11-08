@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { DashboardSidebar } from '@/components/layout/sidebar';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,14 +9,10 @@ import { Input } from '@/components/ui/input';
 import { Avatar } from '@/components/ui/avatar';
 import {
   Users,
-  ShieldCheck,
   Search,
   CheckCircle,
-  XCircle,
   Filter,
   RefreshCw,
-  AlertCircle,
-  MoreVertical,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -29,7 +25,7 @@ export default function AdminUsersPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -51,11 +47,11 @@ export default function AdminUsersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, search, roleFilter]);
 
   useEffect(() => {
     fetchUsers();
-  }, [page, roleFilter]);
+  }, [fetchUsers]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -149,9 +145,9 @@ export default function AdminUsersPage() {
             >
               <option value="">All Roles</option>
               <option value="LEARNER">Learner</option>
-              <option value="PROFESSIONAL">Professional</option>
+              <option value="FREELANCER">Freelancer</option>
               <option value="MENTOR">Mentor</option>
-              <option value="EMPLOYER">Employer</option>
+              <option value="COMPANY">Company</option>
               <option value="ADMIN">Admin</option>
             </select>
             <Button type="submit" size="sm" className="gap-2">
@@ -208,9 +204,9 @@ export default function AdminUsersPage() {
                           className="h-8 px-2 rounded border border-slate-200 bg-white text-xs font-medium text-slate-800 focus:outline-none focus:border-emerald-500"
                         >
                           <option value="LEARNER">LEARNER</option>
-                          <option value="PROFESSIONAL">PROFESSIONAL</option>
+                          <option value="FREELANCER">FREELANCER</option>
                           <option value="MENTOR">MENTOR</option>
-                          <option value="EMPLOYER">EMPLOYER</option>
+                          <option value="COMPANY">COMPANY</option>
                           <option value="ADMIN">ADMIN</option>
                         </select>
                       </td>

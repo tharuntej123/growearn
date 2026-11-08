@@ -21,31 +21,37 @@ export interface JobMatchRequirement {
 }
 
 export class HybridMatcher {
+  /**
+   * Computes exact skill intersection without arbitrary baseline score inflation.
+   */
+  public static calculateSkillOverlap(
+    userSkills: string[],
+    requiredSkills: string[]
+  ): { matched: string[]; missing: string[]; score: number } {
+    const userLower = userSkills.map((s) => s.toLowerCase().trim());
+    const reqLower = requiredSkills.map((s) => s.toLowerCase().trim());
+
+    const matched: string[] = [];
+    const missing: string[] = [];
+
+    reqLower.forEach((req) => {
+      if (userLower.some((u) => u.includes(req) || req.includes(u))) {
+        matched.push(req);
+      } else {
+        missing.push(req);
+      }
+    });
+
+    const score = reqLower.length > 0 ? Math.round((matched.length / reqLower.length) * 100) : 0;
+    return { matched, missing, score };
+  }
+
   static calculateJobMatch(
     user: UserMatchProfile,
     job: JobMatchRequirement
   ): HybridMatchResult {
-    const userSkillsLower = user.skills.map((s) => s.toLowerCase().trim());
-    const jobSkillsLower = job.requiredSkills.map((s) => s.toLowerCase().trim());
-
-    const matchedSkills: string[] = [];
-    const missingSkills: string[] = [];
-
-    jobSkillsLower.forEach((reqSkill) => {
-      const found = userSkillsLower.some(
-        (uSkill) => uSkill.includes(reqSkill) || reqSkill.includes(uSkill)
-      );
-      if (found) {
-        matchedSkills.push(reqSkill);
-      } else {
-        missingSkills.push(reqSkill);
-      }
-    });
-
-    const skillScore =
-      jobSkillsLower.length > 0
-        ? Math.round((matchedSkills.length / jobSkillsLower.length) * 100)
-        : 85;
+    const { matched: matchedSkills, missing: missingSkills, score: skillScore } =
+      this.calculateSkillOverlap(user.skills, job.requiredSkills);
 
     let requiredYears = 2;
     if (job.experienceLevel === 'ENTRY') requiredYears = 0;

@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { PaymentService } from '@/services/payment/payment.service';
@@ -27,11 +28,11 @@ export async function GET(req: NextRequest) {
 
     const batchReport = await PaymentService.reconcileAllRecentPayments(limit, user.userId, user.role);
     return apiSuccess(batchReport);
-  } catch (error: any) {
-    console.error('[AdminPaymentReconciliation:Error]', error);
+ } catch (_e) { const error = _e as Error; const err = _e as Error; 
+    logger.error('[AdminPaymentReconciliation:Error]', error);
     if (error.message?.includes('Forbidden')) {
-      return apiError(error.message, 'FORBIDDEN', 403);
+      return apiError(err.message, 'FORBIDDEN', 403);
     }
-    return apiError(error.message || 'Payment reconciliation failed', 'RECONCILIATION_ERROR', 500);
+    return apiError(err.message || 'Payment reconciliation failed', 'RECONCILIATION_ERROR', 500);
   }
 }

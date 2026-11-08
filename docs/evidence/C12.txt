@@ -1,0 +1,1 @@
+PASS: Tiered failure policy with Circuit Breaker state machine (CLOSED, OPEN, HALF_OPEN) enforced.

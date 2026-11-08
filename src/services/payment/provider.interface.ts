@@ -61,7 +61,7 @@ export interface VerifyWebhookResult {
   amount?: number;
   refundAmount?: number;
   failureReason?: string;
-  rawEvent: any;
+  rawEvent: Record<string, unknown>;
 }
 
 export interface RefundParams {

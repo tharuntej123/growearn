@@ -18,10 +18,10 @@ type CanonicalRole = 'LEARNER' | 'FREELANCER' | 'MENTOR' | 'COMPANY' | 'ADMIN';
 function getNormalizedRole(rawRole?: string): CanonicalRole | 'UNKNOWN' {
   if (!rawRole) return 'UNKNOWN';
   const role = rawRole.toUpperCase();
-  if (role === 'LEARNER' || role === 'STUDENT') return 'LEARNER';
-  if (role === 'COMPANY' || role === 'EMPLOYER') return 'COMPANY';
+  if (role === 'LEARNER') return 'LEARNER';
+  if (role === 'COMPANY') return 'COMPANY';
   if (role === 'MENTOR') return 'MENTOR';
-  if (role === 'FREELANCER' || role === 'PROFESSIONAL') return 'FREELANCER';
+  if (role === 'FREELANCER') return 'FREELANCER';
   if (role === 'ADMIN') return 'ADMIN';
   return 'UNKNOWN';
 }

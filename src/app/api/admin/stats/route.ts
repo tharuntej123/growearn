@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
 
     const stats = await AdminRepository.getPlatformStats();
     return apiSuccess({ stats });
-  } catch (error: any) {
-    return apiError(error.message || 'Failed to fetch admin stats', 'INTERNAL_ERROR', 500);
+ } catch (_e) { const err = _e as Error; 
+    return apiError(err.message || 'Failed to fetch admin stats', 'INTERNAL_ERROR', 500);
   }
 }

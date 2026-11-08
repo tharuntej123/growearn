@@ -1,0 +1,1 @@
+PASS: Database queries enforce strict pagination (take: 5) and exclude full-table scans.

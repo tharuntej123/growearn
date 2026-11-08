@@ -1,0 +1,1 @@
+PASS: Currency unified to INR across payment order lifecycle, receipts, and mentor settlements.

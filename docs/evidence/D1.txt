@@ -1,0 +1,1 @@
+PASS: Zero Float types on money fields in prisma/schema.prisma. All money is stored in integer paise or Decimal.

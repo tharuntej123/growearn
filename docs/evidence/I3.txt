@@ -1,0 +1,1 @@
+PASS: When local BGE-M3 service is unreachable, RAG chain explicitly reports KEYWORD_FALLBACK mode without hallucination.

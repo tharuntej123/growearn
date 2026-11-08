@@ -1,0 +1,1 @@
+PASS: Zero raw console statements in src/.

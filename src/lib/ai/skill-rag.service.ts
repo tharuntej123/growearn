@@ -66,7 +66,7 @@ export interface RAGRoadmapResult {
   summary: string;
   currentLevel: string;
   estimatedDurationWeeks: number;
-  phases: any[];
+  phases: Array<Record<string, unknown>>;
   items: RAGRoadmapStep[];
   finalMilestone: string;
 }
@@ -196,7 +196,7 @@ export class SkillRAGService {
           description: c.description,
           category: c.category,
           level: c.level,
-          price: c.price,
+          price: Number(c.price),
           durationHours: c.durationHours,
           thumbnail: c.thumbnail,
           skillsCovered: skills,
@@ -329,7 +329,7 @@ export class SkillRAGService {
           location: m.user.location,
           bio: m.bio,
           expertise: expertiseList,
-          hourlyRate: m.hourlyRate,
+          hourlyRate: Number(m.hourlyRate),
           rating: m.rating,
           studentsCount: m.studentsCount,
           sessionCount: m.sessionCount,

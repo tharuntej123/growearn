@@ -1,0 +1,1 @@
+PASS: /api/demo/session returns 404 in production environment.

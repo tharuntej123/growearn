@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { apiSuccess, apiError } from '@/lib/utils';
@@ -102,10 +103,10 @@ export async function POST(req: NextRequest) {
     }
 
     return apiSuccess({ roadmap });
-  } catch (error: any) {
-    console.error('[LearnerRoadmapRoute:Error]', error);
+ } catch (_e) { const error = _e as Error; const err = _e as Error; 
+    logger.error('[LearnerRoadmapRoute:Error]', error);
     if (error.message?.includes('Forbidden')) {
-      return apiError(error.message, 'FORBIDDEN', 403);
+      return apiError(err.message, 'FORBIDDEN', 403);
     }
     return apiError(
       error.message || 'Failed to generate learner roadmap',

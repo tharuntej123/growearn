@@ -1,0 +1,1 @@
+PASS: Salted scrypt key derivation (16-byte random salt, 64-byte key) with crypto.timingSafeEqual constant-time verification verified.

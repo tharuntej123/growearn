@@ -24,8 +24,8 @@ export class MessagingController {
 
       const conversations = await MessagingRepository.getUserConversations(authUser.id);
       return apiSuccess({ conversations });
-    } catch (error: any) {
-      return apiError(error.message || 'Failed to fetch conversations', 'INTERNAL_ERROR', 500);
+ } catch (_e) { const err = _e as Error; 
+      return apiError(err.message || 'Failed to fetch conversations', 'INTERNAL_ERROR', 500);
     }
   }
 
@@ -52,8 +52,8 @@ export class MessagingController {
       );
 
       return apiSuccess({ conversation }, 201);
-    } catch (error: any) {
-      return apiError(error.message || 'Failed to start conversation', 'INTERNAL_ERROR', 500);
+ } catch (_e) { const err = _e as Error; 
+      return apiError(err.message || 'Failed to start conversation', 'INTERNAL_ERROR', 500);
     }
   }
 
@@ -80,9 +80,9 @@ export class MessagingController {
       );
 
       return apiSuccess({ messages });
-    } catch (error: any) {
+ } catch (_e) { const error = _e as Error; const err = _e as Error; 
       const status = error.message?.includes('Forbidden') ? 403 : 500;
-      return apiError(error.message || 'Failed to fetch messages', 'MESSAGING_ERROR', status);
+      return apiError(err.message || 'Failed to fetch messages', 'MESSAGING_ERROR', status);
     }
   }
 
@@ -115,9 +115,9 @@ export class MessagingController {
       });
 
       return apiSuccess({ message }, 201);
-    } catch (error: any) {
+ } catch (_e) { const error = _e as Error; const err = _e as Error; 
       const status = error.message?.includes('Forbidden') ? 403 : 500;
-      return apiError(error.message || 'Failed to send message', 'MESSAGING_ERROR', status);
+      return apiError(err.message || 'Failed to send message', 'MESSAGING_ERROR', status);
     }
   }
 }

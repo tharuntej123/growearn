@@ -75,23 +75,23 @@ async function runTests() {
   assert(validPayloadResult.success, 'Accepts valid job creation payload');
 
   console.log('\n--- 3. Testing Role Authorization Matrix ---');
-  const allowedRoles = ['COMPANY', 'EMPLOYER', 'ADMIN'];
-  const deniedRoles = ['LEARNER', 'STUDENT', 'PROFESSIONAL', 'FREELANCER', 'MENTOR'];
+  const allowedRoles = ['COMPANY', 'ADMIN'];
+  const deniedRoles = ['LEARNER', 'FREELANCER', 'MENTOR'];
 
   allowedRoles.forEach((role) => {
-    const isAllowed = ['COMPANY', 'EMPLOYER', 'ADMIN'].includes(role);
+    const isAllowed = ['COMPANY', 'ADMIN'].includes(role);
     assert(isAllowed, `Role "${role}" is authorized to post jobs`);
   });
 
   deniedRoles.forEach((role) => {
-    const isAllowed = ['COMPANY', 'EMPLOYER', 'ADMIN'].includes(role);
+    const isAllowed = ['COMPANY', 'ADMIN'].includes(role);
     assert(!isAllowed, `Role "${role}" is forbidden from posting jobs`);
   });
 
   console.log('\n--- 4. Testing JobRepository DB Persistence ---');
   try {
     let employer = await prisma.user.findFirst({
-      where: { role: { in: ['EMPLOYER', 'COMPANY'] } },
+      where: { role: 'COMPANY' },
       include: { profile: true },
     });
 

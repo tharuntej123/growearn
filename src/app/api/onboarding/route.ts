@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
+import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { apiSuccess, apiError } from '@/lib/utils';
@@ -179,8 +180,8 @@ export async function POST(req: NextRequest) {
       skillAnalysis,
       roadmap,
     });
-  } catch (error: any) {
-    console.error('Onboarding error:', error);
+ } catch (_e) { const error = _e as Error; 
+    logger.error('Onboarding error:', error);
     return apiError(
       error.message || 'Failed to complete onboarding',
       'INTERNAL_ERROR',

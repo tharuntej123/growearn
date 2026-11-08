@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     );
 
     return apiSuccess({ notifications, unreadCount });
-  } catch (error: any) {
-    return apiError(error.message || 'Failed to fetch notifications', 'INTERNAL_ERROR', 500);
+ } catch (_e) { const err = _e as Error; 
+    return apiError(err.message || 'Failed to fetch notifications', 'INTERNAL_ERROR', 500);
   }
 }

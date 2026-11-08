@@ -1,18 +1,15 @@
 export const ROLES = {
   LEARNER: 'LEARNER',
-  STUDENT: 'LEARNER',
   FREELANCER: 'FREELANCER',
-  PROFESSIONAL: 'FREELANCER',
   MENTOR: 'MENTOR',
   COMPANY: 'COMPANY',
-  EMPLOYER: 'COMPANY',
   ADMIN: 'ADMIN',
 } as const;
 
-export type UserRole = 'LEARNER' | 'PROFESSIONAL' | 'MENTOR' | 'EMPLOYER' | 'ADMIN' | 'STUDENT' | 'FREELANCER' | 'COMPANY';
+export type UserRole = 'LEARNER' | 'FREELANCER' | 'MENTOR' | 'COMPANY' | 'ADMIN';
 
 export const ROLE_INFO: Record<
-  string,
+  UserRole,
   {
     title: string;
     description: string;
@@ -22,14 +19,7 @@ export const ROLE_INFO: Record<
   }
 > = {
   LEARNER: {
-    title: 'Learner / Student',
-    description: 'Learn in-demand skills, follow AI career roadmaps, complete courses, and connect with industry mentors.',
-    badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    defaultDashboard: '/learner/dashboard',
-    icon: 'GraduationCap',
-  },
-  STUDENT: {
-    title: 'Learner / Student',
+    title: 'Learner',
     description: 'Learn in-demand skills, follow AI career roadmaps, complete courses, and connect with industry mentors.',
     badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     defaultDashboard: '/learner/dashboard',
@@ -49,21 +39,7 @@ export const ROLE_INFO: Record<
     defaultDashboard: '/freelancer/dashboard',
     icon: 'Briefcase',
   },
-  PROFESSIONAL: {
-    title: 'Verified Freelancer',
-    description: 'Showcase your verified portfolio, discover project contracts, and submit AI-enhanced proposals.',
-    badgeColor: 'bg-teal-50 text-teal-700 border-teal-200',
-    defaultDashboard: '/freelancer/dashboard',
-    icon: 'Briefcase',
-  },
   COMPANY: {
-    title: 'Company',
-    description: 'Post full-time or contract roles, utilize AI candidate matching, and hire verified top-tier talent.',
-    badgeColor: 'bg-slate-100 text-slate-800 border-slate-200',
-    defaultDashboard: '/company/dashboard',
-    icon: 'Building2',
-  },
-  EMPLOYER: {
     title: 'Company',
     description: 'Post full-time or contract roles, utilize AI candidate matching, and hire verified top-tier talent.',
     badgeColor: 'bg-slate-100 text-slate-800 border-slate-200',
@@ -94,50 +70,7 @@ export const SKILL_CATEGORIES = [
   'Cybersecurity',
 ] as const;
 
-export const DEMO_USERS = [
-  {
-    email: 'student@example.com',
-    role: ROLES.LEARNER,
-    name: 'Alex Chen',
-    title: 'Aspiring Full Stack Engineer',
-  },
-  {
-    email: 'priya.sharma@example.com',
-    role: ROLES.MENTOR,
-    name: 'Priya Sharma',
-    title: 'Senior Backend Engineer @ NovaTech Solutions (8+ yrs)',
-  },
-  {
-    email: 'professional@example.com',
-    role: ROLES.FREELANCER,
-    name: 'Pooja Verma',
-    title: 'Senior Mobile & Full Stack Specialist',
-  },
-  {
-    email: 'careers@novatech-solutions.io',
-    role: ROLES.COMPANY,
-    name: 'NovaTech Solutions',
-    title: 'Enterprise Cloud & FinTech Platforms',
-  },
-  {
-    email: 'admin@growearn.com',
-    role: ROLES.ADMIN,
-    name: 'Platform Admin',
-    title: 'System Oversight & Moderation',
-  },
-];
-
-export function isDemoMode(): boolean {
+export function isDemoEnvironment(): boolean {
   if (typeof process === 'undefined') return false;
-  // Strictly disabled by default in production
-  if (process.env.NODE_ENV === 'production') {
-    return false;
-  }
-  // In development/staging, require explicit enablement flag
-  return (
-    process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === 'true' ||
-    process.env.ENABLE_DEMO_LOGIN === 'true' ||
-    process.env.DEMO_MODE === 'true'
-  );
+  return (process.env.APP_ENV || process.env.NEXT_PUBLIC_APP_ENV) === 'demo';
 }
-

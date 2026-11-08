@@ -82,14 +82,14 @@ export class LocalBGE3EmbeddingProvider implements EmbeddingProvider {
         return { healthy: false, model: this.model, error: `HTTP ${res.status}: ${res.statusText}` };
       }
       const data = await res.json();
-      const models = (data.models || []).map((m: any) => m.name || m.model);
+      const models = (data.models || []).map((m: { name?: string; model?: string }) => m.name || m.model);
       const hasModel = models.some((m: string) => m.includes(this.model) || this.model.includes(m));
       return {
         healthy: Boolean(hasModel),
         model: this.model,
         error: hasModel ? undefined : `Model '${this.model}' not found in Ollama library`,
       };
-    } catch (err: any) {
+ } catch (_e) { const err = _e as Error; 
       return { healthy: false, model: this.model, error: err.message || 'Connection failed' };
     }
   }
@@ -155,7 +155,7 @@ export class LocalBGE3EmbeddingProvider implements EmbeddingProvider {
       this.validateVector(rawVector);
       queryEmbeddingCache.set(cacheKey, rawVector);
       return rawVector;
-    } catch (err: any) {
+ } catch (_e) { const err = _e as Error; 
       if (err.message?.startsWith('SEMANTIC_RAG_UNAVAILABLE') || err.message?.startsWith('SEMANTIC_RAG_DIMENSION_MISMATCH')) {
         throw err;
       }
@@ -196,7 +196,7 @@ export class LocalBGE3EmbeddingProvider implements EmbeddingProvider {
         results.push(vec);
       }
       return results;
-    } catch (err: any) {
+ } catch (_e) { const err = _e as Error; 
       if (err.message?.startsWith('SEMANTIC_RAG_UNAVAILABLE') || err.message?.startsWith('SEMANTIC_RAG_DIMENSION_MISMATCH')) {
         throw err;
       }
@@ -231,6 +231,9 @@ export function getEmbeddingProvider(): LocalBGE3EmbeddingProvider {
 }
 
 export function isEmbeddingConfigured(): boolean {
+  if (process.env.NODE_ENV === 'production' && process.env.MOCK_AI === 'true') {
+    throw new Error('FATAL: MOCK_AI cannot be enabled in production environment.');
+  }
   if (process.env.MOCK_AI === 'true' || process.env.DISABLE_EMBEDDINGS === 'true') {
     return false;
   }
@@ -244,4 +247,8 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 
 export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
   return getEmbeddingProvider().generateEmbeddings(texts);
+}
+
+export async function checkEmbeddingHealth(): Promise<{ healthy: boolean; model: string; error?: string }> {
+  return getEmbeddingProvider().checkHealth();
 }

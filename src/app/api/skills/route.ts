@@ -1,10 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { apiSuccess, apiError } from '@/lib/utils';
 import { getUserAIContext } from '@/services/user-context.service';
 import { SkillAnalysisService } from '@/lib/ai/skill-analysis.service';
-import { CareerRoadmapService } from '@/lib/ai/roadmap.service';
 import { RAGSyncService } from '@/lib/ai/rag-sync.service';
 import { z } from 'zod';
 
@@ -104,7 +103,7 @@ export async function POST(req: NextRequest) {
     }
 
     return apiSuccess({ userSkill, userContext }, 201);
-  } catch (err: any) {
+ } catch (_e) { const err = _e as Error; 
     return apiError(err.message || 'Failed to add skill', 'SKILL_ERROR', 400);
   }
 }

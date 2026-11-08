@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { PaymentService } from '@/services/payment/payment.service';
@@ -53,11 +54,11 @@ export async function POST(req: NextRequest) {
     }
 
     return apiError('Unsupported itemType', 'INVALID_ITEM_TYPE', 400);
-  } catch (error: any) {
-    console.error('[PaymentOrder:Create:Error]', error);
+ } catch (_e) { const error = _e as Error; const err = _e as Error; 
+    logger.error('[PaymentOrder:Create:Error]', error);
     if (error.message?.includes('BLOCKED') || error.message?.includes('NOT CONFIGURED')) {
-      return apiError(error.message, 'PAYMENT_GATEWAY_NOT_CONFIGURED', 503);
+      return apiError(err.message, 'PAYMENT_GATEWAY_NOT_CONFIGURED', 503);
     }
-    return apiError(error.message || 'Failed to create payment order', 'ORDER_CREATION_FAILED', 400);
+    return apiError(err.message || 'Failed to create payment order', 'ORDER_CREATION_FAILED', 400);
   }
 }

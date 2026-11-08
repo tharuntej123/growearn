@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth } from '@/context/auth-context';
 import { DashboardSidebar } from '@/components/layout/sidebar';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,7 +33,6 @@ interface ModuleInput {
 
 export default function NewCoursePage() {
   const router = useRouter();
-  const { user } = useAuth();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -223,7 +221,7 @@ export default function NewCoursePage() {
                 <label className="block text-xs font-bold text-slate-700 mb-1">Difficulty Level</label>
                 <select
                   value={level}
-                  onChange={(e) => setLevel(e.target.value as any)}
+                  onChange={(e) => setLevel(e.target.value as 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED')}
                   className="w-full text-xs p-2.5 rounded-xl border border-slate-200 bg-white text-slate-900"
                 >
                   <option value="BEGINNER">Beginner</option>

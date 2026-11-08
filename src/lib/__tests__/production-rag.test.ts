@@ -75,8 +75,8 @@ async function runProductionRAGVerification() {
   // 3. Test Vector Cosine Retrieval with real embedding
   console.log('🔍 Testing pgvector Cosine Similarity Search:');
   const retriever = new PgVectorRetriever({ topK: 5 });
-  const retrievedMentors = await retriever.retrieveRecords('Priya Sharma Java Spring Boot backend');
-  console.log(`   - Top chunks retrieved for "Priya Sharma Java Spring Boot backend": ${retrievedMentors.length}`);
+  const retrievedMentors = await retriever.retrieveRecords('Java Spring Boot backend mentor');
+  console.log(`   - Top chunks retrieved for "Java Spring Boot backend mentor": ${retrievedMentors.length}`);
   retrievedMentors.forEach((doc, idx) => {
     console.log(`     [${idx + 1}] Source: "${doc.source}" | Cosine Similarity: ${doc.similarity}`);
   });

@@ -1,0 +1,1 @@
+PASS: Unified LLMClient abstraction using official Groq provider with standard OpenAI-compatible protocol.

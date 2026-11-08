@@ -18,7 +18,7 @@ export async function PUT(
 
     const updated = await AdminRepository.moderateCourse(authUser.id, courseId, Boolean(isPublished));
     return apiSuccess({ course: updated, message: `Course moderation updated` });
-  } catch (error: any) {
-    return apiError(error.message || 'Failed to moderate course', 'INTERNAL_ERROR', 500);
+ } catch (_e) { const err = _e as Error; 
+    return apiError(err.message || 'Failed to moderate course', 'INTERNAL_ERROR', 500);
   }
 }

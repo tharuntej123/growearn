@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/auth-context';
 import { DashboardSidebar } from '@/components/layout/sidebar';
 import { Card } from '@/components/ui/card';
@@ -11,14 +11,7 @@ import {
   Heart,
   MessageSquare,
   Share2,
-  Sparkles,
   Send,
-  PlusCircle,
-  TrendingUp,
-  Award,
-  Briefcase,
-  Layers,
-  Filter,
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -62,7 +55,7 @@ export default function FeedPage() {
   const [commentingPostId, setCommentingPostId] = useState<string | null>(null);
   const [commentText, setCommentText] = useState('');
 
-  const fetchPosts = async () => {
+  const fetchPosts = useCallback(async () => {
     setIsLoading(true);
     try {
       const res = await fetch(`/api/posts?tab=${activeTab}`);
@@ -76,11 +69,11 @@ export default function FeedPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [activeTab]);
 
   useEffect(() => {
     fetchPosts();
-  }, [activeTab]);
+  }, [fetchPosts]);
 
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -225,7 +218,7 @@ export default function FeedPage() {
             ].map((t) => (
               <button
                 key={t.id}
-                onClick={() => setActiveTab(t.id as any)}
+                onClick={() => setActiveTab(t.id as 'following' | 'for_you' | 'latest')}
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
                   activeTab === t.id
                     ? 'bg-emerald-600 text-white shadow-sm'

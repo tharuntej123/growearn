@@ -51,7 +51,7 @@ export interface UserAIContext {
     currentSkills: string[];
     skillGaps: string[];
     finalMilestone: string | null;
-    phases: any[];
+    phases: Array<Record<string, unknown>>;
   } | null;
 }
 
@@ -139,7 +139,7 @@ export async function getUserAIContext(userId: string): Promise<UserAIContext | 
 
   let roadmapData = null;
   if (user.careerRoadmap) {
-    let phases: any[] = [];
+    let phases: Array<Record<string, unknown>> = [];
     let currentSkills: string[] = [];
     let skillGaps: string[] = [];
 
@@ -195,7 +195,7 @@ export async function getUserAIContext(userId: string): Promise<UserAIContext | 
           interests,
           experienceLevel: user.profile.experienceLevel || 'Beginner',
           yearsOfExperience: user.profile.yearsOfExperience || 0,
-          hourlyRate: user.profile.hourlyRate,
+          hourlyRate: user.profile.hourlyRate ? Number(user.profile.hourlyRate) : null,
           preferredLocation: user.profile.preferredLocation,
           preferredJobType: user.profile.preferredJobType,
           availability: user.profile.availability,

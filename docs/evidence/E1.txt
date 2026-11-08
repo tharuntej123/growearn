@@ -1,0 +1,1 @@
+PASS: Zero pass-through maybeRerank stubs found. Pipeline honestly reports hybrid reciprocal rank fusion.

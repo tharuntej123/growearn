@@ -1,0 +1,1 @@
+PASS: Zero mock person/company names found outside prisma/seed/data/

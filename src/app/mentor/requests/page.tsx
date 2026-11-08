@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useAuth } from '@/context/auth-context';
 import { DashboardSidebar } from '@/components/layout/sidebar';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,17 +9,12 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
 import {
   Users,
-  CheckCircle2,
-  XCircle,
   MessageSquare,
   Clock,
-  Calendar,
-  Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function MentorRequestsPage() {
-  const { user } = useAuth();
   const [requests, setRequests] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 

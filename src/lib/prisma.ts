@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { PrismaClient } from '@prisma/client';
 
 const globalForPrisma = globalThis as unknown as {
@@ -22,9 +23,9 @@ export async function checkDatabaseHealth(): Promise<{
     await prisma.$queryRawUnsafe('SELECT 1');
     const latencyMs = Date.now() - start;
     return { connected: true, latencyMs };
-  } catch (error: any) {
+ } catch (_e) { const error = _e as Error; 
     const latencyMs = Date.now() - start;
-    console.error('[Database:HealthCheckFailed]', error?.message || error);
+    logger.error('[Database:HealthCheckFailed]', error?.message || error);
     return {
       connected: false,
       latencyMs,

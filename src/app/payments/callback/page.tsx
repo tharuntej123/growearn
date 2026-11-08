@@ -39,7 +39,7 @@ function PaymentCallbackContent() {
         setStatus('FAILED');
         setErrorMessage(json.error?.message || json.message || 'Payment could not be verified with Cashfree');
       }
-    } catch (err: any) {
+ } catch (_e) { const err = _e as Error; 
       setStatus('FAILED');
       setErrorMessage(err.message || 'Network error reconciling payment');
     }

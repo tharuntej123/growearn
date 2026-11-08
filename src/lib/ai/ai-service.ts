@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import {
   SkillGapAnalysisResult,
   CareerRoadmapResult,
@@ -56,7 +57,7 @@ Rules:
           };
         }
       } catch (err) {
-        console.warn('[AIService.analyzeSkills] Groq LLM error, falling back to deterministic analysis:', err);
+        logger.warn('[AIService.analyzeSkills] Groq LLM error, falling back to deterministic analysis:', err);
       }
     }
 
@@ -158,7 +159,7 @@ Return ONLY valid JSON matching this schema:
           };
         }
       } catch (err) {
-        console.warn('[AIService.generateRoadmap] Groq LLM error, falling back to deterministic roadmap:', err);
+        logger.warn('[AIService.generateRoadmap] Groq LLM error, falling back to deterministic roadmap:', err);
       }
     }
 
@@ -264,7 +265,7 @@ Generate a concise, high-converting client proposal in JSON.`,
           return completion.data;
         }
       } catch (err) {
-        console.warn('[AIService.generateProposal] Groq LLM error, falling back to deterministic proposal:', err);
+        logger.warn('[AIService.generateProposal] Groq LLM error, falling back to deterministic proposal:', err);
       }
     }
 
@@ -320,7 +321,7 @@ Return ONLY valid JSON matching:
           return completion.data;
         }
       } catch (err) {
-        console.warn('[AIService.improveMessage] Groq LLM error, falling back to deterministic template:', err);
+        logger.warn('[AIService.improveMessage] Groq LLM error, falling back to deterministic template:', err);
       }
     }
 
@@ -397,7 +398,7 @@ User Question: "${question}"`,
           return completion.data;
         }
       } catch (err) {
-        console.warn('[AIService.answerCareerQuestion] Groq LLM error:', err);
+        logger.warn('[AIService.answerCareerQuestion] Groq LLM error:', err);
       }
     }
 
@@ -464,7 +465,7 @@ Return ONLY valid JSON matching:
           return completion.data;
         }
       } catch (err) {
-        console.warn('[AIService.extractResumeSkills] Groq LLM error, falling back to deterministic extraction:', err);
+        logger.warn('[AIService.extractResumeSkills] Groq LLM error, falling back to deterministic extraction:', err);
       }
     }
 

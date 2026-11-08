@@ -41,7 +41,7 @@ export class RecommendationService {
     limit = 10,
     filters?: { city?: string; locationType?: string; jobType?: string; query?: string; isLocal?: boolean }
   ): Promise<{ jobs: ScoredJob[]; isPersonalized: boolean; searchMode: 'SEMANTIC_RAG' | 'DETERMINISTIC_HYBRID_FALLBACK'; emptyReason?: string }> {
-    const where: any = { status: 'OPEN' };
+    const where: Record<string, unknown> = { status: 'OPEN' };
 
     if (filters?.isLocal !== undefined) {
       where.isLocal = filters.isLocal;
@@ -118,8 +118,8 @@ export class RecommendationService {
         city: j.city,
         locationType: j.locationType,
         jobType: j.jobType,
-        minSalary: j.minSalary,
-        maxSalary: j.maxSalary,
+        minSalary: Number(j.minSalary),
+        maxSalary: Number(j.maxSalary),
         currency: j.currency,
         experienceLevel: j.experienceLevel,
         isLocal: j.isLocal,
@@ -255,8 +255,8 @@ export class RecommendationService {
         city: job.city,
         locationType: job.locationType,
         jobType: job.jobType,
-        minSalary: job.minSalary,
-        maxSalary: job.maxSalary,
+        minSalary: Number(job.minSalary),
+        maxSalary: Number(job.maxSalary),
         currency: job.currency,
         experienceLevel: job.experienceLevel,
         isLocal: job.isLocal,

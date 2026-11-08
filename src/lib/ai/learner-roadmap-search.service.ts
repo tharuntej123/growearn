@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 // Dedicated, isolated Tavily search service EXCLUSIVELY for Learner AI roadmap generation.
 // STAGE RESTRICTION: Never imported, called, or exposed to any other RAG, job, mentor, or app feature.
 
@@ -106,7 +107,7 @@ export class LearnerRoadmapSearchService {
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => '');
-        console.warn(
+        logger.warn(
           `[LearnerRoadmapSearch:Warn] Tavily search returned HTTP ${response.status}: ${errorText.slice(0, 150)}`
         );
         return [];
@@ -165,12 +166,12 @@ export class LearnerRoadmapSearchService {
       });
 
       return normalizedResults;
-    } catch (err: any) {
+ } catch (_e) { const err = _e as Error; 
       // Graceful fail-open fallback: Never throw to frontend, log structured warning
       if (err.name === 'TimeoutError' || err.message?.includes('timeout')) {
-        console.warn(`[LearnerRoadmapSearch:Timeout] Tavily search timed out after ${this.REQUEST_TIMEOUT_MS}ms`);
+        logger.warn(`[LearnerRoadmapSearch:Timeout] Tavily search timed out after ${this.REQUEST_TIMEOUT_MS}ms`);
       } else {
-        console.warn(`[LearnerRoadmapSearch:Error] Failed to fetch Tavily search results: ${err.message}`);
+        logger.warn(`[LearnerRoadmapSearch:Error] Failed to fetch Tavily search results: ${err.message}`);
       }
       return [];
     }

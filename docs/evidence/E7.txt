@@ -1,0 +1,1 @@
+PASS: Document ingestion executes inside Prisma transaction, deleting prior chunks and writing new chunks atomically.

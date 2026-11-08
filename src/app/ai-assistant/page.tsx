@@ -1,22 +1,17 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { DashboardSidebar } from '@/components/layout/sidebar';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Avatar } from '@/components/ui/avatar';
 import {
   Sparkles,
   Send,
-  BrainCircuit,
-  MessageSquare,
   Bot,
-  User as UserIcon,
-  CheckCircle2,
   Copy,
   Wand2,
 } from 'lucide-react';
@@ -145,6 +140,7 @@ function FormattedMessageContent({ content }: { content: string }) {
 }
 
 export default function AIAssistantPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'career_chat' | 'message_improver'>('career_chat');
 
@@ -162,7 +158,7 @@ export default function AIAssistantPage() {
   const [isSending, setIsSending] = useState(false);
 
   const [rawMessage, setRawMessage] = useState('hi can u tell me about this job and how much u pay');
-  const [improvedResult, setImprovedResult] = useState<any>(null);
+  const [improvedResult, setImprovedResult] = useState<{ tone?: string; improved: string; explanation?: string } | null>(null);
   const [selectedTone, setSelectedTone] = useState<
     'professional' | 'friendly' | 'concise' | 'persuasive' | 'grammar_fix'
   >('professional');
@@ -335,7 +331,7 @@ export default function AIAssistantPage() {
                             key={idx}
                             onClick={() => {
                               if (act === 'Open Onboarding') {
-                                window.location.href = '/onboarding';
+                                router.push('/onboarding');
                               } else {
                                 handleSendMessage(act);
                               }
@@ -403,7 +399,7 @@ export default function AIAssistantPage() {
                   ].map((t) => (
                     <button
                       key={t.id}
-                      onClick={() => setSelectedTone(t.id as any)}
+                      onClick={() => setSelectedTone(t.id as 'professional' | 'friendly' | 'concise' | 'persuasive' | 'grammar_fix')}
                       className={`px-3 py-1.5 rounded-lg border transition-all ${
                         selectedTone === t.id
                           ? 'bg-emerald-50 text-emerald-900 border-emerald-300 font-bold shadow-sm'

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { DashboardSidebar } from '@/components/layout/sidebar';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,10 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
   BookOpen,
-  CheckCircle,
-  XCircle,
   Search,
-  Filter,
   RefreshCw,
   Star,
   ExternalLink,
@@ -28,7 +25,7 @@ export default function AdminCoursesPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const fetchCourses = async () => {
+  const fetchCourses = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -50,11 +47,11 @@ export default function AdminCoursesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, search, statusFilter]);
 
   useEffect(() => {
     fetchCourses();
-  }, [page, statusFilter]);
+  }, [fetchCourses]);
 
   const handleModerate = async (courseId: string, status: string, isFeatured?: boolean) => {
     setUpdatingId(courseId);
@@ -237,6 +234,15 @@ export default function AdminCoursesPage() {
               </tbody>
             </table>
           </div>
+          {totalPages > 1 && (
+            <div className="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+              <span>Page {page} of {totalPages}</span>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Previous</Button>
+                <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>Next</Button>
+              </div>
+            </div>
+          )}
         </Card>
       </main>
     </div>

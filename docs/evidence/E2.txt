@@ -1,0 +1,1 @@
+PASS: keywordSearch queries document_chunks stored tsv column utilizing document_chunks_tsv_idx GIN index.

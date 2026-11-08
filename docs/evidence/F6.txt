@@ -1,0 +1,1 @@
+PASS: agents/app/main.py implements constant-time HMAC secret validation with key rotation support.

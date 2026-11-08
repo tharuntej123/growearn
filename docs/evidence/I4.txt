@@ -1,0 +1,1 @@
+PASS: When GROQ_API_KEY is unconfigured, RAG chain returns formatted retrieved context with degraded status.

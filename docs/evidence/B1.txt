@@ -1,0 +1,1 @@
+PASS: Environment safety validator strictly threw exception when APP_ENV=demo was combined with production database or production Cashfree keys.

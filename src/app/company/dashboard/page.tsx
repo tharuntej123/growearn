@@ -13,10 +13,6 @@ import {
   Users,
   PlusCircle,
   ArrowRight,
-  Sparkles,
-  TrendingUp,
-  Clock,
-  CheckCircle2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -66,7 +62,7 @@ export default function CompanyDashboardPage() {
               <span>Company ATS & Hiring Workspace</span>
             </h1>
             <p className="text-xs text-slate-500 mt-1">
-              Manage your engineering job postings, review AI candidate rankings, and hire pre-vetted talent.
+              Welcome back, {user?.name || 'Recruiter'}. Manage your engineering job postings, review AI candidate rankings, and hire pre-vetted talent.
             </p>
           </div>
           <Link href="/company/jobs/new">
@@ -159,9 +155,9 @@ export default function CompanyDashboardPage() {
                   </div>
 
                   <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-100">
-                    {job.skills?.map((s: any) => (
+                    {job.skills?.map((s: { id?: string; name?: string; skill?: { name?: string } }, sIdx: number) => (
                       <span
-                        key={s.skill?.name || s.id}
+                        key={s.skill?.name || s.name || s.id || sIdx}
                         className="px-2 py-0.5 rounded-md bg-slate-50 text-[11px] font-medium text-slate-600 border border-slate-200/80"
                       >
                         {s.skill?.name || s.name}
@@ -194,11 +190,14 @@ export default function CompanyDashboardPage() {
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-1 pt-1">
-                    {cand.skills?.slice(0, 4).map((s: any) => (
-                      <span key={s.skill?.name || s} className="text-[10px] bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded text-slate-600">
-                        {s.skill?.name || s}
-                      </span>
-                    ))}
+                    {cand.skills?.slice(0, 4).map((s: { name?: string; skill?: { name?: string } } | string, sIdx: number) => {
+                      const skillName = typeof s === 'string' ? s : s.skill?.name || s.name || '';
+                      return (
+                        <span key={skillName || sIdx} className="text-[10px] bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded text-slate-600">
+                          {skillName}
+                        </span>
+                      );
+                    })}
                   </div>
                 </Card>
               ))}

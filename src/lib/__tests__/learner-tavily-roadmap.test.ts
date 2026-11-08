@@ -115,7 +115,7 @@ async function runLearnerTavilyRoadmapTests() {
     let fetchCallCount = 0;
 
     // Mock successful Tavily response
-    global.fetch = (async (_url: any, _options: any) => {
+    global.fetch = (async () => {
       fetchCallCount++;
       return {
         ok: true,
@@ -212,7 +212,7 @@ async function runLearnerTavilyRoadmapTests() {
   // --------------------------------------------------------------------------
   console.log('\n🔒 SUITE 5: Strict Role Authorization (Learner Exclusivity)...');
   {
-    const forbiddenRoles = ['MENTOR', 'EMPLOYER', 'ADMIN', 'FREELANCER'];
+    const forbiddenRoles = ['MENTOR', 'COMPANY', 'ADMIN', 'FREELANCER'];
 
     for (const role of forbiddenRoles) {
       try {

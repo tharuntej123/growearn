@@ -1,0 +1,1 @@
+PASS: Demo role switcher component implemented for all 5 canonical roles.

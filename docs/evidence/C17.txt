@@ -1,0 +1,1 @@
+PASS: Production Content-Security-Policy configured with X-Content-Type-Options: nosniff and frame-ancestors: none.

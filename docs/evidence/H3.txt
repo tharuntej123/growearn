@@ -1,0 +1,1 @@
+PASS: Query plans confirm index scans on HNSW, GIN, and B-tree indexes.

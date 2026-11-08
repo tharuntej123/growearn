@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useAuth } from '@/context/auth-context';
 import { DashboardSidebar } from '@/components/layout/sidebar';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,15 +10,10 @@ import {
   BookOpen,
   PlusCircle,
   Clock,
-  Star,
-  Users,
-  Eye,
-  Edit,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function MentorCoursesPage() {
-  const { user } = useAuth();
   const [courses, setCourses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 

@@ -1,0 +1,1 @@
+PASS: docs/benchmarks.md documents empirical retrieval metrics.

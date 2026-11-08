@@ -1,0 +1,1 @@
+PASS: AIRun model exists in Prisma schema for telemetry and observability.

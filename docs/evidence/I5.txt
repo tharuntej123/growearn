@@ -1,0 +1,1 @@
+PASS: Tavily requests enforce 8-second timeout and fallback without Tavily search traces.

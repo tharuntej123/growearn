@@ -13,6 +13,7 @@ import { PostRepository } from '../../repositories/post.repository';
 import { NotificationRepository } from '../../repositories/notification.repository';
 import { StorageService, LocalStorageProvider } from '../../services/storage.service';
 import { DatabaseRateLimiter } from '../rate-limiter';
+import { PgVectorRetriever } from '../ai/retriever';
 import { registerSchema } from '../../validators/auth.schema';
 import { EMBEDDING_DIMENSION, LocalBGE3EmbeddingProvider } from '../ai/embeddings';
 import { formatVectorForPg } from '../ai/vector-store';
@@ -268,12 +269,12 @@ async function runMasterTestSuite() {
     );
 
     // 1.7: Canonical Role Mapping & Rejection of Malicious Roles
-    const canonicalLearner = normalizeRole('STUDENT');
-    const canonicalFreelancer = normalizeRole('PROFESSIONAL');
-    const canonicalCompany = normalizeRole('EMPLOYER');
+    const canonicalLearner = normalizeRole('LEARNER');
+    const canonicalFreelancer = normalizeRole('FREELANCER');
+    const canonicalCompany = normalizeRole('COMPANY');
     assert(
       canonicalLearner === 'LEARNER' && canonicalFreelancer === 'FREELANCER' && canonicalCompany === 'COMPANY',
-      'Role Architecture: Legacy Database Roles Normalize Cleanly to Canonical Enums'
+      'Role Architecture: Canonical Roles Normalize Cleanly to Canonical Enums'
     );
 
     let invalidRoleRejected = false;
@@ -381,9 +382,70 @@ async function runMasterTestSuite() {
       'Role Boundaries: Learner is Strictly Blocked from Mentor Course Creation'
     );
     assert(
-      !isRoleAllowed(learnerRole, ['COMPANY', 'EMPLOYER', 'ADMIN']),
+      !isRoleAllowed(learnerRole, ['COMPANY', 'ADMIN']),
       'Role Boundaries: Learner is Strictly Blocked from Company Job Creation'
     );
+
+    // G. Candidate PII Opt-In & Discoverability Guard
+    const learnerProfile = await prisma.profile.findUnique({
+      where: { userId: registeredUser!.id },
+    });
+    assert(
+      learnerProfile !== null && learnerProfile.isDiscoverable === false,
+      'Candidate PII Opt-In: Profile isDiscoverable Defaults to False (Opt-In Only)'
+    );
+
+    // H. Retrieval Layer Role Allow-List Enforcement
+    const learnerRetriever = new PgVectorRetriever({ userRole: 'LEARNER', sourceType: 'candidate' });
+    const blockedCandidateDocs = await learnerRetriever.retrieveRecords('Software Engineer');
+    assert(
+      blockedCandidateDocs.length === 0,
+      'Retrieval Layer: LEARNER Role Strictly Blocked from Candidate Chunk Retrieval'
+    );
+
+    // I. Email and Password Registration Lifecycle
+    const testPasswordEmail = `test-pwd-user-${Date.now()}@growearn-test.internal`;
+    const pwdRegisterResult = await AuthService.registerWithPassword({
+      name: 'Password Verified User',
+      email: testPasswordEmail,
+      password: 'SecurePassword123!',
+      confirmPassword: 'SecurePassword123!',
+      role: 'FREELANCER',
+    });
+    assert(
+      Boolean(pwdRegisterResult && pwdRegisterResult.user.id && pwdRegisterResult.session),
+      'Password Auth: New User Signup with Salted Scrypt Hashing & Session Issuance'
+    );
+
+    const userInDb = await prisma.user.findUnique({
+      where: { id: pwdRegisterResult.user.id },
+      select: { passwordHash: true },
+    });
+    assert(
+      Boolean(userInDb?.passwordHash && userInDb.passwordHash.includes(':')),
+      'Password Auth: Salted Key Storage Prevents Plaintext & Insecure Storage'
+    );
+
+    // J. Email and Password Login Lifecycle
+    const pwdLoginResult = await AuthService.loginWithPassword({
+      email: testPasswordEmail,
+      password: 'SecurePassword123!',
+    });
+    assert(
+      Boolean(pwdLoginResult && pwdLoginResult.user.id === pwdRegisterResult.user.id && pwdLoginResult.session),
+      'Password Auth: Successful Login with Correct Password Issues Valid Database Session'
+    );
+
+    let invalidPwdRejected = false;
+    try {
+      await AuthService.loginWithPassword({
+        email: testPasswordEmail,
+        password: 'WrongPassword123!',
+      });
+    } catch {
+      invalidPwdRejected = true;
+    }
+    assert(invalidPwdRejected, 'Password Auth: Login Strictly Rejects Incorrect Password');
   } catch (err: any) {
     console.error('Suite 1 Error:', err);
   }
@@ -402,6 +464,13 @@ async function runMasterTestSuite() {
     assert(
       r3.success === false && r3.remaining === 0 && r3.resetSeconds > 0,
       'Rate Limiter: Third Request Blocked (Returns HTTP 429 Retry-After)'
+    );
+
+    // Circuit Breaker Telemetry Verification
+    const metrics = DatabaseRateLimiter.getMetrics();
+    assert(
+      metrics.state === 'CLOSED' && typeof metrics.totalFailures === 'number',
+      'Rate Limiter: Circuit Breaker Telemetry Active & Healthy'
     );
 
     // Clean up test key
@@ -642,11 +711,11 @@ async function runMasterTestSuite() {
     console.error('Suite 5 Error:', err);
   }
 
-  // SUITE 6: PROFESSIONAL & JOB MATCHING
-  console.log('\n💼 SUITE 6: Professional Job Matching & Application Flow...');
+  // SUITE 6: FREELANCER & JOB MATCHING
+  console.log('\n💼 SUITE 6: Freelancer Job Matching & Application Flow...');
   try {
     const professional = await prisma.user.findFirst({
-      where: { role: { in: ['PROFESSIONAL', 'FREELANCER'] } },
+      where: { role: 'FREELANCER' },
     });
 
     const activeJobs = await prisma.job.findMany({ take: 5 });
@@ -738,11 +807,11 @@ async function runMasterTestSuite() {
     console.error('Suite 7 Error:', err);
   }
 
-  // SUITE 8: EMPLOYER PIPELINE & STATUS PERSISTENCE
-  console.log('\n🏢 SUITE 8: Employer Hiring Pipeline & Status Persistence...');
+  // SUITE 8: COMPANY PIPELINE & STATUS PERSISTENCE
+  console.log('\n🏢 SUITE 8: Company Hiring Pipeline & Status Persistence...');
   try {
     const employer = await prisma.user.findFirst({
-      where: { role: { in: ['EMPLOYER', 'COMPANY'] } },
+      where: { role: 'COMPANY' },
     });
 
     if (employer) {
@@ -907,7 +976,7 @@ async function runMasterTestSuite() {
           userId: student.id,
           providerOrderId: testOrderId,
           amount: paidCourse.price,
-          amountInPaise: Math.round(paidCourse.price * 100),
+          amountInPaise: Math.round(Number(paidCourse.price) * 100),
           currency: 'INR',
           status: 'CREATED',
           itemType: 'COURSE',
@@ -926,7 +995,7 @@ async function runMasterTestSuite() {
           providerPaymentId: `cf_pay_${Date.now()}`,
           providerSignature: validSig,
           amount: paidCourse.price,
-          amountInPaise: Math.round(paidCourse.price * 100),
+          amountInPaise: Math.round(Number(paidCourse.price) * 100),
           currency: 'INR',
           status: 'CAPTURED',
           provider: 'CASHFREE',

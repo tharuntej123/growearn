@@ -10,7 +10,7 @@ import Link from 'next/link';
 
 interface RoleGuardProps {
   children: React.ReactNode;
-  allowedRoles: ('STUDENT' | 'LEARNER' | 'COMPANY' | 'EMPLOYER' | 'MENTOR' | 'PROFESSIONAL' | 'FREELANCER' | 'ADMIN')[];
+  allowedRoles: ('LEARNER' | 'COMPANY' | 'MENTOR' | 'FREELANCER' | 'ADMIN')[];
   fallbackUrl?: string;
   roleName?: string;
 }
@@ -72,11 +72,11 @@ export function RoleGuard({
 
   if (!isAllowed) {
     const userDashboard = ROLE_INFO[user.role]?.defaultDashboard || fallbackUrl || '/feed';
-    const displayRole = user.role === 'EMPLOYER' || user.role === 'COMPANY'
+    const displayRole = user.role === 'COMPANY'
       ? 'Company'
-      : user.role === 'STUDENT' || user.role === 'LEARNER'
+      : user.role === 'LEARNER'
       ? 'Learner'
-      : user.role === 'PROFESSIONAL' || user.role === 'FREELANCER'
+      : user.role === 'FREELANCER'
       ? 'Freelancer'
       : user.role === 'MENTOR'
       ? 'Mentor'

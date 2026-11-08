@@ -1,0 +1,1 @@
+PASS: vitest.config.ts configured for automated unit and integration tests.

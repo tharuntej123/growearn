@@ -84,7 +84,7 @@ export async function PATCH(
     }).catch(() => {});
 
     return apiSuccess({ application: updated });
-  } catch (err: any) {
+ } catch (_e) { const err = _e as Error; 
     return apiError(err.message || 'Failed to update application', 'UPDATE_ERROR', 500);
   }
 }

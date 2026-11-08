@@ -3,15 +3,12 @@
 import { prisma } from '../prisma';
 import { PgVectorStore } from '../ai/vector-store';
 import { PgVectorRetriever } from '../ai/retriever';
-import { generateEmbedding } from '../ai/embeddings';
 import { ProductionRAGChain } from '../ai/rag-chain';
-import { IntentClassifier } from '../ai/intent-classifier';
 import { SkillRAGService } from '../ai/skill-rag.service';
 import { RecommendationService } from '../../services/recommendation.service';
 import { getUserAIContext } from '../../services/user-context.service';
 import { HybridMatcher } from '../ai/hybrid-matcher';
 import { UserRepository } from '../../repositories/user.repository';
-import { PRODUCTION_ROADMAPS_CATALOG } from '../ai/roadmaps-catalog';
 
 interface TestSectionResult {
   section: string;
@@ -197,7 +194,7 @@ async function runEndToEndProductionValidation() {
   console.log('💼 SECTION 5: Verifying Freelancer Job Matching Flow (Skills + Exp + Projects + Certs)...');
   try {
     const freelancerUser = await prisma.user.findFirst({
-      where: { role: { in: ['FREELANCER', 'PROFESSIONAL'] } },
+      where: { role: 'FREELANCER' },
       include: { profile: true, skills: { include: { skill: true } } },
     });
 
@@ -243,7 +240,7 @@ async function runEndToEndProductionValidation() {
   console.log('🏢 SECTION 6: Verifying Company Dashboard Flow (Job Postings & Candidate Retrieval)...');
   try {
     const companyUser = await prisma.user.findFirst({
-      where: { role: { in: ['EMPLOYER', 'COMPANY', 'RECRUITER'] } },
+      where: { role: 'COMPANY' },
       include: {
         jobPostings: {
           include: {

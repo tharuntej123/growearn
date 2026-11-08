@@ -1,0 +1,1 @@
+PASS: Learner, Freelancer, and Mentor roles strictly prohibited from retrieving candidate chunks; Company and Admin retrievals audited.

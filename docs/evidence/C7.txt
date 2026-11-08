@@ -1,0 +1,1 @@
+PASS: OAuth account collision returns NEEDS_LINKING and requires signed linking token.

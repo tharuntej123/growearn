@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { getCurrentUser } from '@/lib/auth';
@@ -24,6 +25,23 @@ const agenticRoadmapSchema = z
     (data) => Boolean(data.role || data.targetRole || data.skill),
     { message: 'Target role or skill is required' }
   );
+
+interface AgenticRoadmapPayload {
+  target_role?: string;
+  targetRole?: string;
+  summary?: string;
+  estimated_weeks?: number;
+  phases?: unknown[];
+  recommended_courses?: unknown[];
+  recommended_mentors?: unknown[];
+  agent_trace?: unknown[];
+  agentTrace?: unknown[];
+  review_status?: string;
+  reviewer_notes?: string;
+  mode?: string;
+  fallback_reason?: string;
+  [key: string]: unknown;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -75,8 +93,13 @@ export async function POST(req: NextRequest) {
     const targetTimelineWeeks = parseResult.data.target_timeline_weeks || 16;
 
     const agentsServiceUrl = process.env.AGENTS_SERVICE_URL || 'http://localhost:8000';
+    const internalSecret = process.env.INTERNAL_SERVICE_KEY;
 
-    let agenticData: any = null;
+    if (process.env.NODE_ENV === 'production' && (!internalSecret || internalSecret.length < 32)) {
+      logger.error('[AgentsGateway] FATAL: INTERNAL_SERVICE_KEY must be configured with >= 32 characters in production.');
+    }
+
+    let agenticData: AgenticRoadmapPayload | null = null;
     let mode: 'agentic' | 'fallback' = 'agentic';
     let fallbackReason: string | undefined = undefined;
 
@@ -86,7 +109,10 @@ export async function POST(req: NextRequest) {
 
       const agentRes = await fetch(`${agentsServiceUrl}/roadmap`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(internalSecret ? { 'X-Internal-Secret': internalSecret } : {}),
+        },
         body: JSON.stringify({
           role: targetRole,
           current_skills: currentSkills,
@@ -99,12 +125,13 @@ export async function POST(req: NextRequest) {
       clearTimeout(timeoutId);
 
       if (agentRes.ok) {
-        agenticData = await agentRes.json();
+        agenticData = (await agentRes.json()) as AgenticRoadmapPayload;
       } else {
         fallbackReason = `Agents service returned HTTP ${agentRes.status}`;
       }
-    } catch (err: any) {
-      fallbackReason = `Agents service unavailable (${err.name === 'AbortError' ? 'timeout' : err.message || 'connection failed'})`;
+    } catch (err: unknown) {
+      const errObj = err instanceof Error ? err : new Error(String(err));
+      fallbackReason = `Agents service unavailable (${errObj.name === 'AbortError' ? 'timeout' : errObj.message || 'connection failed'})`;
     }
 
     // If agents service was down or failed, execute deterministic fallback
@@ -196,8 +223,8 @@ export async function POST(req: NextRequest) {
           where: { id: existing.id },
           data: {
             targetRole,
-            summary: agenticData.summary,
-            phasesJson: JSON.stringify(agenticData.phases),
+            summary: agenticData.summary || null,
+            phasesJson: JSON.stringify(agenticData.phases || []),
             updatedAt: new Date(),
           },
         });
@@ -206,13 +233,13 @@ export async function POST(req: NextRequest) {
           data: {
             userId: authUser.id,
             targetRole,
-            summary: agenticData.summary,
-            phasesJson: JSON.stringify(agenticData.phases),
+            summary: agenticData.summary || null,
+            phasesJson: JSON.stringify(agenticData.phases || []),
           },
         });
       }
-    } catch (dbErr: any) {
-      console.warn('[AgenticRoadmap] Database persistence skipped/failed:', dbErr.message);
+ } catch (_e) { const dbErr = _e as Error; 
+      logger.warn('[AgenticRoadmap] Database persistence skipped/failed:', dbErr.message);
     }
 
     return apiSuccess({
@@ -223,7 +250,7 @@ export async function POST(req: NextRequest) {
       mode,
       fallbackReason,
     });
-  } catch (err: any) {
+ } catch (_e) { const err = _e as Error; 
     return apiError(err.message || 'Internal error in agentic roadmap route', 'INTERNAL_ERROR', 500);
   }
 }

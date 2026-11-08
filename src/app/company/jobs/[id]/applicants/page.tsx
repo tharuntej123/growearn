@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth } from '@/context/auth-context';
 import { DashboardSidebar } from '@/components/layout/sidebar';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,14 +10,9 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
 import {
   Users,
-  Briefcase,
   ArrowLeft,
-  CheckCircle2,
-  XCircle,
   MessageSquare,
-  FileText,
   Sparkles,
-  ExternalLink,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -26,20 +20,14 @@ export default function CompanyJobApplicantsPage() {
   const params = useParams();
   const router = useRouter();
   const jobId = params?.id as string;
-  const { user } = useAuth();
 
   const [job, setJob] = useState<any | null>(null);
   const [applications, setApplications] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('ALL');
 
-  useEffect(() => {
-    if (jobId) {
-      fetchApplicants();
-    }
-  }, [jobId]);
-
-  const fetchApplicants = async () => {
+  const fetchApplicants = useCallback(async () => {
+    if (!jobId) return;
     setIsLoading(true);
     try {
       const res = await fetch(`/api/jobs/${jobId}/applications`);
@@ -55,7 +43,11 @@ export default function CompanyJobApplicantsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [jobId]);
+
+  useEffect(() => {
+    fetchApplicants();
+  }, [fetchApplicants]);
 
   const handleUpdateStatus = async (appId: string, newStatus: string) => {
     try {
@@ -210,9 +202,9 @@ export default function CompanyJobApplicantsPage() {
 
                   {/* Skills tags */}
                   <div className="flex flex-wrap gap-1.5 pt-1">
-                    {applicant?.skills?.map((s: any) => (
+                    {applicant?.skills?.map((s: { id?: string; name?: string; skill?: { name?: string } }, sIdx: number) => (
                       <span
-                        key={s.skill?.name || s.id}
+                        key={s.skill?.name || s.name || s.id || sIdx}
                         className="px-2 py-0.5 rounded-md bg-slate-100 text-[11px] font-medium text-slate-700"
                       >
                         {s.skill?.name || s.name}

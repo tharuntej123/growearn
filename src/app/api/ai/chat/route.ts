@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { apiSuccess, apiError } from '@/lib/utils';
@@ -40,8 +41,8 @@ export async function POST(req: NextRequest) {
       sources: result.sources,
       recommendedActions: result.recommendedActions,
     });
-  } catch (error: any) {
-    console.error('AI chat error:', error);
+ } catch (_e) { const error = _e as Error; 
+    logger.error('AI chat error:', error);
     return apiError(
       error.message || 'AI assistant error',
       'INTERNAL_ERROR',

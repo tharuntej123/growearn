@@ -1,0 +1,1 @@
+PASS: docker-compose.yml isolates internal agents port (expose: 8000) and uses environment variables for passwords.

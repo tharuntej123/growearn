@@ -1,0 +1,1 @@
+PASS: Revoked session tokens immediately rejected at database and middleware layer.

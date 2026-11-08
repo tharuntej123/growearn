@@ -1,0 +1,1 @@
+PASS: Only canonical roles (LEARNER, FREELANCER, MENTOR, COMPANY, ADMIN) exist.

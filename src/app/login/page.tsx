@@ -50,7 +50,7 @@ function LoginContent() {
     if (redirectTarget && redirectTarget.startsWith('/')) {
       params.set('redirect', redirectTarget);
     }
-    window.location.href = `/api/auth/google/init?${params.toString()}`;
+    window.location.assign(new URL(`/api/auth/google/init?${params.toString()}`, window.location.origin).href);
   };
 
   return (

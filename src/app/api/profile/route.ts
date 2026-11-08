@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { updateProfileSchema } from '@/validators/auth.schema';
@@ -48,7 +48,7 @@ export async function PUT(req: NextRequest) {
       ...profileData
     } = validated.data;
 
-    const userData: any = {};
+    const userData: Record<string, unknown> = {};
     if (name !== undefined) userData.name = name;
     if (headline !== undefined) userData.headline = headline;
     if (bio !== undefined) userData.bio = bio;
@@ -65,16 +65,17 @@ export async function PUT(req: NextRequest) {
       });
     }
 
+    const targetRoleVal = (profileData as Record<string, string | undefined>).targetRole || (profileData as Record<string, string | undefined>).careerGoal || undefined;
     await prisma.profile.upsert({
       where: { userId: authUser.id },
       update: {
         ...profileData,
-        targetRole: (profileData as any).targetRole || (profileData as any).careerGoal,
+        targetRole: targetRoleVal,
       },
       create: {
         userId: authUser.id,
         ...profileData,
-        targetRole: (profileData as any).targetRole || (profileData as any).careerGoal,
+        targetRole: targetRoleVal,
       },
     });
 
@@ -83,9 +84,9 @@ export async function PUT(req: NextRequest) {
       await MentorRepository.upsertMentorProfile(authUser.id, {
         hourlyRate: profileData.hourlyRate,
         bio: bio || undefined,
-        title: (profileData as any).title || headline,
+        title: (profileData as Record<string, string | undefined>).title || headline || undefined,
         yearsExperience: profileData.yearsOfExperience,
-        company: (profileData as any).companyName,
+        company: (profileData as Record<string, string | undefined>).companyName || undefined,
       });
     }
 
@@ -155,7 +156,7 @@ export async function PUT(req: NextRequest) {
 
     const freshContext = await getUserAIContext(authUser.id);
     return apiSuccess({ user: freshContext });
-  } catch (err: any) {
+ } catch (_e) { const err = _e as Error; 
     return apiError(err.message || 'Failed to update profile', 'PROFILE_UPDATE_ERROR', 400);
   }
 }

@@ -1,0 +1,1 @@
+PASS: completeStructured validates Zod schemas and handles JSON repair.

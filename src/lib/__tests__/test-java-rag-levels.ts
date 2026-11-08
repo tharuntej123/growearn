@@ -7,12 +7,12 @@ async function testJavaRAG() {
   console.log('ROADMAP TARGET ROLE:', res.roadmap.targetRole);
   console.log('SUMMARY:', res.roadmap.summary);
   console.log('\nPHASES (Basic to Advanced):');
-  res.roadmap.phases.forEach((p) => {
+  res.roadmap.phases.forEach((p: Record<string, unknown>) => {
     console.log(`  [Phase ${p.phaseNumber}] ${p.title}`);
     console.log(`    Objective: ${p.objective}`);
-    console.log(`    Topics: ${p.topics.join(', ')}`);
-    console.log(`    Practice: ${p.practiceTasks.join(' | ')}`);
-    console.log(`    Project: ${p.projects.join(', ')}`);
+    console.log(`    Topics: ${Array.isArray(p.topics) ? p.topics.join(', ') : ''}`);
+    console.log(`    Practice: ${Array.isArray(p.practiceTasks) ? p.practiceTasks.join(' | ') : ''}`);
+    console.log(`    Project: ${Array.isArray(p.projects) ? p.projects.join(', ') : ''}`);
     console.log(`    Milestone: ${p.milestone}\n`);
   });
 

@@ -1,0 +1,1 @@
+PASS: Client IP resolution parses verified edge proxy headers and rightmost un-spoofable IP entry.

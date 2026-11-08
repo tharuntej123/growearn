@@ -1,0 +1,1 @@
+PASS: Landing page dynamically renders from API/database or shows empty state without hardcoded mock mentors or ratings.

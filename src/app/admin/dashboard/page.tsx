@@ -2,10 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useAuth } from '@/context/auth-context';
 import { DashboardSidebar } from '@/components/layout/sidebar';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   ShieldCheck,
@@ -14,15 +12,10 @@ import {
   Briefcase,
   Activity,
   FileCheck,
-  CheckCircle2,
-  AlertTriangle,
-  Clock,
-  ArrowRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function AdminDashboardPage() {
-  const { user } = useAuth();
   const [stats, setStats] = useState<any | null>(null);
   const [health, setHealth] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,6 +49,17 @@ export default function AdminDashboardPage() {
       setIsLoading(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[calc(100vh-4rem)] bg-slate-50/50">
+        <DashboardSidebar />
+        <main className="flex-1 p-8 flex items-center justify-center">
+          <p className="text-slate-500 text-sm">Loading administrator telemetry...</p>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] bg-slate-50/50">
@@ -180,7 +184,7 @@ export default function AdminDashboardPage() {
             </h2>
 
             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden divide-y divide-slate-100">
-              {stats.recentAuditLogs.map((log: any) => (
+              {stats.recentAuditLogs.map((log: { id: string; action: string; user?: { email?: string }; resource?: string; createdAt: string | Date }) => (
                 <div key={log.id} className="p-3.5 px-5 flex items-center justify-between text-xs">
                   <div className="space-y-0.5">
                     <span className="font-bold text-slate-900">{log.action}</span>

@@ -1,0 +1,1 @@
+PASS: Profile isDiscoverable=false immediately purges candidate chunks from pgvector table.

@@ -1,0 +1,1 @@
+PASS: Vercel deployment architecture, environment matrix, and migration lifecycle documented in docs/vercel-deployment.md.

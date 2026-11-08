@@ -1,0 +1,1 @@
+PASS: RAG chain visibly flags fallback mode (KEYWORD_FALLBACK / fallback) when embedding service is unreachable.

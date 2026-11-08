@@ -101,10 +101,10 @@ export function Navbar() {
 
         {user && (() => {
           const rawRole = (user.role || 'LEARNER').toUpperCase();
-          const isLearner = rawRole === 'STUDENT' || rawRole === 'LEARNER';
+          const isLearner = rawRole === 'LEARNER';
           const isMentor = rawRole === 'MENTOR';
-          const isProfessional = rawRole === 'FREELANCER' || rawRole === 'PROFESSIONAL';
-          const isEmployer = rawRole === 'COMPANY' || rawRole === 'EMPLOYER';
+          const isProfessional = rawRole === 'FREELANCER';
+          const isEmployer = rawRole === 'COMPANY';
           const isAdmin = rawRole === 'ADMIN';
 
           return (
@@ -243,7 +243,7 @@ export function Navbar() {
                   className="hidden sm:inline-flex items-center gap-1.5 text-xs py-1 px-3 border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all cursor-pointer font-semibold shadow-xs"
                 >
                   <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
-                  {user.role === 'STUDENT' || user.role === 'LEARNER' ? 'Learner' : user.role === 'FREELANCER' || user.role === 'PROFESSIONAL' ? 'Freelancer' : user.role === 'COMPANY' || user.role === 'EMPLOYER' ? 'Company' : user.role} Dashboard
+                  {user.role === 'LEARNER' ? 'Learner' : user.role === 'FREELANCER' ? 'Freelancer' : user.role === 'COMPANY' ? 'Company' : user.role} Dashboard
                 </Badge>
               </Link>
 

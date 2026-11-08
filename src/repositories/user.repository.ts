@@ -176,7 +176,7 @@ export class UserRepository {
     search?: string;
   }) {
     const where: Prisma.UserWhereInput = {
-      role: { in: ['PROFESSIONAL', 'FREELANCER', 'STUDENT', 'LEARNER', 'MENTOR'] },
+      role: { in: ['FREELANCER', 'LEARNER', 'MENTOR'] },
     };
 
     if (params?.search) {
