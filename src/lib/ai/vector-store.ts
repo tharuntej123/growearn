@@ -143,7 +143,7 @@ export class PgVectorStore {
   static async similaritySearch(
     queryEmbedding: number[],
     topK: number = 5,
-    filterSourceType?: string
+    filterSourceType?: string | string[]
   ): Promise<DocumentChunkRecord[]> {
     const safeTopK = Math.min(100, Math.max(1, topK));
     const vectorStr = formatVectorForPg(queryEmbedding);
@@ -155,7 +155,23 @@ export class PgVectorStore {
         Prisma.sql`SELECT set_config('hnsw.ef_search', ${efSearch.toString()}, true)`
       );
 
-      if (filterSourceType && filterSourceType.trim() !== '') {
+      if (Array.isArray(filterSourceType) && filterSourceType.length > 0) {
+        return tx.$queryRaw<RawSimilarityRow[]>(
+          Prisma.sql`
+            SELECT 
+              id, 
+              content, 
+              source, 
+              source_type, 
+              metadata, 
+              (1 - (embedding <=> ${vectorStr}::vector)) AS similarity
+            FROM document_chunks
+            WHERE source_type IN (${Prisma.join(filterSourceType)})
+            ORDER BY embedding <=> ${vectorStr}::vector ASC
+            LIMIT ${safeTopK}
+          `
+        );
+      } else if (typeof filterSourceType === 'string' && filterSourceType.trim() !== '') {
         return tx.$queryRaw<RawSimilarityRow[]>(
           Prisma.sql`
             SELECT 
@@ -208,7 +224,7 @@ export class PgVectorStore {
   static async keywordSearch(
     query: string,
     topK: number = 5,
-    filterSourceType?: string
+    filterSourceType?: string | string[]
   ): Promise<DocumentChunkRecord[]> {
     const safeTopK = Math.min(100, Math.max(1, topK));
     const cleanTokens = query
@@ -221,38 +237,58 @@ export class PgVectorStore {
     const tsQuery = cleanTokens.join(' | ');
 
     try {
-      const rows = filterSourceType
-        ? await prisma.$queryRaw<RawSimilarityRow[]>(
-            Prisma.sql`
-              SELECT 
-                id, 
-                content, 
-                source, 
-                source_type, 
-                metadata,
-                ts_rank_cd(to_tsvector('english', content || ' ' || source), to_tsquery('english', ${tsQuery})) AS similarity
-              FROM document_chunks
-              WHERE source_type = ${filterSourceType}
-                AND to_tsvector('english', content || ' ' || source) @@ to_tsquery('english', ${tsQuery})
-              ORDER BY similarity DESC
-              LIMIT ${safeTopK}
-            `
-          )
-        : await prisma.$queryRaw<RawSimilarityRow[]>(
-            Prisma.sql`
-              SELECT 
-                id, 
-                content, 
-                source, 
-                source_type, 
-                metadata,
-                ts_rank_cd(to_tsvector('english', content || ' ' || source), to_tsquery('english', ${tsQuery})) AS similarity
-              FROM document_chunks
-              WHERE to_tsvector('english', content || ' ' || source) @@ to_tsquery('english', ${tsQuery})
-              ORDER BY similarity DESC
-              LIMIT ${safeTopK}
-            `
-          );
+      let rows: RawSimilarityRow[];
+      if (Array.isArray(filterSourceType) && filterSourceType.length > 0) {
+        rows = await prisma.$queryRaw<RawSimilarityRow[]>(
+          Prisma.sql`
+            SELECT 
+              id, 
+              content, 
+              source, 
+              source_type, 
+              metadata,
+              ts_rank_cd(tsv, to_tsquery('english', ${tsQuery})) AS similarity
+            FROM document_chunks
+            WHERE source_type IN (${Prisma.join(filterSourceType)})
+              AND tsv @@ to_tsquery('english', ${tsQuery})
+            ORDER BY similarity DESC
+            LIMIT ${safeTopK}
+          `
+        );
+      } else if (typeof filterSourceType === 'string' && filterSourceType.trim() !== '') {
+        rows = await prisma.$queryRaw<RawSimilarityRow[]>(
+          Prisma.sql`
+            SELECT 
+              id, 
+              content, 
+              source, 
+              source_type, 
+              metadata,
+              ts_rank_cd(tsv, to_tsquery('english', ${tsQuery})) AS similarity
+            FROM document_chunks
+            WHERE source_type = ${filterSourceType}
+              AND tsv @@ to_tsquery('english', ${tsQuery})
+            ORDER BY similarity DESC
+            LIMIT ${safeTopK}
+          `
+        );
+      } else {
+        rows = await prisma.$queryRaw<RawSimilarityRow[]>(
+          Prisma.sql`
+            SELECT 
+              id, 
+              content, 
+              source, 
+              source_type, 
+              metadata,
+              ts_rank_cd(tsv, to_tsquery('english', ${tsQuery})) AS similarity
+            FROM document_chunks
+            WHERE tsv @@ to_tsquery('english', ${tsQuery})
+            ORDER BY similarity DESC
+            LIMIT ${safeTopK}
+          `
+        );
+      }
 
       return rows.map((r) => ({
         id: r.id,
@@ -275,7 +311,7 @@ export class PgVectorStore {
     queryText: string,
     queryEmbedding: number[],
     topK: number = 5,
-    filterSourceType?: string
+    filterSourceType?: string | string[]
   ): Promise<DocumentChunkRecord[]> {
     const k = 60;
     const fetchLimit = topK * 2;

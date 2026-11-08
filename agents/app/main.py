@@ -1,4 +1,6 @@
 import os
+import sys
+import hmac
 import logging
 from pathlib import Path
 from dotenv import load_dotenv
@@ -8,8 +10,9 @@ _repo_root = Path(__file__).resolve().parent.parent.parent
 load_dotenv(_repo_root / ".env.local")
 load_dotenv(_repo_root / ".env")
 
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, Security, status, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import APIKeyHeader
 from .schemas import RoadmapRequest, RoadmapResponse
 from .crew import build_agentic_roadmap
 
@@ -19,42 +22,88 @@ logging.basicConfig(
 )
 logger = logging.getLogger("growearn-agents")
 
+# Internal service authentication configuration
+INTERNAL_SERVICE_KEY = os.getenv("INTERNAL_SERVICE_KEY", "").strip()
+INTERNAL_SERVICE_KEY_PREVIOUS = os.getenv("INTERNAL_SERVICE_KEY_PREVIOUS", "").strip()
+ENVIRONMENT = os.getenv("NODE_ENV", os.getenv("ENVIRONMENT", "development")).lower()
+
+# Enforce strict 32+ character key requirement in production environments
+if ENVIRONMENT == "production":
+    if not INTERNAL_SERVICE_KEY or len(INTERNAL_SERVICE_KEY) < 32:
+        logger.critical("FATAL: INTERNAL_SERVICE_KEY must be configured with >= 32 characters in production.")
+        sys.exit(1)
+
+api_key_header = APIKeyHeader(name="X-Internal-Secret", auto_error=False)
+
+def verify_internal_secret(header_secret: str = Security(api_key_header)):
+    """
+    Verifies that the caller provides a valid internal service secret using constant-time comparison.
+    Supports current and previous keys for seamless zero-downtime rotation.
+    """
+    # If no key is set and strictly running in local non-production, bypass for ease of development
+    if not INTERNAL_SERVICE_KEY and ENVIRONMENT != "production":
+        return True
+
+    if not header_secret:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing required X-Internal-Secret authentication header."
+        )
+
+    is_valid = False
+    if INTERNAL_SERVICE_KEY:
+        if hmac.compare_digest(header_secret.encode("utf-8"), INTERNAL_SERVICE_KEY.encode("utf-8")):
+            is_valid = True
+
+    if not is_valid and INTERNAL_SERVICE_KEY_PREVIOUS:
+        if hmac.compare_digest(header_secret.encode("utf-8"), INTERNAL_SERVICE_KEY_PREVIOUS.encode("utf-8")):
+            is_valid = True
+
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid internal service authentication credentials."
+        )
+
+    return True
+
 app = FastAPI(
     title="Growearn CrewAI Multi-Agent Service",
     description="Multi-agent orchestration service (Researcher, Planner, Reviewer) for AI career roadmap generation.",
     version="1.0.0"
 )
 
+# Tighten CORS: Restrict to explicit application origins with credentials
+allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "")
+allowed_origins = [o.strip() for o in allowed_origins_env.split(",") if o.strip()]
+if not allowed_origins:
+    allowed_origins = ["http://localhost:3000", "http://127.0.0.1:3000", "http://app:3000"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "X-Internal-Secret"],
 )
 
 @app.get("/health")
 def health_check():
     """
-    Health check endpoint returning service readiness and configuration status.
+    Public health check endpoint returning service operational status.
+    Returns no sensitive configuration or environment data.
     """
-    has_groq = bool(os.getenv("GROQ_API_KEY", "").strip())
-    has_tavily = bool(os.getenv("TAVILY_API_KEY", "").strip())
     return {
         "status": "ok",
         "service": "growearn-agents",
-        "agents": ["Researcher", "Planner", "Reviewer"],
-        "llm_provider": "groq",
-        "model": os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"),
-        "tavily_enabled": has_tavily,
-        "groq_configured": has_groq,
         "framework": "crewai"
     }
 
-@app.post("/roadmap", response_model=RoadmapResponse)
+@app.post("/roadmap", response_model=RoadmapResponse, dependencies=[Depends(verify_internal_secret)])
 def generate_roadmap(request: RoadmapRequest):
     """
     Generate an agent-grounded, peer-reviewed 4-phase career roadmap.
+    Requires valid internal service secret header.
     """
     if not request.role or not request.role.strip():
         raise HTTPException(
@@ -75,5 +124,7 @@ def generate_roadmap(request: RoadmapRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
-
+    # Bind to private localhost interface by default
+    bind_host = os.getenv("AGENTS_HOST", "127.0.0.1")
+    bind_port = int(os.getenv("AGENTS_PORT", "8000"))
+    uvicorn.run(app, host=bind_host, port=bind_port)

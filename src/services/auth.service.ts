@@ -12,6 +12,8 @@ import {
 } from '@/lib/auth';
 import { SignJWT, jwtVerify } from 'jose';
 import { prisma } from '@/lib/prisma';
+import { hashPassword, verifyPassword } from '@/lib/password';
+import { RegisterInput, LoginInput } from '@/validators/auth.schema';
 
 export interface GoogleAuthCallbackResult {
   status: 'SUCCESS' | 'NEEDS_LINKING' | 'ERROR';
@@ -467,6 +469,95 @@ export class AuthService {
       },
       session,
       token: session.cookieValue,
+    };
+  }
+
+  static async registerWithPassword(input: RegisterInput, ipAddress?: string, userAgent?: string) {
+    const requestedRole = (input.role || 'LEARNER').toUpperCase();
+    if (requestedRole === 'ADMIN') {
+      throw new Error('Unauthorized role assignment: ADMIN accounts cannot be created via public registration.');
+    }
+
+    const canonicalRole = normalizeRole(requestedRole);
+    const email = input.email.toLowerCase().trim();
+
+    const existingUser = await UserRepository.findByEmail(email);
+    if (existingUser) {
+      throw new Error('An account with this email address already exists. Please log in.');
+    }
+
+    const passwordHash = await hashPassword(input.password);
+
+    const newUser = await UserRepository.create({
+      email,
+      passwordHash,
+      name: input.name.trim(),
+      role: canonicalRole,
+      isVerified: true,
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        userId: newUser.id,
+        action: 'USER_REGISTER_PASSWORD',
+        resource: 'User',
+        details: { email: newUser.email, role: newUser.role },
+        ipAddress: ipAddress || null,
+        userAgent: userAgent || null,
+      },
+    }).catch(() => {});
+
+    const session = await createDatabaseSession(newUser);
+
+    return {
+      user: {
+        id: newUser.id,
+        email: newUser.email,
+        name: newUser.name,
+        role: newUser.role,
+        avatarUrl: newUser.avatarUrl,
+      },
+      session,
+      targetDashboard: this.getTargetDashboard(newUser.role),
+    };
+  }
+
+  static async loginWithPassword(input: LoginInput, ipAddress?: string, userAgent?: string) {
+    const email = input.email.toLowerCase().trim();
+    const user = await UserRepository.findByEmail(email);
+
+    if (!user || !user.passwordHash) {
+      throw new Error('Invalid email or password.');
+    }
+
+    const isValid = await verifyPassword(input.password, user.passwordHash);
+    if (!isValid) {
+      throw new Error('Invalid email or password.');
+    }
+
+    await prisma.auditLog.create({
+      data: {
+        userId: user.id,
+        action: 'USER_LOGIN_PASSWORD',
+        resource: 'User',
+        details: { email: user.email, role: user.role },
+        ipAddress: ipAddress || null,
+        userAgent: userAgent || null,
+      },
+    }).catch(() => {});
+
+    const session = await createDatabaseSession(user);
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: normalizeRole(user.role),
+        avatarUrl: user.avatarUrl,
+      },
+      session,
+      targetDashboard: this.getTargetDashboard(user.role),
     };
   }
 

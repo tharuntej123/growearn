@@ -1,5 +1,6 @@
 import { RunnableSequence, RunnableLambda } from '@langchain/core/runnables';
 import { StringOutputParser } from '@langchain/core/output_parsers';
+import { Document } from '@langchain/core/documents';
 import { ragPromptTemplate } from './prompt';
 import { PgVectorRetriever } from './retriever';
 import { IntentClassifier, IntentCategory } from './intent-classifier';
@@ -28,6 +29,7 @@ export interface GroundedRAGResult {
 export interface RAGChainInput {
   question: string;
   userContextSnippet?: string;
+  preRetrievedDocs?: Document[];
 }
 
 /**
@@ -44,7 +46,7 @@ export function buildRunnableRAGChain(retriever: PgVectorRetriever) {
       context: new RunnableLambda({
         func: async (input: RAGChainInput) => {
           const t0 = performance.now();
-          const docs = await retriever.invoke(input.question);
+          const docs = input.preRetrievedDocs ?? (await retriever.invoke(input.question));
           const formatted = docs
             .map((d) => `[Source: ${d.metadata?.source || 'Growearn'}]\n${d.pageContent}`)
             .join('\n\n');
@@ -66,8 +68,20 @@ export function buildRunnableRAGChain(retriever: PgVectorRetriever) {
   return chain;
 }
 
-export const defaultRetriever = new PgVectorRetriever();
-export const ragChain = buildRunnableRAGChain(defaultRetriever);
+let _defaultRetriever: PgVectorRetriever | null = null;
+let _defaultRAGChain: ReturnType<typeof buildRunnableRAGChain> | null = null;
+
+export function getDefaultRAGChain() {
+  if (!_defaultRAGChain) {
+    _defaultRetriever = new PgVectorRetriever();
+    _defaultRAGChain = buildRunnableRAGChain(_defaultRetriever);
+  }
+  return _defaultRAGChain;
+}
+
+export const ragChain = {
+  invoke: (input: RAGChainInput) => getDefaultRAGChain().invoke(input),
+};
 
 export async function executeRAGWithTracing(input: RAGChainInput): Promise<string> {
   const chain = buildRunnableRAGChain(new PgVectorRetriever());
@@ -97,9 +111,13 @@ export class ProductionRAGChain {
     // 1. Structured Intent Classification
     const { intent } = await IntentClassifier.classify(q);
 
-    // 2. Query pgvector Vector Store via PgVectorRetriever
+    // 2. Query pgvector Vector Store via PgVectorRetriever with role-based isolation
     let chunkRecords: any[] = [];
-    const retriever = new PgVectorRetriever({ topK: 5 });
+    const retriever = new PgVectorRetriever({
+      topK: 5,
+      userRole: userContext?.role,
+      userId: userContext?.id,
+    });
 
     if (isEmbeddingConfigured()) {
       try {
@@ -145,9 +163,24 @@ export class ProductionRAGChain {
       try {
         const ragChain = buildRunnableRAGChain(retriever);
         const t0 = performance.now();
+        // Convert chunk records to documents for single-pass retrieval execution
+        const preRetrievedDocs = chunkRecords.map(
+          (r) =>
+            new Document({
+              pageContent: r.content,
+              metadata: {
+                id: r.id,
+                source: r.source,
+                sourceType: r.sourceType,
+                similarity: r.similarity,
+                ...r.metadata,
+              },
+            })
+        );
         answer = await ragChain.invoke({
           question: q,
           userContextSnippet: userSnippet,
+          preRetrievedDocs,
         });
 
         if (process.env.LANGCHAIN_TRACING_ENABLED === 'true') {

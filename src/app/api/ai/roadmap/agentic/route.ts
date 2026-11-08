@@ -75,6 +75,11 @@ export async function POST(req: NextRequest) {
     const targetTimelineWeeks = parseResult.data.target_timeline_weeks || 16;
 
     const agentsServiceUrl = process.env.AGENTS_SERVICE_URL || 'http://localhost:8000';
+    const internalSecret = process.env.INTERNAL_SERVICE_KEY;
+
+    if (process.env.NODE_ENV === 'production' && (!internalSecret || internalSecret.length < 32)) {
+      console.error('[AgentsGateway] FATAL: INTERNAL_SERVICE_KEY must be configured with >= 32 characters in production.');
+    }
 
     let agenticData: any = null;
     let mode: 'agentic' | 'fallback' = 'agentic';
@@ -86,7 +91,10 @@ export async function POST(req: NextRequest) {
 
       const agentRes = await fetch(`${agentsServiceUrl}/roadmap`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(internalSecret ? { 'X-Internal-Secret': internalSecret } : {}),
+        },
         body: JSON.stringify({
           role: targetRole,
           current_skills: currentSkills,

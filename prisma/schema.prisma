@@ -103,6 +103,7 @@ model Profile {
   preferredLocation  String?
   preferredJobType   String?   // REMOTE, HYBRID, ONSITE, ANY
   isOnboarded        Boolean   @default(false)
+  isDiscoverable     Boolean   @default(false)
   companyName        String?
   companyIndustry    String?
   companyWebsite     String?
@@ -111,6 +112,7 @@ model Profile {
   updatedAt          DateTime  @updatedAt
 
   @@index([userId])
+  @@index([isDiscoverable])
 }
 
 model Skill {

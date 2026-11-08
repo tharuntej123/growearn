@@ -13,6 +13,7 @@ import { PostRepository } from '../../repositories/post.repository';
 import { NotificationRepository } from '../../repositories/notification.repository';
 import { StorageService, LocalStorageProvider } from '../../services/storage.service';
 import { DatabaseRateLimiter } from '../rate-limiter';
+import { PgVectorRetriever } from '../ai/retriever';
 import { registerSchema } from '../../validators/auth.schema';
 import { EMBEDDING_DIMENSION, LocalBGE3EmbeddingProvider } from '../ai/embeddings';
 import { formatVectorForPg } from '../ai/vector-store';
@@ -384,6 +385,67 @@ async function runMasterTestSuite() {
       !isRoleAllowed(learnerRole, ['COMPANY', 'EMPLOYER', 'ADMIN']),
       'Role Boundaries: Learner is Strictly Blocked from Company Job Creation'
     );
+
+    // G. Candidate PII Opt-In & Discoverability Guard
+    const learnerProfile = await prisma.profile.findUnique({
+      where: { userId: registeredUser!.id },
+    });
+    assert(
+      learnerProfile !== null && learnerProfile.isDiscoverable === false,
+      'Candidate PII Opt-In: Profile isDiscoverable Defaults to False (Opt-In Only)'
+    );
+
+    // H. Retrieval Layer Role Allow-List Enforcement
+    const learnerRetriever = new PgVectorRetriever({ userRole: 'LEARNER', sourceType: 'candidate' });
+    const blockedCandidateDocs = await learnerRetriever.retrieveRecords('Software Engineer');
+    assert(
+      blockedCandidateDocs.length === 0,
+      'Retrieval Layer: LEARNER Role Strictly Blocked from Candidate Chunk Retrieval'
+    );
+
+    // I. Email and Password Registration Lifecycle
+    const testPasswordEmail = `test-pwd-user-${Date.now()}@growearn-test.internal`;
+    const pwdRegisterResult = await AuthService.registerWithPassword({
+      name: 'Password Verified User',
+      email: testPasswordEmail,
+      password: 'SecurePassword123!',
+      confirmPassword: 'SecurePassword123!',
+      role: 'FREELANCER',
+    });
+    assert(
+      Boolean(pwdRegisterResult && pwdRegisterResult.user.id && pwdRegisterResult.session),
+      'Password Auth: New User Signup with Salted Scrypt Hashing & Session Issuance'
+    );
+
+    const userInDb = await prisma.user.findUnique({
+      where: { id: pwdRegisterResult.user.id },
+      select: { passwordHash: true },
+    });
+    assert(
+      Boolean(userInDb?.passwordHash && userInDb.passwordHash.includes(':')),
+      'Password Auth: Salted Key Storage Prevents Plaintext & Insecure Storage'
+    );
+
+    // J. Email and Password Login Lifecycle
+    const pwdLoginResult = await AuthService.loginWithPassword({
+      email: testPasswordEmail,
+      password: 'SecurePassword123!',
+    });
+    assert(
+      Boolean(pwdLoginResult && pwdLoginResult.user.id === pwdRegisterResult.user.id && pwdLoginResult.session),
+      'Password Auth: Successful Login with Correct Password Issues Valid Database Session'
+    );
+
+    let invalidPwdRejected = false;
+    try {
+      await AuthService.loginWithPassword({
+        email: testPasswordEmail,
+        password: 'WrongPassword123!',
+      });
+    } catch {
+      invalidPwdRejected = true;
+    }
+    assert(invalidPwdRejected, 'Password Auth: Login Strictly Rejects Incorrect Password');
   } catch (err: any) {
     console.error('Suite 1 Error:', err);
   }
@@ -402,6 +464,13 @@ async function runMasterTestSuite() {
     assert(
       r3.success === false && r3.remaining === 0 && r3.resetSeconds > 0,
       'Rate Limiter: Third Request Blocked (Returns HTTP 429 Retry-After)'
+    );
+
+    // Circuit Breaker Telemetry Verification
+    const metrics = DatabaseRateLimiter.getMetrics();
+    assert(
+      metrics.state === 'CLOSED' && typeof metrics.totalFailures === 'number',
+      'Rate Limiter: Circuit Breaker Telemetry Active & Healthy'
     );
 
     // Clean up test key

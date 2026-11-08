@@ -1,5 +1,6 @@
+import os
 import pytest
-from app.main import health_check, generate_roadmap
+from app.main import health_check, generate_roadmap, verify_internal_secret
 from app.schemas import RoadmapRequest
 from fastapi import HTTPException
 
@@ -7,10 +8,38 @@ def test_health_endpoint():
     data = health_check()
     assert data["status"] == "ok"
     assert data["service"] == "growearn-agents"
-    assert "Researcher" in data["agents"]
-    assert "Planner" in data["agents"]
-    assert "Reviewer" in data["agents"]
     assert data["framework"] == "crewai"
+    # Ensure sensitive credentials and provider details are NOT leaked
+    assert "groq_api_key" not in data
+    assert "tavily_api_key" not in data
+
+def test_verify_internal_secret():
+    # Test valid secret matching current key
+    import app.main as main_mod
+    original_key = main_mod.INTERNAL_SERVICE_KEY
+    original_prev = main_mod.INTERNAL_SERVICE_KEY_PREVIOUS
+    try:
+        main_mod.INTERNAL_SERVICE_KEY = "test_super_secret_internal_key_32_chars_long"
+        main_mod.INTERNAL_SERVICE_KEY_PREVIOUS = "previous_secret_internal_key_32_chars_long"
+
+        # 1. Matches current key
+        assert verify_internal_secret("test_super_secret_internal_key_32_chars_long") is True
+
+        # 2. Matches rotated previous key
+        assert verify_internal_secret("previous_secret_internal_key_32_chars_long") is True
+
+        # 3. Missing header raises 401
+        with pytest.raises(HTTPException) as exc:
+            verify_internal_secret(None)
+        assert exc.value.status_code == 401
+
+        # 4. Invalid key raises 401
+        with pytest.raises(HTTPException) as exc:
+            verify_internal_secret("invalid_forged_key_value")
+        assert exc.value.status_code == 401
+    finally:
+        main_mod.INTERNAL_SERVICE_KEY = original_key
+        main_mod.INTERNAL_SERVICE_KEY_PREVIOUS = original_prev
 
 def test_roadmap_endpoint_success():
     req = RoadmapRequest(

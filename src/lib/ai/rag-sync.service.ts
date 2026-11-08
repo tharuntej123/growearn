@@ -159,7 +159,9 @@ export class RAGSyncService {
         },
       });
 
-      if (!user) {
+      // Candidate PII Guard: Opt-in only.
+      // If user is missing, or user has NOT explicitly opted into discoverability, purge chunks immediately.
+      if (!user || !user.profile?.isDiscoverable) {
         await DocumentIngestionService.deleteEntityVector('candidate', userId);
         return null;
       }
@@ -233,7 +235,10 @@ export class RAGSyncService {
       prisma.mentorProfile.findMany({ where: { isAvailable: true }, select: { id: true } }),
       prisma.course.findMany({ where: { isPublished: true }, select: { id: true } }),
       prisma.user.findMany({
-        where: { role: { in: ['PROFESSIONAL', 'FREELANCER', 'STUDENT', 'LEARNER'] } },
+        where: {
+          role: { in: ['PROFESSIONAL', 'FREELANCER', 'STUDENT', 'LEARNER'] },
+          profile: { isDiscoverable: true },
+        },
         select: { id: true },
         take: 100,
       }),

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthService } from '@/services/auth.service';
-import { roleSelectSchema } from '@/validators/auth.schema';
+import { registerSchema, loginSchema, roleSelectSchema } from '@/validators/auth.schema';
 import { apiSuccess, apiError } from '@/lib/utils';
 import {
   AUTH_COOKIE_NAME,
@@ -258,13 +258,67 @@ export class AuthController {
   }
 
   /**
-   * Retired endpoints
+   * Email and password registration
+   */
+  static async register(req: NextRequest) {
+    const rateLimitResponse = await enforceRateLimit(req, 'auth_register', 5, 60);
+    if (rateLimitResponse) return rateLimitResponse;
+
+    try {
+      const body = await req.json();
+      const validated = registerSchema.safeParse(body);
+      if (!validated.success) {
+        return apiError(validated.error.errors[0]?.message || 'Invalid registration data', 'VALIDATION_ERROR', 400);
+      }
+
+      const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined;
+      const ua = req.headers.get('user-agent') || undefined;
+
+      const result = await AuthService.registerWithPassword(validated.data, ip, ua);
+      const response = apiSuccess(result, 201);
+      response.cookies.set(AUTH_COOKIE_NAME, result.session.cookieValue, getAuthCookieOptions());
+      return response;
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Registration failed';
+      return apiError(message, 'REGISTER_ERROR', 400);
+    }
+  }
+
+  /**
+   * Email and password login
+   */
+  static async login(req: NextRequest) {
+    const rateLimitResponse = await enforceRateLimit(req, 'auth_login', 5, 60);
+    if (rateLimitResponse) return rateLimitResponse;
+
+    try {
+      const body = await req.json();
+      const validated = loginSchema.safeParse(body);
+      if (!validated.success) {
+        return apiError(validated.error.errors[0]?.message || 'Invalid login credentials', 'VALIDATION_ERROR', 400);
+      }
+
+      const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined;
+      const ua = req.headers.get('user-agent') || undefined;
+
+      const result = await AuthService.loginWithPassword(validated.data, ip, ua);
+      const response = apiSuccess(result);
+      response.cookies.set(AUTH_COOKIE_NAME, result.session.cookieValue, getAuthCookieOptions());
+      return response;
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Login failed';
+      return apiError(message, 'LOGIN_ERROR', 401);
+    }
+  }
+
+  /**
+   * Backward-compatibility alias
    */
   static async retiredPasswordEndpoint() {
     return NextResponse.json(
       {
         success: false,
-        error: 'Password authentication retired. Use Google OAuth or request a magic link.',
+        error: 'Password authentication active via standard POST /api/auth/login and /api/auth/register',
       },
       { status: 410 }
     );

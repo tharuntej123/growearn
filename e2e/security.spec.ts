@@ -14,7 +14,7 @@ test.describe('Security & Access Control Browser Tests', () => {
     await expect(page).toHaveURL(/login/);
   });
 
-  test('Retired legacy password registration returns HTTP 410 Gone', async ({ request }) => {
+  test('Public registration strictly blocks ADMIN role assignment', async ({ request }) => {
     const res = await request.post('/api/auth/register', {
       data: {
         name: 'Attacker Admin',
@@ -25,7 +25,7 @@ test.describe('Security & Access Control Browser Tests', () => {
       },
     });
 
-    expect(res.status()).toBe(410);
+    expect(res.status()).toBe(400);
     const json = await res.json();
     expect(json.success).toBe(false);
   });
