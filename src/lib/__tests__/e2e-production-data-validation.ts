@@ -3,15 +3,12 @@
 import { prisma } from '../prisma';
 import { PgVectorStore } from '../ai/vector-store';
 import { PgVectorRetriever } from '../ai/retriever';
-import { generateEmbedding } from '../ai/embeddings';
 import { ProductionRAGChain } from '../ai/rag-chain';
-import { IntentClassifier } from '../ai/intent-classifier';
 import { SkillRAGService } from '../ai/skill-rag.service';
 import { RecommendationService } from '../../services/recommendation.service';
 import { getUserAIContext } from '../../services/user-context.service';
 import { HybridMatcher } from '../ai/hybrid-matcher';
 import { UserRepository } from '../../repositories/user.repository';
-import { PRODUCTION_ROADMAPS_CATALOG } from '../ai/roadmaps-catalog';
 
 interface TestSectionResult {
   section: string;

@@ -186,7 +186,7 @@ export class ProductionRAGChain {
         if (process.env.LANGCHAIN_TRACING_ENABLED === 'true') {
           console.log(`[LangChain:Trace] RunnableSequence total latency: ${(performance.now() - t0).toFixed(2)}ms`);
         }
-      } catch (_chainError) {
+      } catch {
         // Fallback to LLMClient direct call if LangChain sequence fails
         try {
           let contextString = PgVectorRetriever.formatDocsForPrompt(chunkRecords);

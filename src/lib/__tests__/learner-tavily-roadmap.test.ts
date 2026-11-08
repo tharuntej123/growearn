@@ -115,7 +115,7 @@ async function runLearnerTavilyRoadmapTests() {
     let fetchCallCount = 0;
 
     // Mock successful Tavily response
-    global.fetch = (async (_url: any, _options: any) => {
+    global.fetch = (async () => {
       fetchCallCount++;
       return {
         ok: true,

@@ -1,5 +1,4 @@
 import { AIAssistantService } from '../ai/ai-assistant.service';
-import { LLMClient } from '../ai/llm-client';
 import { prisma } from '../prisma';
 
 async function runTests() {

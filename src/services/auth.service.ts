@@ -8,7 +8,6 @@ import {
   revokeSession,
   getAuthSecretKey,
   isGoogleOAuthConfigured,
-  CanonicalRole,
 } from '@/lib/auth';
 import { SignJWT, jwtVerify } from 'jose';
 import { prisma } from '@/lib/prisma';
@@ -153,7 +152,7 @@ export class AuthService {
     ipAddress?: string;
     userAgent?: string;
   }): Promise<GoogleAuthCallbackResult> {
-    const { googleSub, email, name, avatarUrl, emailVerified, role, action, ipAddress, userAgent } = params;
+    const { googleSub, email, name, avatarUrl, emailVerified, role, ipAddress, userAgent } = params;
     const normalizedEmail = email.toLowerCase().trim();
 
     // SECURITY GUARD: Reject any attempt to register or claim ADMIN role via public OAuth

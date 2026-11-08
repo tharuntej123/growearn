@@ -1,7 +1,5 @@
 import { prisma } from '../prisma';
 import { CourseRepository } from '../../repositories/course.repository';
-import { MentorRepository } from '../../repositories/mentor.repository';
-import { JobRepository } from '../../repositories/job.repository';
 import { UserRepository } from '../../repositories/user.repository';
 import { SkillRAGService } from '../ai/skill-rag.service';
 import { RecommendationService } from '../../services/recommendation.service';

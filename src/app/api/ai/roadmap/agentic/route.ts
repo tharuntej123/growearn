@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
       console.error('[AgentsGateway] FATAL: INTERNAL_SERVICE_KEY must be configured with >= 32 characters in production.');
     }
 
-    let agenticData: any = null;
+    let agenticData: Record<string, unknown> | null = null;
     let mode: 'agentic' | 'fallback' = 'agentic';
     let fallbackReason: string | undefined = undefined;
 
@@ -107,12 +107,13 @@ export async function POST(req: NextRequest) {
       clearTimeout(timeoutId);
 
       if (agentRes.ok) {
-        agenticData = await agentRes.json();
+        agenticData = (await agentRes.json()) as Record<string, unknown>;
       } else {
         fallbackReason = `Agents service returned HTTP ${agentRes.status}`;
       }
-    } catch (err: any) {
-      fallbackReason = `Agents service unavailable (${err.name === 'AbortError' ? 'timeout' : err.message || 'connection failed'})`;
+    } catch (err: unknown) {
+      const errObj = err instanceof Error ? err : new Error(String(err));
+      fallbackReason = `Agents service unavailable (${errObj.name === 'AbortError' ? 'timeout' : errObj.message || 'connection failed'})`;
     }
 
     // If agents service was down or failed, execute deterministic fallback
