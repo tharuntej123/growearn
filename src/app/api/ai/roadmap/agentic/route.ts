@@ -25,6 +25,23 @@ const agenticRoadmapSchema = z
     { message: 'Target role or skill is required' }
   );
 
+interface AgenticRoadmapPayload {
+  target_role?: string;
+  targetRole?: string;
+  summary?: string;
+  estimated_weeks?: number;
+  phases?: unknown[];
+  recommended_courses?: unknown[];
+  recommended_mentors?: unknown[];
+  agent_trace?: unknown[];
+  agentTrace?: unknown[];
+  review_status?: string;
+  reviewer_notes?: string;
+  mode?: string;
+  fallback_reason?: string;
+  [key: string]: unknown;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const authUser = await getCurrentUser(req);
@@ -81,7 +98,7 @@ export async function POST(req: NextRequest) {
       console.error('[AgentsGateway] FATAL: INTERNAL_SERVICE_KEY must be configured with >= 32 characters in production.');
     }
 
-    let agenticData: Record<string, unknown> | null = null;
+    let agenticData: AgenticRoadmapPayload | null = null;
     let mode: 'agentic' | 'fallback' = 'agentic';
     let fallbackReason: string | undefined = undefined;
 
@@ -107,7 +124,7 @@ export async function POST(req: NextRequest) {
       clearTimeout(timeoutId);
 
       if (agentRes.ok) {
-        agenticData = (await agentRes.json()) as Record<string, unknown>;
+        agenticData = (await agentRes.json()) as AgenticRoadmapPayload;
       } else {
         fallbackReason = `Agents service returned HTTP ${agentRes.status}`;
       }
@@ -205,8 +222,8 @@ export async function POST(req: NextRequest) {
           where: { id: existing.id },
           data: {
             targetRole,
-            summary: agenticData.summary,
-            phasesJson: JSON.stringify(agenticData.phases),
+            summary: agenticData.summary || null,
+            phasesJson: JSON.stringify(agenticData.phases || []),
             updatedAt: new Date(),
           },
         });
@@ -215,8 +232,8 @@ export async function POST(req: NextRequest) {
           data: {
             userId: authUser.id,
             targetRole,
-            summary: agenticData.summary,
-            phasesJson: JSON.stringify(agenticData.phases),
+            summary: agenticData.summary || null,
+            phasesJson: JSON.stringify(agenticData.phases || []),
           },
         });
       }
