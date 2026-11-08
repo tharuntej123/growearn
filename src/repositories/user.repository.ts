@@ -67,7 +67,7 @@ export class UserRepository {
         mentorProfile: isMentor
           ? {
               create: {
-                bio: `${data.name} is an expert mentor available for guidance on GroEarn.`,
+                bio: `${data.name} is an expert mentor available for guidance on GrowEarn.`,
                 expertise: 'Software Engineering, Web Development',
                 hourlyRate: 50,
                 yearsExperience: 5,
@@ -103,7 +103,7 @@ export class UserRepository {
         const mp = await prisma.mentorProfile.create({
           data: {
             userId,
-            bio: `${user.name} is an expert mentor on GroEarn.`,
+            bio: `${user.name} is an expert mentor on GrowEarn.`,
             expertise: 'Software Engineering, Web Development',
             hourlyRate: 50,
             yearsExperience: 5,

@@ -42,7 +42,7 @@ async function insertChunk(
   }
 }
 
-async function main() {
+export async function seedFixturesData() {
   const dbUrl = process.env.DATABASE_URL || '';
   const isCloudOrProdDb =
     process.env.NODE_ENV === 'production' ||
@@ -2092,11 +2092,13 @@ Community Feed: Cross-role knowledge sharing with verified role badges on every 
   console.log('   (Platform enforces zero-password-footprint architecture via OAuth & session tokens)');
 }
 
-main()
-  .catch((e) => {
-    console.error('❌ Seed failed:', e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+if (require.main === module) {
+  seedFixturesData()
+    .catch((e) => {
+      console.error('❌ Seed failed:', e);
+      process.exit(1);
+    })
+    .finally(async () => {
+      await prisma.$disconnect();
+    });
+}

@@ -89,7 +89,7 @@ async function concurrentBenchmark(
 
 async function runPerformanceBenchmarks() {
   console.log('================================================================================');
-  console.log('⚡ GROEARN REALISTIC CONCURRENT PERFORMANCE BENCHMARK');
+  console.log('⚡ GROWEARN REALISTIC CONCURRENT PERFORMANCE BENCHMARK');
   console.log('================================================================================\n');
 
   const results: MetricResult[] = [];

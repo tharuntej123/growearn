@@ -7,7 +7,7 @@ import { SkillRAGService } from '../ai/skill-rag.service';
 
 async function testLiveSemanticRag() {
   console.log('================================================================================');
-  console.log('🔬 GROEARN LOCAL BGE-M3 SEMANTIC RAG & PGVECTOR HNSW VERIFICATION PROOF');
+  console.log('🔬 GROWEARN LOCAL BGE-M3 SEMANTIC RAG & PGVECTOR HNSW VERIFICATION PROOF');
   console.log('================================================================================\n');
 
   const provider = getEmbeddingProvider();

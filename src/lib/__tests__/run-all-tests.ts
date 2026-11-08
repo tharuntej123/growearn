@@ -1,4 +1,4 @@
-// Master End-to-End Automated Test Suite for GroEarn (Second Deep Verification Pass).
+// Master End-to-End Automated Test Suite for GrowEarn (Second Deep Verification Pass).
 
 import { prisma } from '../prisma';
 import { AuthService } from '../../services/auth.service';
@@ -52,7 +52,7 @@ function assert(condition: boolean, testName: string, failureMessage?: string) {
 
 async function runMasterTestSuite() {
   console.log('================================================================================');
-  console.log('🚀 GROEARN PRODUCTION-GRADE MASTER VERIFICATION TEST SUITE');
+  console.log('🚀 GROWEARN PRODUCTION-GRADE MASTER VERIFICATION TEST SUITE');
   console.log('================================================================================\n');
 
   // Ensure deterministic test credentials for Cashfree verification in CI / test environments

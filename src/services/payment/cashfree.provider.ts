@@ -168,7 +168,7 @@ export class CashfreePaymentProvider implements IPaymentProvider {
       order_currency: 'INR',
       customer_details: {
         customer_id: params.customer.id,
-        customer_name: params.customer.name || 'GroEarn User',
+        customer_name: params.customer.name || 'GrowEarn User',
         customer_email: params.customer.email,
         customer_phone: customerPhone,
       },
@@ -176,7 +176,7 @@ export class CashfreePaymentProvider implements IPaymentProvider {
         return_url: returnUrl,
         notify_url: params.notifyUrl || undefined,
       },
-      order_note: `GroEarn: ${params.itemTitle}`,
+      order_note: `GrowEarn: ${params.itemTitle}`,
       order_tags: {
         itemType: params.itemType,
         itemId: params.itemId,
@@ -391,7 +391,7 @@ export class CashfreePaymentProvider implements IPaymentProvider {
     const refundPayload = {
       refund_amount: Number(params.refundAmount.toFixed(2)),
       refund_id: params.refundId,
-      refund_note: params.refundNote || 'GroEarn Course/Mentorship Refund',
+      refund_note: params.refundNote || 'GrowEarn Course/Mentorship Refund',
       refund_speed: 'STANDARD',
     };
 

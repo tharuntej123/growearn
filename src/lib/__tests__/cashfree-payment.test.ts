@@ -33,7 +33,7 @@ function assert(condition: boolean, suite: string, testName: string, failureMess
 
 async function runCashfreePaymentTests() {
   console.log('================================================================================');
-  console.log('💳 GROEARN PRODUCTION-READY CASHFREE PAYMENT VERIFICATION SUITE');
+  console.log('💳 GROWEARN PRODUCTION-READY CASHFREE PAYMENT VERIFICATION SUITE');
   console.log('================================================================================\n');
 
   // Warm up database connection

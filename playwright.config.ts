@@ -35,10 +35,9 @@ export default defineConfig({
       PORT: '3000',
       DATABASE_URL: process.env.DATABASE_URL || '',
       DIRECT_URL: process.env.DIRECT_URL || '',
-      AUTH_SECRET: process.env.AUTH_SECRET || 'groearn-super-secret-auth-key-2026-production-grade-min-32-chars',
+      AUTH_SECRET: process.env.AUTH_SECRET || 'growearn-super-secret-auth-key-2026-production-grade-min-32-chars',
       NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'http://127.0.0.1:3000',
-      NEXT_PUBLIC_DEMO_MODE: 'true',
-      DEMO_MODE: 'true',
+      APP_ENV: 'test',
     },
   },
   projects: [

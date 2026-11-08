@@ -30,9 +30,9 @@ export function getAuthSecretKey(): Uint8Array {
   return new TextEncoder().encode(getAuthSecret());
 }
 
-export const AUTH_COOKIE_NAME = 'groearn_session';
-export const OAUTH_STATE_COOKIE_NAME = 'groearn_oauth_state';
-export const LINKING_COOKIE_NAME = 'groearn_account_linking';
+export const AUTH_COOKIE_NAME = 'growearn_session';
+export const OAUTH_STATE_COOKIE_NAME = 'growearn_oauth_state';
+export const LINKING_COOKIE_NAME = 'growearn_account_linking';
 export const LEGACY_COOKIE_NAME = 'growearn_auth_token';
 export const LEGACY_UFP_COOKIE_NAME = 'ufp_auth_token';
 

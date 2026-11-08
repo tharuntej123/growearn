@@ -10,13 +10,13 @@ export async function loginAsRole(
   const targetEmail =
     email ||
     (role === 'LEARNER'
-      ? 'student@example.com'
+      ? 'learner@example.com'
       : role === 'FREELANCER'
-      ? 'professional@example.com'
+      ? 'freelancer@example.com'
       : role === 'MENTOR'
-      ? 'priya.sharma@example.com'
+      ? 'mentor@example.com'
       : role === 'COMPANY'
-      ? 'careers@novatech-solutions.io'
+      ? 'company@example.com'
       : 'admin@growearn.com');
 
   let user = await prisma.user.findFirst({
@@ -38,7 +38,7 @@ export async function loginAsRole(
 
   await context.addCookies([
     {
-      name: 'groearn_session',
+      name: 'growearn_session',
       value: session.cookieValue,
       domain: '127.0.0.1',
       path: '/',
@@ -46,7 +46,7 @@ export async function loginAsRole(
       sameSite: 'Lax',
     },
     {
-      name: 'groearn_session',
+      name: 'growearn_session',
       value: session.cookieValue,
       domain: 'localhost',
       path: '/',

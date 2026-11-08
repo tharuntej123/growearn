@@ -98,7 +98,7 @@ services:
       - TAVILY_API_KEY=${TAVILY_API_KEY}
       - INTERNAL_SERVICE_KEY=${INTERNAL_SERVICE_KEY}
       - EMBEDDING_BASE_URL=http://embedding-service:11434
-      - GROWEN_API_BASE=http://app:3000
+      - GROWEARN_API_BASE=http://app:3000
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
       interval: 10s
@@ -151,9 +151,7 @@ services:
       - PLATFORM_COMMISSION_PERCENT=${PLATFORM_COMMISSION_PERCENT:-10}
       - STORAGE_PROVIDER=${STORAGE_PROVIDER:-local}
       - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
-      - MOCK_AI=${MOCK_AI:-false}
-      - DEMO_MODE=${DEMO_MODE:-false}
-      - NEXT_PUBLIC_DEMO_MODE=${NEXT_PUBLIC_DEMO_MODE:-false}
+      - APP_ENV=${APP_ENV:-production}
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health || exit 1"]
       interval: 15s

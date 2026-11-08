@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { createDatabaseSession, CanonicalRole } from '@/lib/auth';
+import { createDatabaseSession, CanonicalRole, AUTH_COOKIE_NAME } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   // Strictly disabled in production
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    response.cookies.set('groearn_session', sessionResult.cookieValue, {
+    response.cookies.set(AUTH_COOKIE_NAME, sessionResult.cookieValue, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

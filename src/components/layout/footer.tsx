@@ -15,7 +15,7 @@ export function Footer() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-tr from-emerald-600 to-teal-600 text-white shadow-xs">
               <Sparkles className="h-4 w-4" />
             </div>
-            <span className="font-bold text-slate-900 text-base">Growearn</span>
+            <span className="font-bold text-slate-900 text-base">GrowEarn</span>
           </div>
           <p className="text-xs text-slate-600 leading-relaxed">
             The AI-powered talent ecosystem bridging learning, 1-on-1 mentorship, professional work contracts, and intelligent hiring.
@@ -74,7 +74,7 @@ export function Footer() {
       </div>
 
       <div className="mx-auto max-w-7xl mt-8 pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500">
-        <p>© 2026 Growearn. All rights reserved.</p>
+        <p>© 2026 GrowEarn. All rights reserved.</p>
         <p>Built with Next.js 16, TypeScript, Prisma, and Tailwind CSS.</p>
       </div>
     </footer>

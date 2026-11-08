@@ -30,7 +30,7 @@ function assert(condition: boolean, testName: string, failureMessage?: string) {
 
 async function runLearnerTavilyRoadmapTests() {
   console.log('================================================================================');
-  console.log('🧭 GROEARN TAVILY LEARNER ROADMAP INTEGRATION TEST SUITE');
+  console.log('🧭 GROWEARN TAVILY LEARNER ROADMAP INTEGRATION TEST SUITE');
   console.log('================================================================================\n');
 
   // Warm up database connection

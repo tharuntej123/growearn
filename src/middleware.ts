@@ -9,7 +9,7 @@ function getMiddlewareAuthSecret(): Uint8Array {
   return new TextEncoder().encode(secret);
 }
 
-const AUTH_COOKIE_NAME = 'groearn_session';
+const AUTH_COOKIE_NAME = 'growearn_session';
 const LEGACY_COOKIE_NAME = 'growearn_auth_token';
 const LEGACY_UFP_COOKIE_NAME = 'ufp_auth_token';
 

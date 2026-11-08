@@ -175,7 +175,7 @@ export function ProfileHeaderCard({ profile, userRole, onEdit }: ProfileHeaderCa
 
       <div className="mt-6 pt-6 border-t border-slate-100 text-xs sm:text-sm text-slate-600 leading-relaxed">
         <p className="font-bold text-slate-900 mb-1">About</p>
-        <p>{String(profile?.bio || 'Building modern software solutions and advancing career skills with Growearn.')}</p>
+        <p>{String(profile?.bio || 'Building modern software solutions and advancing career skills with GrowEarn.')}</p>
       </div>
     </Card>
   );
