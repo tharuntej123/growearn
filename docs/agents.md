@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-Growearn integrates an autonomous multi-agent career planning subsystem powered by **CrewAI**, **FastAPI**, and **Tavily Search**. The multi-agent service runs as a containerized microservice alongside the Next.js frontend and PostgreSQL/Ollama infrastructure, exposed internally on port `8001`.
+Growearn integrates an autonomous multi-agent career planning subsystem powered by **CrewAI**, **FastAPI**, and **Tavily Search**. The multi-agent service runs as a containerized microservice alongside the Next.js frontend and PostgreSQL/Ollama infrastructure, exposed internally on port `8000`. Inter-service calls are authenticated via `X-Internal-Secret` with constant-time HMAC validation.
 
 When a learner requests an advanced career roadmap on `/learner/dashboard`, the Next.js API route (`/api/ai/roadmap/agentic`) delegates the planning lifecycle to the CrewAI service. If the agent service is unavailable, unconfigured, or times out (>60s), the platform gracefully degrades to an atomic, deterministic single-pass roadmap generator to guarantee 100% uptime.
 

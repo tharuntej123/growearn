@@ -142,8 +142,9 @@ graph TD
 ## 4. Containerization & Docker Topology
 
 GroEarn runs as a multi-container orchestrated ecosystem (`docker-compose.yml`):
-- **`app` (`groearn-app`)**: Multi-stage production Alpine Node 20 runner on port `3000`, running as unprivileged `nextjs` user with automated database migrations on startup.
-- **`postgres` (`groearn-postgres`)**: PostgreSQL 16 image with pre-installed `pgvector` extension (`vector(1024)`), HNSW cosine indexes, and persistent volume `postgres_data`.
+- **`app` (`growearn-app`)**: Multi-stage production Alpine Node 20 runner on port `3000`, running as unprivileged `nextjs` user with automated database migrations on startup.
+- **`agents` (`growearn-agents`)**: CrewAI multi-agent microservice in Python 3.11 with FastAPI and Uvicorn on internal port `8000`. Secured via `X-Internal-Secret` (`INTERNAL_SERVICE_KEY`), running the 3-agent pipeline (`Researcher`, `Planner`, `Reviewer`) with Tavily web search and Growearn catalog tools.
+- **`postgres` (`growearn-postgres`)**: PostgreSQL 16 image with pre-installed `pgvector` extension (`vector(1024)`), HNSW cosine indexes, GIN full-text search indexes, and persistent volume `postgres_data`.
 - **`embedding-service` (`groearn-embedding-service`)**: Ollama service on port `11434` serving BGE-M3 1024-dimensional dense vectors with volume `ollama_models`.
 - **`model-init` (`groearn-model-init`)**: Automated one-shot model puller that downloads `bge-m3` weights before the app container starts, eliminating cold-start latency.
 - **`groearn-internal`**: Isolated Docker bridge network interconnecting all services.
