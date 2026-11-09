@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { PaymentProviderFactory } from './payment-provider.factory';
+import { OrderFulfillmentService } from './order-fulfillment.service';
 
 export class PaymentWebhookService {
   // Real Cashfree Webhook Verification & Idempotent Event Processing.
@@ -88,26 +89,8 @@ export class PaymentWebhookService {
               },
             });
 
-            if (order.itemType === 'COURSE') {
-              await tx.coursePurchase.upsert({
-                where: { userId_courseId: { userId: order.userId, courseId: order.itemId } },
-                update: { paymentId: payment.id, orderId: order.id, amountPaid: order.amount },
-                create: {
-                  userId: order.userId,
-                  courseId: order.itemId,
-                  paymentId: payment.id,
-                  orderId: order.id,
-                  amountPaid: order.amount,
-                  currency: order.currency,
-                },
-              });
-
-              await tx.enrollment.upsert({
-                where: { studentId_courseId: { studentId: order.userId, courseId: order.itemId } },
-                update: {},
-                create: { studentId: order.userId, courseId: order.itemId, progressPercent: 0 },
-              });
-            }
+            // Unified transactional fulfillment for COURSE & MENTORSHIP
+            await OrderFulfillmentService.fulfillOrder(tx, order, payment.id);
           }
         } else if (status === 'FAILED' && providerOrderId) {
           await tx.paymentOrder.updateMany({
@@ -155,7 +138,7 @@ export class PaymentWebhookService {
           status: 'FAILED',
           errorMessage: err.message,
         },
-      }).catch(() => {});
+      }).catch(() => { });
 
       return { status: 'FAILED', eventId, processed: false, error: err.message };
     }

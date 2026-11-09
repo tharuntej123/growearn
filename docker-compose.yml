@@ -132,7 +132,7 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://${POSTGRES_USER:-growearn}:${POSTGRES_PASSWORD:-growearn_secure_password}@postgres:5432/${POSTGRES_DB:-growearn}?schema=public
-      - AUTH_SECRET=${AUTH_SECRET}
+      - AUTH_SECRET=${AUTH_SECRET:-ci-test-auth-secret-key-minimum-32-chars-long-secure-random}
       - AUTH_URL=${AUTH_URL:-http://localhost:3000}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}

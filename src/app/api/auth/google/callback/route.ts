@@ -1,13 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import { AuthController } from '@/controllers/auth.controller';
 
 export async function GET(req: NextRequest) {
-  const url = new URL('/api/auth/callback/google', req.url);
-  url.search = req.nextUrl.search;
-  return NextResponse.redirect(url, 308);
+  return AuthController.googleCallback(req);
 }
 
 export async function POST(req: NextRequest) {
-  const url = new URL('/api/auth/callback/google', req.url);
-  url.search = req.nextUrl.search;
-  return NextResponse.redirect(url, 308);
+  return AuthController.googleCallback(req);
 }

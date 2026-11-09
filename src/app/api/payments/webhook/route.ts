@@ -45,6 +45,12 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await PaymentService.processWebhook(rawBody, headersObj);
+    if (!result.processed) {
+      return NextResponse.json(
+        { error: result.error || 'Cashfree webhook processing failed', eventId: result.eventId },
+        { status: 500 }
+      );
+    }
     return NextResponse.json({ received: true, ...result }, { status: 200 });
  } catch (_e) { const error = _e as Error; const err = _e as Error; 
     logger.error('[PaymentWebhook:Error]', err.message);

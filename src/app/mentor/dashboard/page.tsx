@@ -51,47 +51,15 @@ export default function MentorDashboardPage() {
   const [courseFile, setCourseFile] = useState<File | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
 
-  const [publishedCourses, setPublishedCourses] = useState<CourseItem[]>([
-    {
-      id: 'course-1',
-      title: 'Full Stack Next.js 16 & Microservices Architecture',
-      category: 'Full Stack Development',
-      price: 59,
-      description: 'Production-grade course covering React 19, Next.js App Router, Prisma ORM, and distributed microservices.',
-      fileName: 'nextjs-microservices-syllabus.pdf',
-      fileSizeMb: '2.4 MB',
-      enrollmentsCount: 184,
-    },
-    {
-      id: 'course-2',
-      title: 'High Throughput System Design & Distributed Caching',
-      category: 'System Architecture',
-      price: 79,
-      description: 'Master low-latency cache invalidation, Redis cluster topology, and Kafka event stream architectures.',
-      fileName: 'system-design-case-studies.pdf',
-      fileSizeMb: '4.1 MB',
-      enrollmentsCount: 128,
-    },
-  ]);
-
-  const [requests, setRequests] = useState([
-    {
-      id: 'req-1',
-      student: { name: 'Devon Vance', email: 'devon.v@example.com', avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150' },
-      topic: 'Full Stack Architecture & Career Roadmap Review',
-      message: 'Need help validating microservices stateless filter chain and role authorizations.',
-      status: 'ACCEPTED',
-      time: 'Tomorrow, 7:30 PM IST',
-    },
-    {
-      id: 'req-2',
-      student: { name: 'Rahul Sharma', email: 'rahul.s@example.com', avatarUrl: '' },
-      topic: 'High Throughput Kafka Event Sourcing Design',
-      message: 'Architectural guidance on partition rebalancing and consumer offset lag.',
-      status: 'PENDING',
-      time: 'Saturday, 10:00 AM IST',
-    },
-  ]);
+  const [publishedCourses, setPublishedCourses] = useState<CourseItem[]>([]);
+  const [requests, setRequests] = useState<{
+    id: string;
+    student: { name: string; email: string; avatarUrl: string };
+    topic: string;
+    message: string;
+    status: string;
+    time: string;
+  }[]>([]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -196,8 +164,8 @@ export default function MentorDashboardPage() {
               <span>Active Students</span>
               <Users className="h-4 w-4 text-emerald-600" />
             </div>
-            <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2">142</p>
-            <p className="text-[11px] text-emerald-600 mt-1 font-medium">+14 this month</p>
+            <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2">0</p>
+            <p className="text-[11px] text-slate-500 mt-1 font-medium">New mentor profile</p>
           </Card>
 
           <Card className="p-5 bg-white border border-slate-200 rounded-2xl shadow-xs">
@@ -205,8 +173,8 @@ export default function MentorDashboardPage() {
               <span>Mentoring Revenue</span>
               <DollarSign className="h-4 w-4 text-emerald-600" />
             </div>
-            <p className="text-2xl sm:text-3xl font-extrabold text-emerald-700 mt-2">$18,400</p>
-            <p className="text-[11px] text-slate-500 mt-1">From 260+ sessions</p>
+            <p className="text-2xl sm:text-3xl font-extrabold text-emerald-700 mt-2">₹0</p>
+            <p className="text-[11px] text-slate-500 mt-1">From completed sessions</p>
           </Card>
 
           <Card className="p-5 bg-white border border-slate-200 rounded-2xl shadow-xs">
@@ -214,8 +182,8 @@ export default function MentorDashboardPage() {
               <span>Mentor Rating</span>
               <Star className="h-4 w-4 text-amber-500 fill-amber-400" />
             </div>
-            <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2">4.95 / 5.0</p>
-            <p className="text-[11px] text-slate-500 mt-1">Across 84 student reviews</p>
+            <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2">New</p>
+            <p className="text-[11px] text-slate-500 mt-1">No student reviews yet</p>
           </Card>
 
           <Card className="p-5 bg-white border border-slate-200 rounded-2xl shadow-xs">
@@ -224,7 +192,7 @@ export default function MentorDashboardPage() {
               <BookOpen className="h-4 w-4 text-teal-600" />
             </div>
             <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2">{publishedCourses.length}</p>
-            <p className="text-[11px] text-slate-500 mt-1">312 total enrollments</p>
+            <p className="text-[11px] text-slate-500 mt-1">0 total enrollments</p>
           </Card>
         </div>
 
@@ -248,25 +216,38 @@ export default function MentorDashboardPage() {
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {publishedCourses.map((c) => (
-              <Card key={c.id} className="p-5 bg-white border border-slate-200 rounded-2xl space-y-3 shadow-xs">
-                <div className="flex items-center justify-between">
-                  <Badge variant="default" className="text-[10px]">{c.category}</Badge>
-                  <span className="text-sm font-extrabold text-emerald-700">${c.price}</span>
-                </div>
-                <h3 className="text-base font-bold text-slate-900">{c.title}</h3>
-                <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">{c.description}</p>
+          {publishedCourses.length === 0 ? (
+            <Card className="p-8 text-center bg-white border border-dashed border-slate-300 rounded-2xl space-y-3">
+              <BookOpen className="h-10 w-10 text-slate-400 mx-auto" />
+              <h3 className="text-sm font-bold text-slate-800">No courses published yet</h3>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                Share your expertise by publishing your first curriculum or syllabus.
+              </p>
+              <Button size="sm" variant="outline" onClick={() => setShowCourseModal(true)}>
+                Publish First Course
+              </Button>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {publishedCourses.map((c) => (
+                <Card key={c.id} className="p-5 bg-white border border-slate-200 rounded-2xl space-y-3 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <Badge variant="default" className="text-[10px]">{c.category}</Badge>
+                    <span className="text-sm font-extrabold text-emerald-700">${c.price}</span>
+                  </div>
+                  <h3 className="text-base font-bold text-slate-900">{c.title}</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">{c.description}</p>
 
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                  <span className="flex items-center gap-1.5 font-medium text-slate-700 truncate max-w-xs">
-                    <FileText className="h-4 w-4 text-emerald-600 shrink-0" /> {c.fileName} ({c.fileSizeMb})
-                  </span>
-                  <Badge variant="success" className="text-[10px]">{c.enrollmentsCount} Enrolled</Badge>
-                </div>
-              </Card>
-            ))}
-          </div>
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                    <span className="flex items-center gap-1.5 font-medium text-slate-700 truncate max-w-xs">
+                      <FileText className="h-4 w-4 text-emerald-600 shrink-0" /> {c.fileName} ({c.fileSizeMb})
+                    </span>
+                    <Badge variant="success" className="text-[10px]">{c.enrollmentsCount} Enrolled</Badge>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="space-y-4">
@@ -280,10 +261,19 @@ export default function MentorDashboardPage() {
             <Badge variant="outline" className="bg-white">{requests.length} Active</Badge>
           </div>
 
-          <div className="space-y-3">
-            {requests.map((req) => (
-              <Card key={req.id} className="p-5 bg-white border border-slate-200 shadow-xs rounded-2xl">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          {requests.length === 0 ? (
+            <Card className="p-8 text-center bg-white border border-dashed border-slate-300 rounded-2xl space-y-3">
+              <Users className="h-10 w-10 text-slate-400 mx-auto" />
+              <h3 className="text-sm font-bold text-slate-800">No coaching requests yet</h3>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                Incoming student 1-on-1 booking requests and architecture reviews will appear here.
+              </p>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {requests.map((req) => (
+                <Card key={req.id} className="p-5 bg-white border border-slate-200 shadow-xs rounded-2xl">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="flex items-start gap-4">
                     <Avatar src={req.student.avatarUrl} fallback={req.student.name} size="md" />
                     <div className="space-y-1">
@@ -336,7 +326,8 @@ export default function MentorDashboardPage() {
               </Card>
             ))}
           </div>
-        </div>
+        )}
+      </div>
 
         <div className="space-y-4 pt-2">
           <div>

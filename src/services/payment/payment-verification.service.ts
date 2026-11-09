@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma';
 import { PaymentProviderFactory } from './payment-provider.factory';
+import { OrderFulfillmentService } from './order-fulfillment.service';
 
 export interface VerifyPaymentInput {
   orderId: string;
@@ -109,8 +110,6 @@ export class PaymentVerificationService {
       throw new Error(`Payment verification amount mismatch: Expected ₹${order.amount}, received ₹${verification.amount}`);
     }
 
-    const orderNotes = (order.notes as Record<string, unknown>) || {};
-
     // 3. Process Transactionally
     const transactionResult = await prisma.$transaction(async (tx) => {
       // Mark order as PAID
@@ -146,86 +145,8 @@ export class PaymentVerificationService {
         },
       });
 
-      let entitlementId = '';
-
-      if (order.itemType === 'COURSE') {
-        // Record CoursePurchase
-        await tx.coursePurchase.upsert({
-          where: { userId_courseId: { userId, courseId: order.itemId } },
-          update: {
-            paymentId: payment.id,
-            orderId: order.id,
-            amountPaid: order.amount,
-          },
-          create: {
-            userId,
-            courseId: order.itemId,
-            paymentId: payment.id,
-            orderId: order.id,
-            amountPaid: order.amount,
-            currency: order.currency,
-          },
-        });
-
-        // Grant active Enrollment
-        const enrollment = await tx.enrollment.upsert({
-          where: { studentId_courseId: { studentId: userId, courseId: order.itemId } },
-          update: {
-            progressPercent: 0,
-          },
-          create: {
-            studentId: userId,
-            courseId: order.itemId,
-            progressPercent: 0,
-          },
-        });
-        entitlementId = enrollment.id;
-
-        // Send confirmation notification
-        await tx.notification.create({
-          data: {
-            userId,
-            title: 'Course Enrollment Activated! 🎓',
-            message: `Your payment of ₹${order.amount} was confirmed. You now have full access.`,
-            link: `/courses/${order.itemId}`,
-            notificationType: 'COURSE_UPDATE',
-          },
-        }).catch(() => {});
-      } else if (order.itemType === 'MENTORSHIP') {
-        const scheduledAt = typeof orderNotes.scheduledAt === 'string' ? new Date(orderNotes.scheduledAt) : new Date(Date.now() + 86400000);
-        const durationMinutes = typeof orderNotes.durationMinutes === 'number' ? orderNotes.durationMinutes : 60;
-
-        // Create confirmed MentorshipBooking
-        const booking = await tx.mentorshipBooking.create({
-          data: {
-            studentId: userId,
-            mentorId: order.itemId,
-            scheduledAt,
-            durationMinutes,
-            price: order.amount,
-            status: 'SCHEDULED',
-            paymentId: payment.id,
-          },
-        });
-        entitlementId = booking.id;
-
-        // Link payment to booking
-        await tx.payment.update({
-          where: { id: payment.id },
-          data: { bookingId: booking.id },
-        });
-
-        // Send notifications
-        await tx.notification.create({
-          data: {
-            userId,
-            title: 'Mentorship Booking Confirmed! 🤝',
-            message: `Your mentorship session has been scheduled. Payment of ₹${order.amount} was captured.`,
-            link: '/mentors',
-            notificationType: 'GENERAL',
-          },
-        }).catch(() => {});
-      }
+      // Unified transactional fulfillment for COURSE & MENTORSHIP
+      const { entitlementId } = await OrderFulfillmentService.fulfillOrder(tx, order, payment.id);
 
       return {
         paymentId: payment.id,

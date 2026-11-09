@@ -46,6 +46,31 @@ function getDefaultDashboard(role: CanonicalRole | 'UNKNOWN'): string {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // CSRF Origin verification on mutating API routes
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) && pathname.startsWith('/api/')) {
+    // Webhooks are authenticated cryptographically via HMAC-SHA256 signatures, exempt from browser Origin header
+    if (!pathname.startsWith('/api/payments/webhook')) {
+      const origin = req.headers.get('origin');
+      const host = req.headers.get('host');
+      if (origin && host) {
+        try {
+          const originHost = new URL(origin).host;
+          if (originHost !== host) {
+            return NextResponse.json(
+              { error: 'Cross-origin request blocked: Origin does not match host header' },
+              { status: 403 }
+            );
+          }
+        } catch {
+          return NextResponse.json(
+            { error: 'Invalid Origin header' },
+            { status: 403 }
+          );
+        }
+      }
+    }
+  }
+
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||

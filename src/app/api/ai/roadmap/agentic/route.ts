@@ -183,23 +183,14 @@ export async function POST(req: NextRequest) {
           name: m.user?.name || 'Expert Mentor',
           headline: m.title || 'Technical Mentor',
           hourly_rate: Number(m.hourlyRate) || 50,
-          rating: Number(m.rating) || 4.9,
+          rating: m.rating !== null && m.rating !== undefined ? Number(m.rating) : null,
         })),
         agent_trace: [
           {
-            agent: 'Researcher',
-            action: 'Tavily search fallback',
-            summary: 'Live web documentation retrieved via standard search provider.',
-          },
-          {
-            agent: 'Planner',
-            action: 'Heuristic curriculum generator',
-            summary: `Synthesized 4-phase learning progression for ${targetRole}.`,
-          },
-          {
-            agent: 'Reviewer',
-            action: 'Rule-based validation',
-            summary: 'Verified prerequisite sequence and approved 16-week pacing.',
+            agent: 'System',
+            action: 'Deterministic curriculum fallback',
+            status: 'fallback',
+            summary: `Agent service offline (${fallbackReason}); generated curriculum via database roadmap fallback.`,
           },
         ],
         review_status: 'APPROVED',

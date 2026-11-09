@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, isRoleAllowed } from '@/lib/auth';
 import { apiSuccess, apiError } from '@/lib/utils';
 import { prisma } from '@/lib/prisma';
 import { MentorRepository } from '@/repositories/mentor.repository';
@@ -93,7 +93,11 @@ export class MentorController {
         },
         include: {
           user: {
-            include: {
+            select: {
+              id: true,
+              name: true,
+              avatarUrl: true,
+              headline: true,
               profile: true,
               skills: { include: { skill: true } },
               experiences: { orderBy: { startDate: 'desc' } },
@@ -141,7 +145,7 @@ export class MentorController {
         where: {
           OR: [{ id }, { userId: id }],
         },
-        include: { user: true },
+
       });
 
       if (!mentor) {
@@ -212,6 +216,10 @@ export class MentorController {
         return apiError('Unauthorized', 'UNAUTHORIZED', 401);
       }
 
+      if (!isRoleAllowed(authUser.role, ['MENTOR', 'ADMIN'])) {
+        return apiError('Forbidden: Only MENTOR accounts can access mentor bookings', 'FORBIDDEN', 403);
+      }
+
       const mentorProfile = await prisma.mentorProfile.findUnique({
         where: { userId: authUser.id },
       });
@@ -251,6 +259,10 @@ export class MentorController {
       const authUser = await getCurrentUser(req);
       if (!authUser) {
         return apiError('Unauthorized', 'UNAUTHORIZED', 401);
+      }
+
+      if (!isRoleAllowed(authUser.role, ['MENTOR', 'ADMIN'])) {
+        return apiError('Forbidden: Only MENTOR accounts can update mentorship booking status', 'FORBIDDEN', 403);
       }
 
       const { id: requestId } = await params;
@@ -338,6 +350,10 @@ export class MentorController {
       const authUser = await getCurrentUser(req);
       if (!authUser) {
         return apiError('Unauthorized', 'UNAUTHORIZED', 401);
+      }
+
+      if (!isRoleAllowed(authUser.role, ['MENTOR', 'ADMIN'])) {
+        return apiError('Forbidden: Only MENTOR accounts can create or update a mentor profile', 'FORBIDDEN', 403);
       }
 
       const body = await req.json();

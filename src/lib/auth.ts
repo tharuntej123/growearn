@@ -5,15 +5,6 @@ import crypto from 'crypto';
 import { OAuth2Client } from 'google-auth-library';
 import prisma from '@/lib/prisma';
 
-// Ensure environment variables from .env / .env.local are loaded if not yet set in process.env
-if (!process.env.AUTH_SECRET && !process.env.JWT_SECRET && typeof window === 'undefined') {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const dotenv = require('dotenv');
-    dotenv.config();
-    dotenv.config({ path: '.env.local' });
-  } catch {}
-}
 
 export function getAuthSecret(): string {
   const secret = process.env.AUTH_SECRET || process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET;
@@ -123,7 +114,7 @@ export function getGoogleOAuthClient(redirectUri?: string): OAuth2Client {
   const defaultRedirect =
     process.env.GOOGLE_REDIRECT_URI?.trim() ||
     process.env.GOOGLE_CALLBACK_URL?.trim() ||
-    `${getAppBaseUrl()}/api/auth/callback/google`;
+    `${getAppBaseUrl()}/api/auth/google/callback`;
 
   return new OAuth2Client({
     clientId: clientId || 'unconfigured_google_client_id',
@@ -199,14 +190,15 @@ export async function verifySignedOAuthState(
     const secretKey = getAuthSecretKey();
     const { payload } = await jwtVerify(stateToken, secretKey, { algorithms: ['HS256'] });
 
-    // Validate state:
-    // If stateToken was passed as state to Google, returnedState matches stateToken.
-    // If randomState was passed or extracted, payload.state matches returnedState.
-    const isStateMatch =
-      payload &&
-      (payload.state === returnedState ||
-        stateToken === returnedState ||
-        (typeof payload.state === 'string' && returnedState.includes(payload.state)));
+    // Cryptographic state match: constant-time exact comparison (no loose includes)
+    let isStateMatch = false;
+    if (payload) {
+      if (typeof payload.state === 'string' && payload.state.length === returnedState.length) {
+        isStateMatch = crypto.timingSafeEqual(Buffer.from(payload.state), Buffer.from(returnedState));
+      } else if (stateToken.length === returnedState.length) {
+        isStateMatch = crypto.timingSafeEqual(Buffer.from(stateToken), Buffer.from(returnedState));
+      }
+    }
 
     if (!isStateMatch) {
       return { valid: false, action: 'login', error: 'OAuth state mismatch: possible CSRF or tampered state parameter' };

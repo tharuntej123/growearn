@@ -293,6 +293,14 @@ export class StorageService {
       if (riff !== 'RIFF' || webp !== 'WEBP') {
         throw new Error('Invalid WebP file: Missing WebP magic signature');
       }
+    } else if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      if (buffer[0] !== 0x50 || buffer[1] !== 0x4B || buffer[2] !== 0x03 || buffer[3] !== 0x04) {
+        throw new Error('Invalid DOCX file: Missing PK ZIP magic signature');
+      }
+      const sample = buffer.subarray(0, Math.min(buffer.length, 2048)).toString('binary');
+      if (!sample.includes('[Content_Types].xml') && !sample.includes('word/')) {
+        throw new Error('Invalid DOCX file: Missing Microsoft Office OpenXML ZIP structure');
+      }
     } else if (mimeType === 'text/plain') {
       for (let i = 0; i < Math.min(buffer.length, 512); i++) {
         if (buffer[i] === 0x00) {

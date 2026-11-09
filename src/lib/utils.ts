@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { NextResponse } from 'next/server';
+import crypto from 'crypto';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -53,13 +54,21 @@ export function apiError(
     message = messageOrCode;
   }
 
+  // Sanitize internal server errors in production and attach diagnostic requestId
+  const requestId = crypto.randomUUID();
+  let sanitizedMessage = message;
+  if (status >= 500 && process.env.NODE_ENV === 'production') {
+    sanitizedMessage = 'An unexpected internal error occurred. Please try again later.';
+  }
+
   return NextResponse.json(
     {
       success: false,
       error: {
         code,
-        message,
-        ...(details !== undefined ? { details } : {}),
+        message: sanitizedMessage,
+        requestId,
+        ...(details !== undefined && process.env.NODE_ENV !== 'production' ? { details } : {}),
       },
     },
     { status }

@@ -127,6 +127,16 @@ export class AdminRepository {
     const user = await prisma.user.update({
       where: { id: targetUserId },
       data: { role: canonicalRole },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        avatarUrl: true,
+        isVerified: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
 
     await prisma.auditLog.create({
@@ -146,6 +156,16 @@ export class AdminRepository {
     const user = await prisma.user.update({
       where: { id: targetUserId },
       data: { isVerified },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        avatarUrl: true,
+        isVerified: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
 
     await prisma.auditLog.create({

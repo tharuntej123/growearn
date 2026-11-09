@@ -5,13 +5,15 @@ import { MessagingRepository } from '@/repositories/messaging.repository';
 import { enforceRateLimit } from '@/lib/rate-limiter';
 import { z } from 'zod';
 
+import { prisma } from '@/lib/prisma';
+
 const startConversationSchema = z.object({
   targetUserId: z.string().min(1, 'Target user ID is required'),
 });
 
 const sendMessageSchema = z.object({
-  content: z.string().min(1, 'Message content cannot be empty'),
-  mediaUrl: z.string().optional(),
+  content: z.string().min(1, 'Message content cannot be empty').max(4000, 'Message cannot exceed 4000 characters'),
+  mediaUrl: z.string().max(2000).optional(),
 });
 
 export class MessagingController {
@@ -44,6 +46,17 @@ export class MessagingController {
       const validated = startConversationSchema.safeParse(body);
       if (!validated.success) {
         return apiError('Invalid target user ID', 'VALIDATION_ERROR', 400);
+      }
+
+      if (validated.data.targetUserId === authUser.id) {
+        return apiError('Cannot start a conversation with yourself', 'BAD_REQUEST', 400);
+      }
+
+      const targetUser = await prisma.user.findUnique({
+        where: { id: validated.data.targetUserId },
+      });
+      if (!targetUser) {
+        return apiError('Target user not found', 'NOT_FOUND', 404);
       }
 
       const conversation = await MessagingRepository.getOrCreateDirectConversation(
