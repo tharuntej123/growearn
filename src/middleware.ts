@@ -46,10 +46,10 @@ function getDefaultDashboard(role: CanonicalRole | 'UNKNOWN'): string {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Google OAuth callback alias: seamlessly rewrite /api/auth/callback/google to /api/auth/google/callback
-  if (pathname === '/api/auth/callback/google') {
+  // Google OAuth callback alias: rewrite /api/auth/google/callback to /api/auth/callback/google
+  if (pathname === '/api/auth/google/callback') {
     const url = req.nextUrl.clone();
-    url.pathname = '/api/auth/google/callback';
+    url.pathname = '/api/auth/callback/google';
     return NextResponse.rewrite(url);
   }
 

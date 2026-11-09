@@ -55,8 +55,8 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        source: '/api/auth/callback/google',
-        destination: '/api/auth/google/callback',
+        source: '/api/auth/google/callback',
+        destination: '/api/auth/callback/google',
       },
     ];
   },
