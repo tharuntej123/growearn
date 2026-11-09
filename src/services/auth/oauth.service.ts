@@ -89,11 +89,33 @@ export class OAuthService {
     }
 
     // Exchange authorization code for tokens using PKCE verifier if available
-    const client = getGoogleOAuthClient(stateResult.oauthRedirectUri);
-    const { tokens } = await client.getToken({
-      code,
-      codeVerifier: stateResult.codeVerifier,
-    });
+    let client = getGoogleOAuthClient(stateResult.oauthRedirectUri);
+    let tokens;
+    try {
+      const res = await client.getToken({
+        code,
+        codeVerifier: stateResult.codeVerifier,
+      });
+      tokens = res.tokens;
+    } catch (tokenErr) {
+      // If code exchange fails with the primary redirectUri, retry with alternate callback URI variant
+      const primaryUri = stateResult.oauthRedirectUri || '';
+      const altRedirect = primaryUri.includes('/api/auth/callback/google')
+        ? primaryUri.replace('/api/auth/callback/google', '/api/auth/google/callback')
+        : primaryUri.replace('/api/auth/google/callback', '/api/auth/callback/google');
+
+      if (altRedirect && altRedirect !== primaryUri) {
+        const altClient = getGoogleOAuthClient(altRedirect);
+        const altRes = await altClient.getToken({
+          code,
+          codeVerifier: stateResult.codeVerifier,
+        });
+        tokens = altRes.tokens;
+        client = altClient;
+      } else {
+        throw tokenErr;
+      }
+    }
 
     if (!tokens.id_token) {
       throw new Error('Google OAuth failed: No identity token returned from Google authentication server.');

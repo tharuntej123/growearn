@@ -46,6 +46,13 @@ function getDefaultDashboard(role: CanonicalRole | 'UNKNOWN'): string {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // Google OAuth callback alias: seamlessly rewrite /api/auth/callback/google to /api/auth/google/callback
+  if (pathname === '/api/auth/callback/google') {
+    const url = req.nextUrl.clone();
+    url.pathname = '/api/auth/google/callback';
+    return NextResponse.rewrite(url);
+  }
+
   // CSRF Origin verification on mutating API routes
   if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) && pathname.startsWith('/api/')) {
     // Webhooks are authenticated cryptographically via HMAC-SHA256 signatures, exempt from browser Origin header

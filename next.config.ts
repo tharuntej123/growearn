@@ -52,6 +52,14 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
+  async rewrites() {
+    return [
+      {
+        source: '/api/auth/callback/google',
+        destination: '/api/auth/google/callback',
+      },
+    ];
+  },
   async headers() {
     return [
       {
