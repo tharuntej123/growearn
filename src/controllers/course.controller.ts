@@ -173,8 +173,29 @@ export class CourseController {
         });
       }
 
+      const isAuthorizedToAccessContent =
+        Boolean(enrollment) ||
+        (authUser && (authUser.id === course.instructorId || authUser.role === 'ADMIN'));
+
+      const sanitizedModules = isAuthorizedToAccessContent
+        ? course.modules
+        : course.modules.map((m) => ({
+            ...m,
+            lessons: m.lessons.map((lesson) => ({
+              ...lesson,
+              content: null,
+              videoUrl: null,
+              resourcesJson: null,
+            })),
+          }));
+
+      const sanitizedCourse = {
+        ...course,
+        modules: sanitizedModules,
+      };
+
       return apiSuccess({
-        course,
+        course: sanitizedCourse,
         isEnrolled: Boolean(enrollment),
         enrollment,
       });
@@ -316,6 +337,82 @@ export class CourseController {
       });
  } catch (_e) { const err = _e as Error; 
       return apiError(err.message || 'Enrollment failed', 'INTERNAL_ERROR', 500);
+    }
+  }
+
+  static async updateCourse(req: NextRequest, { params }: { params: Promise<{ id?: string; slug?: string }> }) {
+    try {
+      const authUser = await getCurrentUser(req);
+      if (!authUser) {
+        return apiError('Unauthorized', 'UNAUTHORIZED', 401);
+      }
+
+      const resolvedParams = await params;
+      const identifier = resolvedParams.slug || resolvedParams.id;
+      if (!identifier) {
+        return apiError('Course identifier is required', 'BAD_REQUEST', 400);
+      }
+
+      const course = await prisma.course.findFirst({
+        where: { OR: [{ id: identifier }, { slug: identifier }] },
+      });
+      if (!course) {
+        return apiError('Course not found', 'NOT_FOUND', 404);
+      }
+
+      if (course.instructorId !== authUser.id && authUser.role !== 'ADMIN') {
+        return apiError('Forbidden: Only the course instructor or admin can modify this course', 'FORBIDDEN', 403);
+      }
+
+      const body = await req.json();
+      const updated = await prisma.course.update({
+        where: { id: course.id },
+        data: {
+          title: typeof body.title === 'string' ? body.title : undefined,
+          description: typeof body.description === 'string' ? body.description : undefined,
+          price: typeof body.price === 'number' ? body.price : undefined,
+          category: typeof body.category === 'string' ? body.category : undefined,
+          isPublished: typeof body.isPublished === 'boolean' ? body.isPublished : undefined,
+          level: typeof body.level === 'string' ? body.level : undefined,
+        },
+      });
+
+      return apiSuccess({ course: updated });
+    } catch (_e) {
+      const err = _e as Error;
+      return apiError(err.message || 'Failed to update course', 'COURSE_UPDATE_ERROR', 500);
+    }
+  }
+
+  static async deleteCourse(req: NextRequest, { params }: { params: Promise<{ id?: string; slug?: string }> }) {
+    try {
+      const authUser = await getCurrentUser(req);
+      if (!authUser) {
+        return apiError('Unauthorized', 'UNAUTHORIZED', 401);
+      }
+
+      const resolvedParams = await params;
+      const identifier = resolvedParams.slug || resolvedParams.id;
+      if (!identifier) {
+        return apiError('Course identifier is required', 'BAD_REQUEST', 400);
+      }
+
+      const course = await prisma.course.findFirst({
+        where: { OR: [{ id: identifier }, { slug: identifier }] },
+      });
+      if (!course) {
+        return apiError('Course not found', 'NOT_FOUND', 404);
+      }
+
+      if (course.instructorId !== authUser.id && authUser.role !== 'ADMIN') {
+        return apiError('Forbidden: Only the course instructor or admin can delete this course', 'FORBIDDEN', 403);
+      }
+
+      await prisma.course.delete({ where: { id: course.id } });
+      return apiSuccess({ message: 'Course deleted successfully' });
+    } catch (_e) {
+      const err = _e as Error;
+      return apiError(err.message || 'Failed to delete course', 'COURSE_DELETE_ERROR', 500);
     }
   }
 }

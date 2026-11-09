@@ -16,6 +16,12 @@ export async function POST(req: NextRequest) {
     const rateLimitResponse = await enforceRateLimit(req, 'storage:upload-resume', 5, 300, authUser.id);
     if (rateLimitResponse) return rateLimitResponse;
 
+    // Pre-flight check: Reject uploads exceeding 10MB before buffering multipart payload
+    const contentLength = req.headers.get('content-length');
+    if (contentLength && parseInt(contentLength, 10) > 10 * 1024 * 1024) {
+      return apiError('Upload payload exceeds 10MB limit', 'PAYLOAD_TOO_LARGE', 413);
+    }
+
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
 

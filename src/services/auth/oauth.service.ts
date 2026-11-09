@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { UserRepository } from '@/repositories/user.repository';
 import {
   normalizeRole,
@@ -67,12 +68,21 @@ export class OAuthService {
   }): Promise<GoogleAuthCallbackResult> {
     const { code, returnedState, stateCookie, ipAddress, userAgent } = params;
 
-    // Verify OAuth state token
-    const stateTokenToVerify = returnedState || stateCookie;
-    if (!stateTokenToVerify) {
-      throw new Error('OAuth state missing: authentication request could not be verified.');
+    // Anti-CSRF verification: Require state parameter
+    if (!returnedState) {
+      throw new Error('OAuth state parameter missing from provider callback.');
     }
 
+    // When stateCookie is available, enforce strict timing-safe match between query state and cookie
+    if (stateCookie) {
+      const stateBuf = Buffer.from(returnedState);
+      const cookieBuf = Buffer.from(stateCookie);
+      if (stateBuf.length !== cookieBuf.length || !crypto.timingSafeEqual(stateBuf, cookieBuf)) {
+        throw new Error('OAuth state CSRF validation failed: State parameter does not match session cookie.');
+      }
+    }
+
+    const stateTokenToVerify = stateCookie || returnedState;
     const stateResult = await verifySignedOAuthState(stateTokenToVerify, returnedState);
     if (!stateResult.valid) {
       throw new Error(stateResult.error || 'Invalid or expired OAuth state');
@@ -204,17 +214,23 @@ export class OAuthService {
     const existingUser = await UserRepository.findByEmail(email);
 
     if (existingUser) {
+      if (emailVerified === false) {
+        throw new Error('Google account email is not verified by Google. Unverified Google accounts cannot be linked.');
+      }
+
       if (action === 'signup') {
         throw new Error('An account with this email already exists. Please log in to link your Google account.');
       }
 
-      // Generate secure signed account linking token
+      // Generate secure single-use signed account linking token
       const secretKey = getAuthSecretKey();
+      const jti = crypto.randomUUID();
       const linkingToken = await new SignJWT({
         userId: existingUser.id,
         googleSub,
         email,
         type: 'ACCOUNT_LINKING',
+        jti,
       })
         .setProtectedHeader({ alg: 'HS256' })
         .setIssuedAt()
@@ -345,6 +361,22 @@ export class OAuthService {
 
     const userId = String(payload.userId);
     const googleSub = String(payload.googleSub);
+    const jti = typeof payload.jti === 'string' ? payload.jti : null;
+
+    if (jti) {
+      const alreadyUsed = await prisma.auditLog.findFirst({
+        where: {
+          action: 'ACCOUNT_LINK_GOOGLE',
+          details: {
+            path: ['jti'],
+            equals: jti,
+          },
+        },
+      });
+      if (alreadyUsed) {
+        throw new Error('This account linking token has already been consumed. Please initiate a new sign-in.');
+      }
+    }
 
     const user = await UserRepository.findById(userId);
     if (!user) {
@@ -382,7 +414,7 @@ export class OAuthService {
         userId: user.id,
         action: 'ACCOUNT_LINK_GOOGLE',
         resource: 'Account',
-        details: { provider: 'google', googleSub, email: user.email },
+        details: { provider: 'google', googleSub, email: user.email, jti },
         ipAddress: ipAddress || null,
         userAgent: userAgent || null,
       },

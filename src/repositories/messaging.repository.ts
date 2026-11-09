@@ -14,7 +14,6 @@ export class MessagingRepository {
                   select: {
                     id: true,
                     name: true,
-                    email: true,
                     avatarUrl: true,
                     role: true,
                     headline: true,

@@ -19,6 +19,16 @@ export async function GET(req: NextRequest) {
       return apiError('Forbidden: Candidate discovery is restricted to verified company and admin accounts', 'FORBIDDEN', 403);
     }
 
+    if (authUser.role === 'COMPANY') {
+      const companyUser = await prisma.user.findUnique({
+        where: { id: authUser.id },
+        select: { isVerified: true },
+      });
+      if (!companyUser?.isVerified) {
+        return apiError('Forbidden: Company account verification required by administrator before accessing candidate directory', 'FORBIDDEN', 403);
+      }
+    }
+
     const searchParams = req.nextUrl.searchParams;
     const search = searchParams.get('search') || undefined;
     const skill = searchParams.get('skill') || undefined;

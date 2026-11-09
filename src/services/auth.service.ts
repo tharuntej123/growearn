@@ -164,7 +164,7 @@ export class AuthService {
       passwordHash,
       name: input.name.trim(),
       role: canonicalRole,
-      isVerified: true,
+      isVerified: false,
     });
 
     await prisma.auditLog.create({
@@ -193,16 +193,18 @@ export class AuthService {
     };
   }
 
+  private static readonly DUMMY_PASSWORD_HASH =
+    '0123456789abcdef0123456789abcdef:' + '0'.repeat(128);
+
   static async loginWithPassword(input: LoginInput, ipAddress?: string, userAgent?: string) {
     const email = input.email.toLowerCase().trim();
     const user = await UserRepository.findByEmail(email);
 
-    if (!user || !user.passwordHash) {
-      throw new Error('Invalid email or password.');
-    }
+    // Constant-time protection: always execute scrypt even if user does not exist
+    const targetHash = user?.passwordHash || this.DUMMY_PASSWORD_HASH;
+    const isValid = await verifyPassword(input.password, targetHash);
 
-    const isValid = await verifyPassword(input.password, user.passwordHash);
-    if (!isValid) {
+    if (!user || !user.passwordHash || !isValid) {
       throw new Error('Invalid email or password.');
     }
 

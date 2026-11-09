@@ -3,17 +3,23 @@
 
 import { z } from 'zod';
 
+const isProd = process.env.APP_ENV === 'production';
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   APP_ENV: z.enum(['development', 'test', 'demo', 'staging', 'production']).default('development'),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   DIRECT_URL: z.string().optional(),
   
-  // Authentication & Security
-  AUTH_SECRET: z.string().min(32).optional(),
-  JWT_SECRET: z.string().min(16).default('development-jwt-secret-minimum-16-characters-long'),
-  SESSION_SECRET: z.string().min(16).default('development-session-secret-at-least-16-chars'),
-  INTERNAL_SERVICE_KEY: z.string().min(16).default('default-internal-service-key-32-chars-long'),
+  // Authentication & Security: strictly enforced without hardcoded fallback secrets in production
+  AUTH_SECRET: isProd
+    ? z.string().min(32, 'AUTH_SECRET must be at least 32 characters in production')
+    : z.string().min(32).optional(),
+  JWT_SECRET: z.string().min(16).optional().default(process.env.AUTH_SECRET || 'development-jwt-secret-minimum-16-characters-long'),
+  SESSION_SECRET: z.string().min(16).optional().default(process.env.AUTH_SECRET || 'development-session-secret-at-least-16-chars'),
+  INTERNAL_SERVICE_KEY: isProd
+    ? z.string().min(32, 'INTERNAL_SERVICE_KEY must be at least 32 characters in production')
+    : z.string().min(16).default('development-internal-key-32-characters-minimum'),
   PREVIOUS_INTERNAL_SERVICE_KEY: z.string().optional(),
   
   // Google OAuth
@@ -44,7 +50,7 @@ let parsedEnv: Env;
 try {
   parsedEnv = envSchema.parse(process.env);
 } catch (_e) { const err = _e as Error; 
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.APP_ENV === 'production') {
     const errorsList = _e instanceof z.ZodError ? _e.errors : err.message;
     process.stderr.write(`FATAL: Environment variable validation failed in production:\n${JSON.stringify(errorsList, null, 2)}\n`);
     throw new Error('Environment validation failed.');

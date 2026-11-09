@@ -4,6 +4,7 @@ import { createJobSchema } from '@/validators/job.schema';
 import { apiSuccess, apiError } from '@/lib/utils';
 import { JobRepository } from '@/repositories/job.repository';
 import { HybridMatcher } from '@/lib/ai/hybrid-matcher';
+import { JobApplicationService } from '@/services/job-application.service';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 
@@ -105,7 +106,24 @@ export class JobController {
         where: { id },
         include: {
           company: {
-            include: { profile: true },
+            select: {
+              id: true,
+              name: true,
+              avatarUrl: true,
+              headline: true,
+              bio: true,
+              location: true,
+              isVerified: true,
+              profile: {
+                select: {
+                  title: true,
+                  portfolioUrl: true,
+                  yearsOfExperience: true,
+                  githubUrl: true,
+                  linkedinUrl: true,
+                },
+              },
+            },
           },
           skills: {
             include: { skill: true },
@@ -233,12 +251,20 @@ export class JobController {
         where: { id: jobId },
         include: {
           skills: { include: { skill: true } },
-          company: true,
+
         },
       });
 
       if (!job) {
         return apiError('Job not found', 'NOT_FOUND', 404);
+      }
+
+      if (job.status !== 'OPEN') {
+        return apiError('Cannot apply to this job listing as it is closed', 'BAD_REQUEST', 400);
+      }
+
+      if (job.deadline && new Date(job.deadline) < new Date()) {
+        return apiError('Application deadline for this job has expired', 'BAD_REQUEST', 400);
       }
 
       if (job.companyId === authUser.id) {
@@ -330,86 +356,7 @@ export class JobController {
         return apiError('Forbidden: You can only view applications for jobs your company posted.', 'FORBIDDEN', 403);
       }
 
-      const applications = await prisma.application.findMany({
-        where: { jobId },
-        select: {
-          id: true,
-          jobId: true,
-          applicantId: true,
-          status: true,
-          coverLetter: true,
-          resumeUrl: true,
-          matchScore: true,
-          matchExplanation: true,
-          appliedAt: true,
-          updatedAt: true,
-          applicant: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              avatarUrl: true,
-              headline: true,
-              location: true,
-              city: true,
-              state: true,
-              country: true,
-              isVerified: true,
-              profile: {
-                select: {
-                  id: true,
-                  title: true,
-                  portfolioUrl: true,
-                  githubUrl: true,
-                  linkedinUrl: true,
-                  yearsOfExperience: true,
-                  availability: true,
-                  aiScore: true,
-                  resumeUrl: true,
-                  resumeName: true,
-                },
-              },
-              skills: {
-                select: {
-                  id: true,
-                  proficiencyLevel: true,
-                  isVerified: true,
-                  skill: {
-                    select: {
-                      id: true,
-                      name: true,
-                      category: true,
-                    },
-                  },
-                },
-              },
-              experiences: {
-                select: {
-                  id: true,
-                  title: true,
-                  company: true,
-                  startDate: true,
-                  endDate: true,
-                  isCurrent: true,
-                  description: true,
-                },
-                orderBy: { startDate: 'desc' },
-              },
-              educations: {
-                select: {
-                  id: true,
-                  degree: true,
-                  school: true,
-                  startDate: true,
-                  endDate: true,
-                  fieldOfStudy: true,
-                },
-              },
-            },
-          },
-        },
-        orderBy: [{ matchScore: 'desc' }, { appliedAt: 'desc' }],
-      });
+      const applications = await JobApplicationService.getApplicationsForJob(jobId);
 
       return apiSuccess({ job, applications });
  } catch (_e) { const err = _e as Error; 
@@ -445,21 +392,7 @@ export class JobController {
         return apiError('Forbidden: Only the job poster can update application status', 'FORBIDDEN', 403);
       }
 
-      const updated = await prisma.application.update({
-        where: { id: applicationId },
-        data: { status },
-      });
-
-      // Send persistent notification to the applicant
-      await prisma.notification.create({
-        data: {
-          userId: app.applicantId,
-          title: `Application Status Update: ${status}`,
-          message: `Your application for "${app.job.title}" has been updated to "${status}".`,
-          link: '/freelancer/applications',
-          notificationType: 'JOB_APPLICATION',
-        },
-      }).catch(() => {});
+      const updated = await JobApplicationService.updateStatus(applicationId, status, app.applicantId, app.job.title);
 
       return apiSuccess({
         message: `Application status updated to ${status}`,
@@ -467,6 +400,70 @@ export class JobController {
       });
  } catch (_e) { const err = _e as Error; 
       return apiError(err.message || 'Failed to update application status', 'INTERNAL_ERROR', 500);
+    }
+  }
+
+  static async updateJob(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    try {
+      const authUser = await getCurrentUser(req);
+      if (!authUser) {
+        return apiError('Unauthorized', 'UNAUTHORIZED', 401);
+      }
+
+      const { id } = await params;
+      const job = await prisma.job.findUnique({ where: { id } });
+      if (!job) {
+        return apiError('Job not found', 'NOT_FOUND', 404);
+      }
+
+      if (job.companyId !== authUser.id && authUser.role !== 'ADMIN') {
+        return apiError('Forbidden: Only the job poster or admin can modify this listing', 'FORBIDDEN', 403);
+      }
+
+      const body = await req.json();
+      const updated = await prisma.job.update({
+        where: { id },
+        data: {
+          title: typeof body.title === 'string' ? body.title : undefined,
+          description: typeof body.description === 'string' ? body.description : undefined,
+          status: typeof body.status === 'string' ? body.status : undefined,
+          jobType: typeof body.jobType === 'string' ? body.jobType : undefined,
+          locationType: typeof body.locationType === 'string' ? body.locationType : undefined,
+          minSalary: typeof body.minSalary === 'number' ? body.minSalary : undefined,
+          maxSalary: typeof body.maxSalary === 'number' ? body.maxSalary : undefined,
+          deadline: body.deadline ? new Date(body.deadline) : undefined,
+        },
+      });
+
+      return apiSuccess({ job: updated });
+    } catch (_e) {
+      const err = _e as Error;
+      return apiError(err.message || 'Failed to update job', 'JOB_UPDATE_ERROR', 500);
+    }
+  }
+
+  static async deleteJob(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    try {
+      const authUser = await getCurrentUser(req);
+      if (!authUser) {
+        return apiError('Unauthorized', 'UNAUTHORIZED', 401);
+      }
+
+      const { id } = await params;
+      const job = await prisma.job.findUnique({ where: { id } });
+      if (!job) {
+        return apiError('Job not found', 'NOT_FOUND', 404);
+      }
+
+      if (job.companyId !== authUser.id && authUser.role !== 'ADMIN') {
+        return apiError('Forbidden: Only the job poster or admin can delete this listing', 'FORBIDDEN', 403);
+      }
+
+      await prisma.job.delete({ where: { id } });
+      return apiSuccess({ message: 'Job deleted successfully' });
+    } catch (_e) {
+      const err = _e as Error;
+      return apiError(err.message || 'Failed to delete job', 'JOB_DELETE_ERROR', 500);
     }
   }
 }

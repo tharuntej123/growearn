@@ -53,9 +53,9 @@ export function Footer() {
               <h4 className="text-sm font-semibold text-slate-900 mb-3">Demo Accounts</h4>
               <div className="p-3 rounded-xl border border-slate-200 bg-white text-xs space-y-1.5 font-mono shadow-xs">
                 <p className="text-slate-700"><span className="text-emerald-700 font-semibold">Learner:</span> student@example.com</p>
-                <p className="text-slate-700"><span className="text-teal-700 font-semibold">Mentor:</span> priya.sharma@example.com</p>
+                <p className="text-slate-700"><span className="text-teal-700 font-semibold">Mentor:</span> mentor@example.com</p>
                 <p className="text-slate-700"><span className="text-emerald-700 font-semibold">Freelancer:</span> professional@example.com</p>
-                <p className="text-slate-700"><span className="text-slate-800 font-semibold">Company:</span> careers@novatech-solutions.io</p>
+                <p className="text-slate-700"><span className="text-slate-800 font-semibold">Company:</span> company@example.com</p>
                 <p className="text-slate-500 pt-1 border-t border-slate-100">Password: <span className="text-emerald-700 font-bold">Demo1234!</span></p>
               </div>
             </>

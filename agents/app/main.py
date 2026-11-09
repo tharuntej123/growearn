@@ -40,19 +40,17 @@ def verify_internal_secret(header_secret: str = Security(api_key_header)):
     Verifies that the caller provides a valid internal service secret using constant-time comparison.
     Supports current and previous keys for seamless zero-downtime rotation.
     """
-    # If no key is set and strictly running in local non-production, bypass for ease of development
-    if not INTERNAL_SERVICE_KEY and ENVIRONMENT != "production":
-        return True
-
+    # Require X-Internal-Secret unconditionally across all environments
     if not header_secret:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing required X-Internal-Secret authentication header."
         )
 
+    expected_key = INTERNAL_SERVICE_KEY or ("development-internal-key-32-characters-minimum" if ENVIRONMENT != "production" else "")
     is_valid = False
-    if INTERNAL_SERVICE_KEY:
-        if hmac.compare_digest(header_secret.encode("utf-8"), INTERNAL_SERVICE_KEY.encode("utf-8")):
+    if expected_key:
+        if hmac.compare_digest(header_secret.encode("utf-8"), expected_key.encode("utf-8")):
             is_valid = True
 
     if not is_valid and INTERNAL_SERVICE_KEY_PREVIOUS:

@@ -24,6 +24,7 @@ export interface VectorRetrieverOptions extends BaseRetrieverInput {
   mode?: 'vector' | 'hybrid';
   userRole?: string;
   userId?: string;
+  isVerifiedCompany?: boolean;
 }
 
 export class PgVectorRetriever extends BaseRetriever {
@@ -35,6 +36,7 @@ export class PgVectorRetriever extends BaseRetriever {
   public mode: 'vector' | 'hybrid';
   public userRole: string;
   public userId?: string;
+  public isVerifiedCompany: boolean;
 
   constructor(options: VectorRetrieverOptions = {}) {
     super(options);
@@ -48,6 +50,7 @@ export class PgVectorRetriever extends BaseRetriever {
       this.userRole = 'LEARNER';
     }
     this.userId = options.userId;
+    this.isVerifiedCompany = options.isVerifiedCompany ?? true;
   }
 
   // Core LangChain retrieval method.
@@ -75,7 +78,11 @@ export class PgVectorRetriever extends BaseRetriever {
       return [];
     }
 
-    const allowedSources = ROLE_ALLOWED_SOURCE_TYPES[this.userRole] || ['course', 'mentor', 'job'];
+    let allowedSources = [...(ROLE_ALLOWED_SOURCE_TYPES[this.userRole] || ['course', 'mentor', 'job'])];
+    // If COMPANY role has not been admin-verified, strictly disallow candidate retrieval
+    if (this.userRole === 'COMPANY' && !this.isVerifiedCompany) {
+      allowedSources = allowedSources.filter((s) => s !== 'candidate');
+    }
     let effectiveFilter: string | string[] | undefined = undefined;
 
     if (this.sourceType && this.sourceType.trim() !== '') {
