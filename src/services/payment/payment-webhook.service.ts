@@ -138,7 +138,7 @@ export class PaymentWebhookService {
           status: 'FAILED',
           errorMessage: err.message,
         },
-      }).catch(() => {});
+      }).catch(() => { });
 
       return { status: 'FAILED', eventId, processed: false, error: err.message };
     }

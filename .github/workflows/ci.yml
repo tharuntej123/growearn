@@ -27,6 +27,9 @@ jobs:
           --health-retries 10
 
     env:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgrespassword"
+      POSTGRES_DB: "growearn_test"
       DATABASE_URL: "postgresql://postgres:postgrespassword@127.0.0.1:5432/growearn_test?sslmode=disable"
       DIRECT_URL: "postgresql://postgres:postgrespassword@127.0.0.1:5432/growearn_test?sslmode=disable"
       AUTH_SECRET: "ci-test-auth-secret-key-minimum-32-chars-long-secure-random"

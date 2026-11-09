@@ -81,9 +81,9 @@ export class AuthService {
     return OAuthService.confirmAccountLink(params);
   }
 
-    /**
-   * Updates user role for active authenticated user.
-   */
+  /**
+ * Updates user role for active authenticated user.
+ */
   static async selectRole(userId: string, role: string, ipAddress?: string, userAgent?: string) {
     const rawRole = role.toUpperCase();
     if (rawRole === 'ADMIN') {
@@ -126,7 +126,7 @@ export class AuthService {
         ipAddress: ipAddress || null,
         userAgent: userAgent || null,
       },
-    }).catch(() => {});
+    }).catch(() => { });
 
     const session = await createDatabaseSession(updated);
 
@@ -176,7 +176,7 @@ export class AuthService {
         ipAddress: ipAddress || null,
         userAgent: userAgent || null,
       },
-    }).catch(() => {});
+    }).catch(() => { });
 
     const session = await createDatabaseSession(newUser);
 
@@ -217,7 +217,7 @@ export class AuthService {
         ipAddress: ipAddress || null,
         userAgent: userAgent || null,
       },
-    }).catch(() => {});
+    }).catch(() => { });
 
     const session = await createDatabaseSession(user);
 

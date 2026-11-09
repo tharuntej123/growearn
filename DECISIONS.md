@@ -22,3 +22,4 @@
 
 ## Decision 5: Prisma Password Hash Stripping
 - A Prisma client `$extends` result transform strips `passwordHash` by default from all user queries unless explicitly selected for password authentication verification.
+

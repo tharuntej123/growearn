@@ -20,6 +20,7 @@ export const registerSchema = z
       .refine(
         (val) => ['LEARNER', 'FREELANCER', 'MENTOR', 'COMPANY'].includes(val.toUpperCase()),
         { message: 'Invalid role selection' }
+        
       )
       .optional()
       .default('LEARNER'),

@@ -16,6 +16,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+ENV DATABASE_URL="postgresql://postgres:postgres@localhost:5432/growearn?schema=public"
+ENV AUTH_SECRET="ci-docker-build-auth-secret-minimum-32-chars"
 RUN npm run build
 
 # Stage 3: Production runtime runner (minimal standalone image)

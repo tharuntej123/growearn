@@ -57,3 +57,4 @@
 - Raw `fetch` calls in client components lack error handling (`res.ok`), causing unhandled runtime exceptions.
 - Missing `not-found.tsx`, `global-error.tsx`, and route-level `error.tsx` error boundaries.
 - Tight coupling between API outputs and frontend consumption without shared Zod schema contracts (`src/contracts/`).
+

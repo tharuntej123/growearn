@@ -107,3 +107,4 @@ export class JobApplicationService {
     return updated;
   }
 }
+
