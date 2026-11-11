@@ -16,6 +16,7 @@ import {
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
 import { CourseUI } from '@/types/ui';
+import { CheckoutModal } from '@/components/payment/checkout-modal';
 
 export default function CoursesPage() {
   const { user } = useAuth();
@@ -27,6 +28,8 @@ export default function CoursesPage() {
   const [activeCourse, setActiveCourse] = useState<CourseUI | null>(null);
   const [activeLesson, setActiveLesson] = useState<{ id?: string; title?: string; durationMinutes?: number; videoUrl?: string; content?: string } | null>(null);
   const [isEnrolling, setIsEnrolling] = useState(false);
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [selectedCourseForCheckout, setSelectedCourseForCheckout] = useState<CourseUI | null>(null);
 
   const fetchCourses = useCallback(async () => {
     setIsLoading(true);
@@ -71,6 +74,13 @@ export default function CoursesPage() {
       return;
     }
 
+    const targetCourse = (courses.find((c) => c.id === courseId) || activeCourse) as CourseUI | null;
+    if (targetCourse && Number(targetCourse.price || 0) > 0) {
+      setSelectedCourseForCheckout(targetCourse);
+      setShowCheckoutModal(true);
+      return;
+    }
+
     setIsEnrolling(true);
     try {
       const res = await fetch(`/api/courses/${courseId}/enroll`, { method: 'POST' });
@@ -78,6 +88,11 @@ export default function CoursesPage() {
       if (json.success) {
         toast.success('Successfully enrolled! Course curriculum unlocked.');
         handleOpenCourse(courseId);
+      } else if (res.status === 402 || json.error?.code === 'PAYMENT_REQUIRED') {
+        if (targetCourse) {
+          setSelectedCourseForCheckout(targetCourse);
+          setShowCheckoutModal(true);
+        }
       } else {
         toast.error(json.error?.message || 'Enrollment failed');
       }
@@ -85,6 +100,15 @@ export default function CoursesPage() {
       toast.error('Error during enrollment');
     } finally {
       setIsEnrolling(false);
+    }
+  };
+
+  const handlePaymentSuccess = () => {
+    if (selectedCourseForCheckout) {
+      toast.success(`🎉 Payment confirmed! You are now enrolled in "${selectedCourseForCheckout.title}"!`);
+      setShowCheckoutModal(false);
+      handleOpenCourse(selectedCourseForCheckout.id);
+      setSelectedCourseForCheckout(null);
     }
   };
 
@@ -240,7 +264,7 @@ export default function CoursesPage() {
                 <div className="space-y-4 bg-slate-50 p-4 rounded-2xl border border-slate-200 h-fit">
                   <div className="flex items-center justify-between pb-2 border-b border-slate-200">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600">Course Syllabus</h4>
-                    <span className="text-xs text-emerald-700 font-bold">{Number(activeCourse.price || 0) > 0 ? `$${activeCourse.price}` : 'Free'}</span>
+                    <span className="text-xs text-emerald-700 font-bold">{Number(activeCourse.price || 0) > 0 ? `₹${activeCourse.price}` : 'Free'}</span>
                   </div>
 
                   <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
@@ -280,13 +304,30 @@ export default function CoursesPage() {
                       isLoading={isEnrolling}
                       className="w-full shadow-sm"
                     >
-                      Enroll in Course ({Number(activeCourse.price || 0) > 0 ? `$${activeCourse.price}` : 'Free'})
+                      {Number(activeCourse.price || 0) > 0 ? `Buy Course (₹${activeCourse.price})` : 'Enroll in Course (Free)'}
                     </Button>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+        )}
+
+        {/* Cashfree Course Checkout Modal */}
+        {showCheckoutModal && selectedCourseForCheckout && (
+          <CheckoutModal
+            isOpen={showCheckoutModal}
+            onClose={() => {
+              setShowCheckoutModal(false);
+              setSelectedCourseForCheckout(null);
+            }}
+            itemType="COURSE"
+            itemId={selectedCourseForCheckout.id}
+            title={selectedCourseForCheckout.title}
+            price={Number(selectedCourseForCheckout.price || 0)}
+            instructorOrMentorName={selectedCourseForCheckout.instructor?.name}
+            onSuccess={handlePaymentSuccess}
+          />
         )}
       </main>
     </div>

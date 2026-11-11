@@ -88,6 +88,8 @@ export default function CourseDetailPage() {
         setIsEnrolled(true);
         setEnrollment(json.data.enrollment);
         toast.success(`🎉 You are now enrolled in "${course.title}"!`);
+      } else if (res.status === 402 || json.error?.code === 'PAYMENT_REQUIRED') {
+        setShowCheckoutModal(true);
       } else {
         toast.error(json.error?.message || 'Enrollment failed');
       }
@@ -230,7 +232,7 @@ export default function CourseDetailPage() {
                   disabled={isEnrolling}
                   className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm h-11 rounded-xl shadow-sm"
                 >
-                  {isEnrolling ? 'Enrolling...' : 'Enroll in Course'}
+                  {isEnrolling ? 'Enrolling...' : (course.price ?? 0) > 0 ? `Buy Course (₹${course.price})` : 'Enroll Free'}
                 </Button>
               )}
 

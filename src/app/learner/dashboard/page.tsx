@@ -1,17 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { useAuth } from '@/context/auth-context';
 import { DashboardSidebar } from '@/components/layout/sidebar';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Avatar } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import {
   Sparkles,
-  Users,
-  ArrowRight,
   Search,
   RefreshCw,
   Bot,
@@ -32,7 +27,9 @@ const POPULAR_SKILLS = [
 import { CourseUI, MentorUI, AgenticRoadmapDataUI, RAGRoadmapDataUI } from '@/types/ui';
 import { AgenticRoadmapView, DatabaseRoadmapView } from '@/components/learner/learner-roadmap-views';
 import { LearnerCoursesSection } from '@/components/learner/learner-courses-section';
+import { LearnerMentorsSection } from '@/components/learner/learner-mentors-section';
 import { MentorshipRequestModal } from '@/components/learner/mentorship-request-modal';
+import { CheckoutModal } from '@/components/payment/checkout-modal';
 
 export default function LearnerDashboardPage() {
   const { user } = useAuth();
@@ -60,6 +57,10 @@ export default function LearnerDashboardPage() {
 
   // Enrolled courses state
   const [enrolledCourseIds, setEnrolledCourseIds] = useState<Set<string>>(new Set());
+
+  // Course Cashfree Checkout state
+  const [selectedCourseForCheckout, setSelectedCourseForCheckout] = useState<CourseUI | null>(null);
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
 
   // CrewAI Multi-Agent Roadmap state
   const [agenticData, setAgenticData] = useState<AgenticRoadmapDataUI | null>(null);
@@ -181,25 +182,49 @@ export default function LearnerDashboardPage() {
     }
   };
 
-  const handleEnroll = async (courseId: string, courseTitle: string) => {
+  const handleEnroll = async (course: CourseUI) => {
     if (!user) {
       toast.error('Please sign in to enroll in this course');
       return;
     }
 
+    if (enrolledCourseIds.has(course.id)) {
+      toast.info(`You are already enrolled in "${course.title}".`);
+      return;
+    }
+
+    // If this is a paid course, launch Cashfree Checkout Modal directly
+    if (Number(course.price || 0) > 0) {
+      setSelectedCourseForCheckout(course);
+      setShowCheckoutModal(true);
+      return;
+    }
+
     try {
-      const res = await fetch(`/api/courses/${courseId}/enroll`, {
+      const res = await fetch(`/api/courses/${course.id}/enroll`, {
         method: 'POST',
       });
       const json = await res.json();
       if (json.success) {
-        setEnrolledCourseIds((prev) => new Set([...prev, courseId]));
-        toast.success(`🎉 Successfully enrolled in "${courseTitle}"!`);
+        setEnrolledCourseIds((prev) => new Set([...prev, course.id]));
+        toast.success(`🎉 Successfully enrolled in "${course.title}"!`);
+      } else if (res.status === 402 || json.error?.code === 'PAYMENT_REQUIRED') {
+        setSelectedCourseForCheckout(course);
+        setShowCheckoutModal(true);
       } else {
         toast.error(json.error?.message || 'Enrollment failed');
       }
     } catch {
       toast.error('Network error during enrollment');
+    }
+  };
+
+  const handlePaymentSuccess = () => {
+    if (selectedCourseForCheckout) {
+      setEnrolledCourseIds((prev) => new Set([...prev, selectedCourseForCheckout.id]));
+      toast.success(`🎉 Payment confirmed! You are now enrolled in "${selectedCourseForCheckout.title}"!`);
+      setShowCheckoutModal(false);
+      setSelectedCourseForCheckout(null);
     }
   };
 
@@ -242,6 +267,20 @@ export default function LearnerDashboardPage() {
   useEffect(() => {
     executeRAGSearch('Java', false);
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetch('/api/dashboard/stats')
+        .then((r) => r.json())
+        .then((json) => {
+          if (json.success && json.data?.userContext?.enrolledCourses) {
+            const ids = json.data.userContext.enrolledCourses.map((c: { id: string }) => c.id);
+            setEnrolledCourseIds(new Set(ids));
+          }
+        })
+        .catch(() => {});
+    }
+  }, [user]);
 
   const handlePickSkill = (skillName: string) => {
     setSelectedSkill(skillName);
@@ -363,105 +402,17 @@ export default function LearnerDashboardPage() {
         />
 
         {/* Top 5 Verified Mentors Section */}
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg sm:text-xl font-bold text-slate-900 flex items-center gap-2">
-                <Users className="h-5 w-5 text-emerald-600" />
-                <span>Industry Mentors in &quot;{selectedSkill}&quot;</span>
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Book 1-on-1 architecture audits, code reviews, and technical mock interviews with verified senior engineers.
-              </p>
-            </div>
-            <Link href="/mentors" className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
-              <span>View All Mentors</span>
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-
-          {mentors.length === 0 ? (
-            <Card className="p-8 text-center bg-white border border-slate-200 rounded-2xl">
-              <p className="text-sm text-slate-500">No mentors currently matched for this skill query.</p>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {mentors.map((m) => (
-                <Card
-                  key={m.id}
-                  className="p-5 bg-white border border-slate-200 rounded-2xl hover:shadow-md transition-all flex flex-col justify-between"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-3">
-                      <Avatar src={m.avatarUrl} fallback={m.name} size="md" className="rounded-xl ring-2 ring-emerald-100" />
-                      <div className="overflow-hidden">
-                        <Link href={`/mentors/${m.id}`}>
-                          <h3 className="text-sm font-bold text-slate-900 hover:text-emerald-600 transition-colors truncate">
-                            {m.name}
-                          </h3>
-                        </Link>
-                        <p className="text-xs text-slate-500 truncate">{m.headline || `${m.yearsExperience}+ yrs experience`}</p>
-                        <div className="flex items-center gap-2 mt-1 text-xs font-semibold text-emerald-700">
-                          <span>⭐ {m.rating}</span>
-                          <span>•</span>
-                          <span>${m.hourlyRate}/hr</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <p className="text-xs text-slate-600 leading-relaxed line-clamp-3">{m.bio}</p>
-
-                    <div className="flex flex-wrap gap-1 pt-1">
-                      {(typeof m.expertise === 'string' ? m.expertise.split(',') : []).slice(0, 4).map((exp: string) => (
-                        <span key={exp} className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium">
-                          {exp}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
-                    <Link href={`/mentors/${m.id}`} className="flex-1">
-                      <Button variant="outline" size="sm" className="w-full text-xs font-semibold">
-                        View Profile
-                      </Button>
-                    </Link>
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        setSelectedMentorForRequest(m);
-                        setRequestTopic(`Mentorship on ${selectedSkill}`);
-                      }}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold"
-                    >
-                      Request Mentorship
-                    </Button>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )}
-
-          {/* Show Next 5 Mentors Pagination */}
-          {hasMoreMentors && (
-            <div className="pt-2 text-center">
-              <Button
-                variant="outline"
-                onClick={loadNext5Mentors}
-                disabled={isLoadingMoreMentors}
-                className="px-6 rounded-xl text-xs font-semibold border-slate-300 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300"
-              >
-                {isLoadingMoreMentors ? (
-                  <span className="flex items-center gap-2">
-                    <RefreshCw className="h-3.5 w-3.5 animate-spin" /> Loading next mentors...
-                  </span>
-                ) : (
-                  <span>Show Next 5 Mentors (Exclude Displayed)</span>
-                )}
-              </Button>
-            </div>
-          )}
-        </section>
+        <LearnerMentorsSection
+          selectedSkill={selectedSkill}
+          mentors={mentors}
+          onRequestMentorship={(m) => {
+            setSelectedMentorForRequest(m);
+            setRequestTopic(`Mentorship on ${selectedSkill}`);
+          }}
+          hasMoreMentors={hasMoreMentors}
+          isLoadingMoreMentors={isLoadingMoreMentors}
+          onLoadNext5Mentors={loadNext5Mentors}
+        />
 
         {/* Mentorship Request Modal */}
         <MentorshipRequestModal
@@ -476,6 +427,23 @@ export default function LearnerDashboardPage() {
           setPreferredTime={setRequestPreferredTime}
           isSubmitting={isSubmittingRequest}
         />
+
+        {/* Cashfree Course Checkout Modal */}
+        {showCheckoutModal && selectedCourseForCheckout && (
+          <CheckoutModal
+            isOpen={showCheckoutModal}
+            onClose={() => {
+              setShowCheckoutModal(false);
+              setSelectedCourseForCheckout(null);
+            }}
+            itemType="COURSE"
+            itemId={selectedCourseForCheckout.id}
+            title={selectedCourseForCheckout.title}
+            price={Number(selectedCourseForCheckout.price || 0)}
+            instructorOrMentorName={selectedCourseForCheckout.instructor?.name}
+            onSuccess={handlePaymentSuccess}
+          />
+        )}
       </main>
     </div>
   );

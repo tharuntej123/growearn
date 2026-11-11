@@ -6,14 +6,14 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
-import { BookOpen, ArrowRight, Check, RefreshCw } from 'lucide-react';
+import { BookOpen, ArrowRight, Check, RefreshCw, CreditCard } from 'lucide-react';
 import { CourseUI } from '@/types/ui';
 
 interface LearnerCoursesSectionProps {
   selectedSkill: string;
   courses: CourseUI[];
   enrolledCourseIds: Set<string>;
-  onEnroll: (courseId: string, title: string) => void;
+  onEnroll: (course: CourseUI) => void;
   hasMoreCourses: boolean;
   isLoadingMoreCourses: boolean;
   onLoadNext5Courses: () => void;
@@ -63,7 +63,7 @@ export function LearnerCoursesSection({
                     {c.level || 'BEGINNER'}
                   </Badge>
                   <span className="text-xs font-bold text-slate-900">
-                    {c.price === 0 ? 'Free' : `$${c.price}`}
+                    {c.price === 0 ? 'Free' : `₹${c.price}`}
                   </span>
                 </div>
 
@@ -91,7 +91,7 @@ export function LearnerCoursesSection({
                 </Link>
                 <Button
                   size="sm"
-                  onClick={() => onEnroll(c.id, c.title)}
+                  onClick={() => onEnroll(c)}
                   disabled={enrolledCourseIds.has(c.id)}
                   className={`text-xs font-semibold ${
                     enrolledCourseIds.has(c.id)
@@ -103,8 +103,12 @@ export function LearnerCoursesSection({
                     <span className="flex items-center gap-1">
                       <Check className="h-3.5 w-3.5" /> Enrolled
                     </span>
+                  ) : Number(c.price || 0) > 0 ? (
+                    <span className="flex items-center gap-1">
+                      <CreditCard className="h-3.5 w-3.5" /> Buy (₹{c.price})
+                    </span>
                   ) : (
-                    'Enroll Now'
+                    'Enroll Free'
                   )}
                 </Button>
               </div>

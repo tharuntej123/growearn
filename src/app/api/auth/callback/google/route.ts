@@ -8,3 +8,4 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   return AuthController.googleCallback(req);
 }
+

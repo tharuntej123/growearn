@@ -298,6 +298,23 @@ export class CourseController {
         return apiError('Course not found', 'NOT_FOUND', 404);
       }
 
+      // Check if user is already enrolled
+      const existingEnrollment = await prisma.enrollment.findUnique({
+        where: {
+          studentId_courseId: {
+            studentId: authUser.id,
+            courseId: course.id,
+          },
+        },
+      });
+
+      if (existingEnrollment) {
+        return apiSuccess({
+          message: `Already enrolled in ${course.title}`,
+          enrollment: existingEnrollment,
+        });
+      }
+
       // Check if this is a paid course
       if (Number(course.price) > 0 && authUser.role !== 'ADMIN' && course.instructorId !== authUser.id) {
         const purchase = await prisma.coursePurchase.findUnique({
@@ -313,7 +330,8 @@ export class CourseController {
           return apiError(
             `Payment required: "${course.title}" is a paid course (₹${course.price}). Please complete Cashfree payment checkout to gain access.`,
             'PAYMENT_REQUIRED',
-            402
+            402,
+            { courseId: course.id, title: course.title, price: Number(course.price) }
           );
         }
       }
