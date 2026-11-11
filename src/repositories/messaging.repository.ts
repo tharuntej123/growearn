@@ -1,7 +1,6 @@
 import { prisma } from '@/lib/prisma';
 
 export class MessagingRepository {
-  // Get all conversations for a user with last message and unread count.
   static async getUserConversations(userId: string) {
     const participants = await prisma.conversationParticipant.findMany({
       where: { userId },
@@ -60,7 +59,6 @@ export class MessagingRepository {
     });
   }
 
-  // Verify whether a user is a participant in a conversation.
   static async isParticipant(conversationId: string, userId: string): Promise<boolean> {
     const participant = await prisma.conversationParticipant.findUnique({
       where: {
@@ -73,7 +71,6 @@ export class MessagingRepository {
     return Boolean(participant);
   }
 
-  // Get messages for a specific conversation with pagination, verifying participant access.
   static async getConversationMessages(conversationId: string, userId: string, limit = 50, offset = 0) {
     const allowed = await this.isParticipant(conversationId, userId);
     if (!allowed) {
@@ -97,7 +94,6 @@ export class MessagingRepository {
       skip: offset,
     });
 
-    // Mark messages from others as read
     await prisma.message.updateMany({
       where: {
         conversationId,
@@ -107,7 +103,6 @@ export class MessagingRepository {
       data: { isRead: true },
     });
 
-    // Update lastReadAt for this participant
     await prisma.conversationParticipant.update({
       where: {
         conversationId_userId: {
@@ -121,7 +116,6 @@ export class MessagingRepository {
     return messages;
   }
 
-  // Send a new message to a conversation.
   static async sendMessage(data: {
     conversationId: string;
     senderId: string;
@@ -161,13 +155,11 @@ export class MessagingRepository {
     return message;
   }
 
-  // Find existing 1-on-1 direct conversation or create a new one.
   static async getOrCreateDirectConversation(userId1: string, userId2: string) {
     if (userId1 === userId2) {
       throw new Error('Cannot create conversation with yourself');
     }
 
-    // Find conversation where both are participants
     const commonConversations = await prisma.conversation.findFirst({
       where: {
         isGroup: false,
@@ -191,7 +183,6 @@ export class MessagingRepository {
       return commonConversations;
     }
 
-    // Create new conversation with both participants
     return prisma.conversation.create({
       data: {
         isGroup: false,

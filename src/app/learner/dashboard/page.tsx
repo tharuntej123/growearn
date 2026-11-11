@@ -38,7 +38,6 @@ export default function LearnerDashboardPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [ragData, setRagData] = useState<RAGRoadmapDataUI | null>(null);
 
-  // Pagination & duplicate exclusion states
   const [courses, setCourses] = useState<CourseUI[]>([]);
   const [mentors, setMentors] = useState<MentorUI[]>([]);
   const [displayedCourseIds, setDisplayedCourseIds] = useState<string[]>([]);
@@ -48,21 +47,17 @@ export default function LearnerDashboardPage() {
   const [hasMoreCourses, setHasMoreCourses] = useState(true);
   const [hasMoreMentors, setHasMoreMentors] = useState(true);
 
-  // Mentorship request modal state
   const [selectedMentorForRequest, setSelectedMentorForRequest] = useState<MentorUI | null>(null);
   const [requestTopic, setRequestTopic] = useState('');
   const [requestMessage, setRequestMessage] = useState('');
   const [requestPreferredTime, setRequestPreferredTime] = useState('');
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
 
-  // Enrolled courses state
   const [enrolledCourseIds, setEnrolledCourseIds] = useState<Set<string>>(new Set());
 
-  // Course Cashfree Checkout state
   const [selectedCourseForCheckout, setSelectedCourseForCheckout] = useState<CourseUI | null>(null);
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
 
-  // CrewAI Multi-Agent Roadmap state
   const [agenticData, setAgenticData] = useState<AgenticRoadmapDataUI | null>(null);
   const [isGeneratingAgentic, setIsGeneratingAgentic] = useState(false);
 
@@ -193,7 +188,6 @@ export default function LearnerDashboardPage() {
       return;
     }
 
-    // If this is a paid course, launch Cashfree Checkout Modal directly
     if (Number(course.price || 0) > 0) {
       setSelectedCourseForCheckout(course);
       setShowCheckoutModal(true);

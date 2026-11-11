@@ -266,7 +266,6 @@ export class CourseController {
         },
       });
 
-      // Auto-ingest into PostgreSQL pgvector using BGE-M3 (1024 dims)
       RAGSyncService.triggerSyncCourse(course.id);
 
       return apiSuccess({ course }, 201);
@@ -298,7 +297,6 @@ export class CourseController {
         return apiError('Course not found', 'NOT_FOUND', 404);
       }
 
-      // Check if user is already enrolled
       const existingEnrollment = await prisma.enrollment.findUnique({
         where: {
           studentId_courseId: {
@@ -315,7 +313,6 @@ export class CourseController {
         });
       }
 
-      // Check if this is a paid course
       if (Number(course.price) > 0 && authUser.role !== 'ADMIN' && course.instructorId !== authUser.id) {
         const purchase = await prisma.coursePurchase.findUnique({
           where: {
@@ -338,7 +335,6 @@ export class CourseController {
 
       const enrollment = await CourseRepository.enrollStudent(authUser.id, course.id);
 
-      // Create persistent notification for student
       await prisma.notification.create({
         data: {
           userId: authUser.id,

@@ -136,7 +136,6 @@ export class MentorController {
         return apiError('Unauthorized: Please log in to request mentorship', 'UNAUTHORIZED', 401);
       }
 
-      // Rate limit: 10 mentorship requests / minute
       const rateLimitResponse = await enforceRateLimit(req, 'mentorship:request', 10, 60, authUser.id);
       if (rateLimitResponse) return rateLimitResponse;
 
@@ -162,7 +161,6 @@ export class MentorController {
         return apiError(validated.error.errors[0]?.message || 'Validation failed', 'VALIDATION_ERROR', 400);
       }
 
-      // Check for existing pending request
       const existingRequest = await prisma.mentorshipRequest.findFirst({
         where: {
           studentId: authUser.id,
@@ -186,7 +184,6 @@ export class MentorController {
         },
       });
 
-      // Send persistent notification to the mentor
       await prisma.notification.create({
         data: {
           userId: mentor.userId,
@@ -288,7 +285,6 @@ export class MentorController {
         return apiError('Forbidden: You can only manage requests sent to your mentor profile', 'FORBIDDEN', 403);
       }
 
-      // Enforce strict mentorship state machine transition rules
       const currentStatus = mentorshipRequest.status;
       if (currentStatus === 'COMPLETED' || currentStatus === 'REJECTED') {
         return apiError(
@@ -318,13 +314,11 @@ export class MentorController {
       });
 
       if (status === 'ACCEPTED') {
-        // Create conversation between student and mentor if not existing
         await MessagingRepository.getOrCreateDirectConversation(
           mentorshipRequest.studentId,
           mentorshipRequest.mentor.userId
         );
 
-        // Notify student
         await prisma.notification.create({
           data: {
             userId: mentorshipRequest.studentId,

@@ -54,7 +54,6 @@ export function apiError(
     message = messageOrCode;
   }
 
-  // Sanitize internal server errors in production and attach diagnostic requestId
   const requestId = crypto.randomUUID();
   let sanitizedMessage = message;
   if (status >= 500 && process.env.NODE_ENV === 'production') {

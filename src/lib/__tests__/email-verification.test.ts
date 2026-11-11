@@ -7,7 +7,7 @@ export async function runEmailVerificationTests() {
   function createVerificationToken(userId: string): { rawToken: string; tokenHash: string } {
     const rawToken = crypto.randomBytes(32).toString('hex');
     const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
     tokenStore.set(tokenHash, { tokenHash, expiresAt, used: false, userId });
     return { rawToken, tokenHash };
   }
@@ -30,13 +30,11 @@ export async function runEmailVerificationTests() {
     return { success: true, userId: record.userId };
   }
 
-  // 1. generates secure 32-byte token and stores sha256 hash
   const { rawToken, tokenHash } = createVerificationToken('user_test_1');
   assert.strictEqual(rawToken.length, 64);
   assert.strictEqual(tokenHash.length, 64);
   assert.notStrictEqual(rawToken, tokenHash);
 
-  // 2. successfully verifies and invalidates valid token on first use
   const { rawToken: rawToken2 } = createVerificationToken('user_test_2');
   const result1 = verifyToken(rawToken2);
   assert.strictEqual(result1.success, true);
@@ -46,7 +44,6 @@ export async function runEmailVerificationTests() {
   assert.strictEqual(result2.success, false);
   assert.strictEqual(result2.error, 'TOKEN_ALREADY_USED');
 
-  // 3. strictly rejects expired verification tokens
   const { rawToken: rawToken3, tokenHash: tokenHash3 } = createVerificationToken('user_test_3');
   const record = tokenStore.get(tokenHash3)!;
   record.expiresAt = new Date(Date.now() - 1000);
@@ -54,7 +51,6 @@ export async function runEmailVerificationTests() {
   assert.strictEqual(expiredResult.success, false);
   assert.strictEqual(expiredResult.error, 'TOKEN_EXPIRED');
 
-  // 4. strictly rejects forged or tampered verification tokens
   const forgedResult = verifyToken('forged_fake_token_value_that_was_never_issued');
   assert.strictEqual(forgedResult.success, false);
   assert.strictEqual(forgedResult.error, 'INVALID_TOKEN');

@@ -97,14 +97,10 @@ export class AuthService {
       throw new Error('User not found');
     }
 
-    // Critical Invariant: Prevent unauthorized role changes.
-    // When a user signs up as a role (e.g. LEARNER, FREELANCER, MENTOR, COMPANY), they must retain
-    // that role and cannot self-switch roles to access other role areas.
     if (user.role && user.role !== normalized) {
       throw new Error(`Forbidden: Account role is permanently assigned to ${user.role}. Self-service role swapping is forbidden.`);
     }
 
-    // Critical Invariant: Prevent removing or demoting the last active administrator
     if (user.role === 'ADMIN' && normalized !== 'ADMIN') {
       const activeAdminCount = await prisma.user.count({
         where: { role: 'ADMIN' },
@@ -116,7 +112,6 @@ export class AuthService {
 
     const updated = await UserRepository.updateRole(userId, normalized);
 
-    // Record role change audit log
     await prisma.auditLog.create({
       data: {
         userId: updated.id,
@@ -200,7 +195,6 @@ export class AuthService {
     const email = input.email.toLowerCase().trim();
     const user = await UserRepository.findByEmail(email);
 
-    // Constant-time protection: always execute scrypt even if user does not exist
     const targetHash = user?.passwordHash || this.DUMMY_PASSWORD_HASH;
     const isValid = await verifyPassword(input.password, targetHash);
 
