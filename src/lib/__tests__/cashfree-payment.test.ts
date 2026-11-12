@@ -206,7 +206,7 @@ async function runCashfreePaymentTests() {
     });
 
     assert(Boolean(preOrder && preOrder.id), 'Order', 'PaymentOrder persisted with providerOrderId column');
-    assert(preOrder.amount === paidCourse.price, 'Order', 'Order amount strictly derived from database course price');
+    assert(Number(preOrder.amount) === Number(paidCourse.price), 'Order', 'Order amount strictly derived from database course price');
     assert(preOrder.currency === 'INR', 'Order', 'Order currency enforced as INR');
     assert(preOrder.status === 'CREATED', 'Order', 'Initial order status is CREATED');
 
@@ -396,7 +396,7 @@ async function runCashfreePaymentTests() {
     const purchase = await prisma.coursePurchase.findUnique({
       where: { userId_courseId: { userId: learner.id, courseId: paidCourse.id } },
     });
-    assert(Boolean(purchase && purchase.amountPaid === paidCourse.price), 'Entitlements', 'CoursePurchase recorded with verified price');
+    assert(Boolean(purchase && Number(purchase.amountPaid) === Number(paidCourse.price)), 'Entitlements', 'CoursePurchase recorded with verified price');
 
     // Verify active Enrollment
     const enrollment = await prisma.enrollment.findUnique({
