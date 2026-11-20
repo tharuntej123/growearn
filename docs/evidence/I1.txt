@@ -1,1 +1,0 @@
-PASS: All 5 canonical role end-to-end browser specifications pass in Playwright suite.

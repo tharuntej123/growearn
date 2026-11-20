@@ -1,1 +1,0 @@
-PASS: docs/payments.md specifies exact payment lifecycle, Cashfree PG integration, and computed settlement ledger.

@@ -5,6 +5,7 @@ import { DashboardSidebar } from '@/components/layout/sidebar';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Pagination } from '@/components/ui/pagination';
 import {
   ShieldAlert,
   RefreshCw,
@@ -103,8 +104,8 @@ export default function AdminAuditLogsPage() {
                             log.action.includes('REGISTER') || log.action.includes('LOGIN')
                               ? 'secondary'
                               : log.action.includes('VERIFY') || log.action.includes('MODERATE')
-                              ? 'success'
-                              : 'warning'
+                                ? 'success'
+                                : 'warning'
                           }
                           className="font-mono text-[11px]"
                         >
@@ -137,33 +138,7 @@ export default function AdminAuditLogsPage() {
             </table>
           </div>
 
-          {totalPages > 1 && (
-            <div className="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
-              <span>
-                Page {page} of {totalPages}
-              </span>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={page <= 1 || loading}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="h-8 px-3"
-                >
-                  Previous
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={page >= totalPages || loading}
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  className="h-8 px-3"
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
+          <Pagination page={page} totalPages={totalPages} loading={loading} onPageChange={setPage} />
         </Card>
       </main>
     </div>

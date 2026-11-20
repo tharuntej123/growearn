@@ -4,7 +4,7 @@ GrowEarn is an AI-powered career-to-earning platform that connects learners, men
 
 ---
 
-## 🌟 Resume & Architecture Highlights
+## 🌟 Highlights
 
 1. **Enterprise Full-Stack Platform**: Built with Next.js 16 (App Router), React 19, TypeScript, PostgreSQL 16/18 with `pgvector`, and Prisma ORM. Connects 5 user roles: **Learner**, **Freelancer**, **Mentor**, **Company**, and **Admin**.
 2. **Hybrid RAG Pipeline**: LangChain `RunnableSequence` paired with Groq LLM (`llama-3.3-70b-versatile`), BGE-M3 1024-dimensional dense embeddings, PostgreSQL `pgvector` HNSW index (ANN cosine distance), PostgreSQL GIN full-text search (`tsvector`), and Reciprocal Rank Fusion (RRF $k=60$) with multi-signal ranking.
@@ -43,7 +43,7 @@ GrowEarn is an AI-powered career-to-earning platform that connects learners, men
          │
          ├─── Cashfree Payment Gateway (v2023-08-01, Webhook HMAC-SHA256)
          │
-[ PostgreSQL + pgvector ] (Prisma ORM, Decimal precision, AuditLog, Outbox)
+[ PostgreSQL + pgvector ] (Prisma ORM, Decimal precision, AuditLog)
 ```
 
 ---
@@ -92,40 +92,46 @@ docker compose up -d --build
 
 ---
 
-## 🧪 Verification & Proof Suite
+## 🧪 Testing
 
-GrowEarn includes an automated 97-point auditor harness verifying security, payment integrity, RAG accuracy, multi-agent workflows, and code hygiene:
+GrowEarn includes automated suites for type safety, linting, unit testing, integration tests, end-to-end browser flows, and Python multi-agent workflows:
 
 ```bash
-# Run comprehensive 97-point auditor and proof verification
-npm run verify:all
-
-# Run TypeScript checks
+# Run TypeScript strict typecheck
 npm run typecheck
 
-# Run ESLint
+# Run ESLint rules check
 npm run lint
 
-# Run Node test suite
+# Run DB-free unit tests
+npm run test:unit
+
+# Run master integration and security test suite
 npm test
 
-# Run Python CrewAI test suite
+# Run Playwright end-to-end tests
+npm run test:e2e
+
+# Run Python CrewAI multi-agent test suite
 pytest agents/tests -v
 ```
-
-All empirical verification proofs and command outputs are preserved under `docs/evidence/`.
 
 ---
 
 ## 📄 Documentation
 
-- [Master Proof Report](docs/PROOF_REPORT.md)
-- [AI Reality & Fallback Matrix](docs/ai-reality-matrix.md)
-- [Payments & Cashfree Integration](docs/payments.md)
-- [Architecture & Benchmarks](docs/benchmarks.md)
-- [Technical Interview Guide](docs/INTERVIEW.md)
+- [Architecture Overview](docs/architecture.md)
+- [Cashfree Payments Integration](docs/payments.md)
+- [AI & RAG Pipeline](docs/ai.md)
+- [AI Request Flow](docs/ai-flow.md)
+- [CrewAI Multi-Agent Service](docs/agents.md)
+- [Security Model & RBAC](docs/security.md)
+- [Architectural Decisions Log](DECISIONS.md)
+- [Benchmarks & Performance](docs/benchmarks.md)
+- [Vercel Deployment Runbook](docs/vercel-deployment.md)
 
 ---
 
 ## 📜 License
-MIT License. Built for production demonstration and interview verification.
+
+MIT License. Built for production demonstration.

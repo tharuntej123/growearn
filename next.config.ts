@@ -6,7 +6,7 @@ const cspHeader = `
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   img-src 'self' data: https: blob:;
   font-src 'self' https://fonts.gstatic.com;
-  connect-src 'self' https://*.cashfree.com https://api.groq.com https://api.tavily.com https://accounts.google.com http://localhost:11434;
+  connect-src 'self' https://*.cashfree.com https://api.groq.com https://api.tavily.com https://accounts.google.com;
   frame-src 'self' https://sdk.cashfree.com https://accounts.google.com;
   base-uri 'self';
   form-action 'self' https://accounts.google.com;

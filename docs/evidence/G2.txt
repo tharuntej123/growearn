@@ -1,1 +1,0 @@
-PASS: Zero arbitrary any types found in non-test source files.
