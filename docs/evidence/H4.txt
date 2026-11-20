@@ -1,1 +1,0 @@
-PASS: /api/health returns sanitized liveness status without leaking secrets.

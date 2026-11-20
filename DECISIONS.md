@@ -16,9 +16,8 @@
 - Circuit breaker trips after consecutive failures to protect database connection pools.
 
 ## Decision 4: Safe Defaults for Demo Mode
-- Production builds (`NODE_ENV === 'production'`) completely disable `/api/demo/session` and demo role switchers.
-- In non-production, `ENABLE_DEMO=true` is required and strictly refuses to execute if connected to a production or cloud database.
-- `ADMIN` role is blocked from demo session generation.
+- There is no demo login endpoint.
+- Demo data comes only from the fixture seed (`prisma/seed/fixtures.ts`), which refuses to run when `APP_ENV=production`.
 
 ## Decision 5: Prisma Password Hash Stripping
 - A Prisma client `$extends` result transform strips `passwordHash` by default from all user queries unless explicitly selected for password authentication verification.

@@ -1,1 +1,0 @@
-PASS: Zero demo/fake user accounts found in production database query.

@@ -101,6 +101,9 @@ jobs:
       - name: 8. Run Master Integration & Security Test Suite
         run: npm test
 
+      - name: 8b. Run DB-free Unit Tests
+        run: npm run test:unit
+
       - name: 9. Run CrewAI Multi-Agent Python Tests
         run: |
           cd agents

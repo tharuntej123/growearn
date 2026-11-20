@@ -1,1 +1,0 @@
-PASS: Embedding model metadata stored on document chunks.

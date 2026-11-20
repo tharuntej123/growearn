@@ -5,6 +5,7 @@ import { DashboardSidebar } from '@/components/layout/sidebar';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Pagination } from '@/components/ui/pagination';
 import { Input } from '@/components/ui/input';
 import {
   BookOpen,
@@ -234,15 +235,7 @@ export default function AdminCoursesPage() {
               </tbody>
             </table>
           </div>
-          {totalPages > 1 && (
-            <div className="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-              <span>Page {page} of {totalPages}</span>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Previous</Button>
-                <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>Next</Button>
-              </div>
-            </div>
-          )}
+          <Pagination page={page} totalPages={totalPages} loading={loading} onPageChange={setPage} />
         </Card>
       </main>
     </div>

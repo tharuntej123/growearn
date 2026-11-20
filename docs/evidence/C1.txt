@@ -1,1 +1,0 @@
-PASS: Zod validation schema strictly blocks public ADMIN role registration across all input shapes.

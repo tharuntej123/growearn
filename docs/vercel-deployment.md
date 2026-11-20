@@ -55,8 +55,8 @@ Before triggering a production build:
 npm run typecheck
 npm run lint
 
-# 2. Verify all 97 automated proofs
-npm run verify:all
+# 2. Run unit tests
+npm run test:unit
 
 # 3. Verify database migrations status
 npx prisma migrate status

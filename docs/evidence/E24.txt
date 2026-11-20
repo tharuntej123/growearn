@@ -1,1 +1,0 @@
-PASS: scripts/eval/queries.json provides golden question and source pairs.
