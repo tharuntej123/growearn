@@ -2,7 +2,7 @@
 // Verifies that hostile user inputs, resume uploads, and retrieved chunk text cannot subvert system prompts.
 
 import assert from 'node:assert';
-import { PromptSafety } from '../ai/prompt-safety';
+import { PromptSafety } from '@/lib/ai/prompt-safety';
 
 export async function runPromptInjectionTests() {
   console.log('🛡️ Testing Prompt Injection Defenses & Data Boundary Encapsulation...');

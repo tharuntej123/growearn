@@ -4,11 +4,11 @@
 
 import fs from 'fs';
 import path from 'path';
-import { prisma } from '../prisma';
-import { LearnerRoadmapSearchService } from '../ai/learner-roadmap-search.service';
-import { CareerRoadmapService } from '../ai/roadmap.service';
-import { roadmapSchema } from '../ai/schemas';
-import { SkillRAGService } from '../ai/skill-rag.service';
+import { prisma } from '@/lib/prisma';
+import { LearnerRoadmapSearchService } from '@/lib/ai/learner-roadmap-search.service';
+import { CareerRoadmapService } from '@/lib/ai/roadmap.service';
+import { roadmapSchema } from '@/lib/ai/schemas';
+import { SkillRAGService } from '@/lib/ai/skill-rag.service';
 
 interface TestResult {
   name: string;

@@ -1,7 +1,7 @@
 // Production AI Assistant Test Suite validating RAG responses, intent classification, and vector search.
 
-import { AIAssistantService } from '../ai/ai-assistant.service';
-import { IntentClassifier } from '../ai/intent-classifier';
+import { AIAssistantService } from '@/lib/ai/ai-assistant.service';
+import { IntentClassifier } from '@/lib/ai/intent-classifier';
 
 async function runAITests() {
   console.log('==============================================');

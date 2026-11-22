@@ -2,14 +2,14 @@
 // Verifies that new Mentors, Jobs, Courses, and Candidates are automatically embedded via BGE-M3 (1024 dims)
 // and immediately discoverable across the platform.
 
-import { prisma } from '../prisma';
-import { JobRepository } from '../../repositories/job.repository';
-import { MentorRepository } from '../../repositories/mentor.repository';
-import { UserRepository } from '../../repositories/user.repository';
-import { SkillRAGService } from '../ai/skill-rag.service';
-import { PgVectorStore } from '../ai/vector-store';
-import { generateEmbedding, isEmbeddingConfigured } from '../ai/embeddings';
-import { RAGSyncService } from '../ai/rag-sync.service';
+import { prisma } from '@/lib/prisma';
+import { JobRepository } from '@/repositories/job.repository';
+import { MentorRepository } from '@/repositories/mentor.repository';
+import { UserRepository } from '@/repositories/user.repository';
+import { SkillRAGService } from '@/lib/ai/skill-rag.service';
+import { PgVectorStore } from '@/lib/ai/vector-store';
+import { generateEmbedding, isEmbeddingConfigured } from '@/lib/ai/embeddings';
+import { RAGSyncService } from '@/lib/ai/rag-sync.service';
 
 async function runLiveMultiRAGTest() {
   console.log('================================================================================');

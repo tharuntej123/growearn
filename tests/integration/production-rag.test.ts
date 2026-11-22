@@ -1,9 +1,9 @@
-import { ProductionRAGChain } from '../ai/rag-chain';
-import { IntentClassifier } from '../ai/intent-classifier';
-import { PgVectorRetriever } from '../ai/retriever';
-import { PgVectorStore } from '../ai/vector-store';
-import { isEmbeddingConfigured, getEmbeddingProvider } from '../ai/embeddings';
-import { prisma } from '../prisma';
+import { ProductionRAGChain } from '@/lib/ai/rag-chain';
+import { IntentClassifier } from '@/lib/ai/intent-classifier';
+import { PgVectorRetriever } from '@/lib/ai/retriever';
+import { PgVectorStore } from '@/lib/ai/vector-store';
+import { isEmbeddingConfigured, getEmbeddingProvider } from '@/lib/ai/embeddings';
+import { prisma } from '@/lib/prisma';
 
 async function runProductionRAGVerification() {
   console.log('================================================================');

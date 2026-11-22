@@ -1,4 +1,4 @@
-import { reciprocalRankFusion, hybridSearch, keywordSearch } from '../ai/vector-store';
+import { reciprocalRankFusion, hybridSearch, keywordSearch } from '@/lib/ai/vector-store';
 
 let passedCount = 0;
 let failedCount = 0;

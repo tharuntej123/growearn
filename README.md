@@ -92,6 +92,38 @@ docker compose up -d --build
 
 ---
 
+## 🗂️ Project Structure
+
+```
+growearn/
+├── src/
+│   ├── app/            Next.js App Router: pages and API routes (src/app/api/**)
+│   ├── components/     React UI, grouped by feature (auth, layout, learner, payment, ui, ...)
+│   ├── context/        React context providers (auth)
+│   ├── controllers/    HTTP layer: parse request, call services, build responses
+│   ├── services/       Business logic (payment, auth, storage, admin bootstrap, ...)
+│   ├── repositories/   Database access (Prisma)
+│   ├── validators/     Zod request schemas
+│   ├── lib/            Shared infrastructure: auth, env, prisma, rate limiter, logger, ai/ (RAG)
+│   └── types/          Shared TypeScript types
+├── prisma/             schema.prisma, migrations/, seed/
+├── agents/             Python CrewAI multi-agent service (app/, tests/)
+├── tests/
+│   ├── unit/           Fast tests with no database or network
+│   ├── integration/    Need Postgres + pgvector (and a seeded database)
+│   └── live/           Need live AI services; manual proofs and benchmarks
+├── e2e/                Playwright browser tests
+├── scripts/            Operational scripts (re-embed, session invalidation, demo reset)
+├── docs/               Architecture, payments, AI, security, deployment, decisions
+├── public/             Static assets
+├── Dockerfile, docker-compose.yml, docker-compose.override.yml.example
+└── .env.example        Every environment variable the app reads
+```
+
+Request flow: `route.ts` -> controller -> service -> repository -> Prisma.
+
+---
+
 ## 🧪 Testing
 
 GrowEarn includes automated suites for type safety, linting, unit testing, integration tests, end-to-end browser flows, and Python multi-agent workflows:
@@ -126,7 +158,7 @@ pytest agents/tests -v
 - [AI Request Flow](docs/ai-flow.md)
 - [CrewAI Multi-Agent Service](docs/agents.md)
 - [Security Model & RBAC](docs/security.md)
-- [Architectural Decisions Log](DECISIONS.md)
+- [Architectural Decisions Log](docs/DECISIONS.md)
 - [Benchmarks & Performance](docs/benchmarks.md)
 - [Vercel Deployment Runbook](docs/vercel-deployment.md)
 

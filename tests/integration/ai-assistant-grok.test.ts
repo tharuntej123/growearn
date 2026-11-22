@@ -1,5 +1,5 @@
-import { AIAssistantService } from '../ai/ai-assistant.service';
-import { prisma } from '../prisma';
+import { AIAssistantService } from '@/lib/ai/ai-assistant.service';
+import { prisma } from '@/lib/prisma';
 
 async function runTests() {
   console.log('==============================================');

@@ -25,26 +25,28 @@ export class S3StorageProvider implements IStorageProvider {
     originalName: string
   ): Promise<StorageObjectMetadata> {
     if (!this.accessKeyId || !this.secretAccessKey) {
-      logger.warn('[Storage] AWS credentials not configured, falling back to direct metadata generation');
+      throw new Error('S3 storage is not configured: set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY');
     }
 
     const host = `${this.bucket}.s3.${this.region}.amazonaws.com`;
     const endpoint = `https://${host}/${key}`;
 
-    if (this.accessKeyId && this.secretAccessKey) {
-      try {
-        await fetch(endpoint, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': mimeType,
-            'Content-Length': String(fileBuffer.length),
-            'x-amz-acl': isPrivate ? 'private' : 'public-read',
-          },
-          body: new Uint8Array(fileBuffer),
-        });
-      } catch (uploadError) {
-        logger.error(`[Storage] S3 Upload network error: ${(uploadError as Error).message}`);
+    try {
+      const res = await fetch(endpoint, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': mimeType,
+          'Content-Length': String(fileBuffer.length),
+          'x-amz-acl': isPrivate ? 'private' : 'public-read',
+        },
+        body: new Uint8Array(fileBuffer),
+      });
+      if (!res.ok) {
+        throw new Error(`S3 rejected the upload (HTTP ${res.status}); request signing is not implemented`);
       }
+    } catch (uploadError) {
+      logger.error(`[Storage] S3 upload failed: ${(uploadError as Error).message}`);
+      throw uploadError;
     }
 
     return {
@@ -140,19 +142,24 @@ export class R2StorageProvider implements IStorageProvider {
     const host = `${this.accountId}.r2.cloudflarestorage.com`;
     const endpoint = `https://${host}/${this.bucket}/${key}`;
 
-    if (this.accessKeyId && this.secretAccessKey && this.accountId) {
-      try {
-        await fetch(endpoint, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': mimeType,
-            'Content-Length': String(fileBuffer.length),
-          },
-          body: new Uint8Array(fileBuffer),
-        });
-      } catch (r2Err) {
-        logger.error(`[Storage] R2 Upload error: ${(r2Err as Error).message}`);
+    if (!this.accessKeyId || !this.secretAccessKey || !this.accountId) {
+      throw new Error('R2 storage is not configured: set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY');
+    }
+    try {
+      const res = await fetch(endpoint, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': mimeType,
+          'Content-Length': String(fileBuffer.length),
+        },
+        body: new Uint8Array(fileBuffer),
+      });
+      if (!res.ok) {
+        throw new Error(`R2 rejected the upload (HTTP ${res.status}); request signing is not implemented`);
       }
+    } catch (r2Err) {
+      logger.error(`[Storage] R2 upload failed: ${(r2Err as Error).message}`);
+      throw r2Err;
     }
 
     return {
@@ -235,15 +242,8 @@ export class GCSStorageProvider implements IStorageProvider {
     isPrivate: boolean,
     originalName: string
   ): Promise<StorageObjectMetadata> {
-    return {
-      key,
-      filename: originalName,
-      sizeBytes: fileBuffer.length,
-      mimeType,
-      provider: 'gcs',
-      isPrivate,
-      uploadedAt: new Date(),
-    };
+    void fileBuffer; void key; void mimeType; void isPrivate; void originalName;
+    throw new Error('GCS storage is not implemented. Use STORAGE_PROVIDER=local');
   }
 
   async delete(key: string): Promise<boolean> {
