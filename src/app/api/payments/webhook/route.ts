@@ -52,8 +52,9 @@ export async function POST(req: NextRequest) {
       );
     }
     return NextResponse.json({ received: true, ...result }, { status: 200 });
- } catch (_e) { const error = _e as Error; const err = _e as Error; 
-    logger.error('[PaymentWebhook:Error]', err.message);
+  } catch (_e) {
+    const error = _e as Error;
+    logger.error('[PaymentWebhook:Error]', error.message);
     if (
       error.message?.includes('Invalid') &&
       error.message?.includes('signature')

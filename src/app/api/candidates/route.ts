@@ -220,8 +220,9 @@ export async function GET(req: NextRequest) {
       searchMode: isVectorSearchApplied ? 'SEMANTIC_RAG' : 'DETERMINISTIC_HYBRID_FALLBACK',
       totalCount: scoredCandidates.length,
     });
- } catch (_e) { const error = _e as Error; const err = _e as Error; 
+  } catch (_e) {
+    const error = _e as Error;
     logger.error('[Candidates:API:Error]', error);
-    return apiError(err.message || 'Failed to fetch candidate directory', 'CANDIDATE_FETCH_ERROR', 500);
+    return apiError(error.message || 'Failed to fetch candidate directory', 'CANDIDATE_FETCH_ERROR', 500);
   }
 }

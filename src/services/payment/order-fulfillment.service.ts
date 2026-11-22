@@ -34,9 +34,8 @@ export class OrderFulfillmentService {
 
       const enrollment = await tx.enrollment.upsert({
         where: { studentId_courseId: { studentId: userId, courseId: order.itemId } },
-        update: {
-          progressPercent: 0,
-        },
+        // Re-fulfillment (duplicate/concurrent webhook) must never reset existing progress.
+        update: {},
         create: {
           studentId: userId,
           courseId: order.itemId,

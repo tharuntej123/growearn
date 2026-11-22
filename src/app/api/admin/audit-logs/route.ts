@@ -17,7 +17,8 @@ export async function GET(req: NextRequest) {
 
     const result = await AdminRepository.getAuditLogs({ action, limit, offset });
     return apiSuccess({ ...result, limit, offset });
- } catch (_e) { const err = _e as Error; 
+  } catch (_e) {
+    const err = _e as Error;
     return apiError(err.message || 'Failed to fetch audit logs', 'INTERNAL_ERROR', 500);
   }
 }

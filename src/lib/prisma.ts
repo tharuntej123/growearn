@@ -23,7 +23,8 @@ export async function checkDatabaseHealth(): Promise<{
     await prisma.$queryRawUnsafe('SELECT 1');
     const latencyMs = Date.now() - start;
     return { connected: true, latencyMs };
- } catch (_e) { const error = _e as Error; 
+  } catch (_e) {
+    const error = _e as Error;
     const latencyMs = Date.now() - start;
     logger.error('[Database:HealthCheckFailed]', error?.message || error);
     return {

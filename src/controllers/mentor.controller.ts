@@ -79,7 +79,8 @@ export class MentorController {
         limit,
         offset,
       });
- } catch (_e) { const err = _e as Error; 
+    } catch (_e) {
+      const err = _e as Error;
       return apiError(err.message || 'Failed to fetch mentors', 'INTERNAL_ERROR', 500);
     }
   }
@@ -124,7 +125,8 @@ export class MentorController {
       }
 
       return apiSuccess({ mentor });
- } catch (_e) { const err = _e as Error; 
+    } catch (_e) {
+      const err = _e as Error;
       return apiError(err.message || 'Failed to fetch mentor details', 'INTERNAL_ERROR', 500);
     }
   }
@@ -201,7 +203,8 @@ export class MentorController {
         },
         201
       );
- } catch (_e) { const err = _e as Error; 
+    } catch (_e) {
+      const err = _e as Error;
       return apiError(err.message || 'Failed to submit mentorship request', 'INTERNAL_ERROR', 500);
     }
   }
@@ -243,7 +246,8 @@ export class MentorController {
       });
 
       return apiSuccess({ requests });
- } catch (_e) { const err = _e as Error; 
+    } catch (_e) {
+      const err = _e as Error;
       return apiError(err.message || 'Failed to fetch mentor requests', 'INTERNAL_ERROR', 500);
     }
   }
@@ -334,7 +338,8 @@ export class MentorController {
         message: `Request status updated to ${status}`,
         request: updated,
       });
- } catch (_e) { const err = _e as Error; 
+    } catch (_e) {
+      const err = _e as Error;
       return apiError(err.message || 'Failed to update request status', 'INTERNAL_ERROR', 500);
     }
   }
@@ -363,7 +368,8 @@ export class MentorController {
       });
 
       return apiSuccess({ mentorProfile });
- } catch (_e) { const err = _e as Error; 
+    } catch (_e) {
+      const err = _e as Error;
       return apiError(err.message || 'Failed to update mentor profile', 'INTERNAL_ERROR', 500);
     }
   }

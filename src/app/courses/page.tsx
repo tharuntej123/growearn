@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { Suspense, useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/context/auth-context';
 import { DashboardSidebar } from '@/components/layout/sidebar';
@@ -17,12 +18,16 @@ import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
 import { CourseUI } from '@/types/ui';
 import { CheckoutModal } from '@/components/payment/checkout-modal';
+import { COURSE_CATEGORIES } from '@/lib/constants';
 
-export default function CoursesPage() {
+function CoursesContent() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const urlSearch = searchParams.get('search') ?? '';
   const [courses, setCourses] = useState<CourseUI[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(urlSearch);
+  const requestId = useRef(0);
   const [category, setCategory] = useState('ALL');
 
   const [activeCourse, setActiveCourse] = useState<CourseUI | null>(null);
@@ -31,7 +36,13 @@ export default function CoursesPage() {
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [selectedCourseForCheckout, setSelectedCourseForCheckout] = useState<CourseUI | null>(null);
 
+  // Keep the input in sync when the navbar search changes the URL while this page is open.
+  useEffect(() => {
+    setSearch(urlSearch);
+  }, [urlSearch]);
+
   const fetchCourses = useCallback(async () => {
+    const currentRequest = ++requestId.current;
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
@@ -40,18 +51,24 @@ export default function CoursesPage() {
 
       const res = await fetch(`/api/courses?${params.toString()}`);
       const json = await res.json();
+      // Ignore out-of-order responses from earlier keystrokes.
+      if (currentRequest !== requestId.current) return;
       if (json.success && json.data?.courses) {
         setCourses(json.data.courses);
+      } else {
+        toast.error(json.error?.message || 'Failed to load courses');
       }
     } catch {
-      toast.error('Failed to load courses');
+      if (currentRequest === requestId.current) toast.error('Failed to load courses');
     } finally {
-      setIsLoading(false);
+      if (currentRequest === requestId.current) setIsLoading(false);
     }
   }, [search, category]);
 
+  // Debounce typing so we do not fire one request per keystroke.
   useEffect(() => {
-    fetchCourses();
+    const timer = setTimeout(fetchCourses, 300);
+    return () => clearTimeout(timer);
   }, [fetchCourses]);
 
   const handleOpenCourse = async (courseId: string) => {
@@ -140,7 +157,7 @@ export default function CoursesPage() {
             </div>
 
             <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto">
-              {['ALL', 'Backend', 'Full Stack', 'Database & Architecture', 'AI / Machine Learning'].map((cat) => (
+              {['ALL', ...COURSE_CATEGORIES].map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setCategory(cat)}
@@ -163,6 +180,13 @@ export default function CoursesPage() {
               <div key={i} className="h-80 rounded-2xl bg-slate-100 animate-pulse border border-slate-200" />
             ))}
           </div>
+        ) : courses.length === 0 ? (
+          <Card className="p-10 text-center bg-white border-slate-200/90 rounded-2xl">
+            <p className="text-sm font-semibold text-slate-800">No courses found</p>
+            <p className="text-xs text-slate-500 mt-1">
+              Try a different keyword or category{search ? ` instead of "${search}"` : ''}.
+            </p>
+          </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {courses.map((course) => (
@@ -211,7 +235,7 @@ export default function CoursesPage() {
                 <div className="p-5 pt-0 border-t border-slate-100 flex items-center justify-between mt-2">
                   <div>
                     <span className="text-base font-extrabold text-emerald-700">
-                      {(course.price || 0) > 0 ? formatCurrency(course.price || 0) : 'Free'}
+                      {(course.price || 0) > 0 ? formatCurrency(course.price || 0, 'INR') : 'Free'}
                     </span>
                     <span className="text-[11px] text-slate-500 ml-1">({course.durationHours} hrs)</span>
                   </div>
@@ -244,13 +268,19 @@ export default function CoursesPage() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-4">
                   <div className="aspect-video bg-black rounded-2xl overflow-hidden border border-slate-200 flex items-center justify-center relative shadow-sm">
-                    <iframe
-                      src={activeLesson?.videoUrl || 'https://www.youtube.com/embed/dQw4w9WgXcQ'}
-                      title={activeLesson?.title || 'Course Lesson'}
-                      className="w-full h-full"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
+                    {activeLesson?.videoUrl ? (
+                      <iframe
+                        src={activeLesson.videoUrl}
+                        title={activeLesson.title || 'Course Lesson'}
+                        className="w-full h-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    ) : (
+                      <p className="text-xs text-slate-300 px-6 text-center">
+                        {activeLesson ? 'This lesson has no video. Read the lesson notes below.' : 'Select a lesson to start learning.'}
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -331,5 +361,13 @@ export default function CoursesPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function CoursesPage() {
+  return (
+    <Suspense fallback={null}>
+      <CoursesContent />
+    </Suspense>
   );
 }

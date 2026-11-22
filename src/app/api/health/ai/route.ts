@@ -43,7 +43,8 @@ export async function GET() {
       },
       { status: 200 }
     );
- } catch (_e) { const err = _e as Error; 
+  } catch (_e) {
+    const err = _e as Error;
     return NextResponse.json(
       {
         status: 'UNHEALTHY',

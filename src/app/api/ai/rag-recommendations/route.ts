@@ -62,7 +62,8 @@ export async function POST(req: NextRequest) {
     }
 
     return apiSuccess(ragResult);
- } catch (_e) { const error = _e as Error; 
+  } catch (_e) {
+    const error = _e as Error;
     return apiError(
       error.message || 'Failed to process RAG skill recommendations',
       'INTERNAL_ERROR',

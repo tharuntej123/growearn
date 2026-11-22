@@ -13,7 +13,8 @@ export async function PUT(req: NextRequest) {
     await NotificationRepository.markAllAsRead(authUser.id);
 
     return apiSuccess({ message: 'All notifications marked as read' });
- } catch (_e) { const err = _e as Error; 
+  } catch (_e) {
+    const err = _e as Error;
     return apiError(err.message || 'Failed to update notifications', 'INTERNAL_ERROR', 500);
   }
 }

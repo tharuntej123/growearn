@@ -89,7 +89,8 @@ export class LocalBGE3EmbeddingProvider implements EmbeddingProvider {
         model: this.model,
         error: hasModel ? undefined : `Model '${this.model}' not found in Ollama library`,
       };
- } catch (_e) { const err = _e as Error; 
+    } catch (_e) {
+      const err = _e as Error;
       return { healthy: false, model: this.model, error: err.message || 'Connection failed' };
     }
   }
@@ -155,7 +156,8 @@ export class LocalBGE3EmbeddingProvider implements EmbeddingProvider {
       this.validateVector(rawVector);
       queryEmbeddingCache.set(cacheKey, rawVector);
       return rawVector;
- } catch (_e) { const err = _e as Error; 
+    } catch (_e) {
+      const err = _e as Error;
       if (err.message?.startsWith('SEMANTIC_RAG_UNAVAILABLE') || err.message?.startsWith('SEMANTIC_RAG_DIMENSION_MISMATCH')) {
         throw err;
       }
@@ -196,7 +198,8 @@ export class LocalBGE3EmbeddingProvider implements EmbeddingProvider {
         results.push(vec);
       }
       return results;
- } catch (_e) { const err = _e as Error; 
+    } catch (_e) {
+      const err = _e as Error;
       if (err.message?.startsWith('SEMANTIC_RAG_UNAVAILABLE') || err.message?.startsWith('SEMANTIC_RAG_DIMENSION_MISMATCH')) {
         throw err;
       }

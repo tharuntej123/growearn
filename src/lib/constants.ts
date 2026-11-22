@@ -70,6 +70,43 @@ export const SKILL_CATEGORIES = [
   'Cybersecurity',
 ] as const;
 
+// Canonical course categories. Mentor forms, the catalog filter and the API all use this list.
+export const COURSE_CATEGORIES = [
+  'Backend',
+  'Frontend',
+  'Full Stack',
+  'AI / Machine Learning',
+  'Cloud & DevOps',
+  'Database & Architecture',
+] as const;
+
+// Legacy / alternate spellings that map onto a canonical category.
+export const COURSE_CATEGORY_ALIASES: Record<string, readonly string[]> = {
+  Backend: ['Backend Engineering', 'Backend Development'],
+  Frontend: ['Frontend Development'],
+  'Full Stack': ['Full Stack Development', 'Fullstack'],
+  'AI / Machine Learning': ['AI & Machine Learning', 'AI/ML', 'Machine Learning'],
+  'Cloud & DevOps': ['DevOps & Cloud', 'Cloud and DevOps', 'DevOps'],
+  'Database & Architecture': ['System Architecture', 'Database and Architecture'],
+};
+
+// Returns the canonical category for any known spelling; unknown values are returned trimmed.
+export function normalizeCourseCategory(value: string): string {
+  const v = value.trim();
+  const key = v.toLowerCase();
+  for (const canonical of COURSE_CATEGORIES) {
+    if (canonical.toLowerCase() === key) return canonical;
+    if ((COURSE_CATEGORY_ALIASES[canonical] || []).some((a) => a.toLowerCase() === key)) return canonical;
+  }
+  return v;
+}
+
+// Every stored spelling that should match a canonical category when filtering.
+export function courseCategoryVariants(value: string): string[] {
+  const canonical = normalizeCourseCategory(value);
+  return [canonical, ...(COURSE_CATEGORY_ALIASES[canonical] || [])];
+}
+
 export function isDemoEnvironment(): boolean {
   if (typeof process === 'undefined') return false;
   return (process.env.APP_ENV || process.env.NEXT_PUBLIC_APP_ENV) === 'demo';

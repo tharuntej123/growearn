@@ -142,7 +142,8 @@ export class DatabaseRateLimiter {
         remaining: Math.max(0, limit - points),
         resetSeconds: remainingTime,
       };
- } catch (_e) { const err = _e as Error; 
+    } catch (_e) {
+      const err = _e as Error;
       this.totalFailures += 1;
       this.consecutiveFailures += 1;
       this.lastFailureTime = Date.now();

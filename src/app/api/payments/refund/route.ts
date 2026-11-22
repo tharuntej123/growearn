@@ -39,14 +39,15 @@ export async function POST(req: NextRequest) {
     });
 
     return apiSuccess(result);
- } catch (_e) { const error = _e as Error; const err = _e as Error; 
+  } catch (_e) {
+    const error = _e as Error;
     logger.error('[PaymentRefund:Error]', error);
     if (error.message?.includes('Forbidden')) {
-      return apiError(err.message, 'FORBIDDEN', 403);
+      return apiError(error.message, 'FORBIDDEN', 403);
     }
     if (error.message?.includes('not found')) {
-      return apiError(err.message, 'NOT_FOUND', 404);
+      return apiError(error.message, 'NOT_FOUND', 404);
     }
-    return apiError(err.message || 'Refund processing failed', 'REFUND_FAILED', 400);
+    return apiError(error.message || 'Refund processing failed', 'REFUND_FAILED', 400);
   }
 }

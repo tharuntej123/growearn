@@ -156,7 +156,8 @@ export async function PUT(req: NextRequest) {
 
     const freshContext = await getUserAIContext(authUser.id);
     return apiSuccess({ user: freshContext });
- } catch (_e) { const err = _e as Error; 
+  } catch (_e) {
+    const err = _e as Error;
     return apiError(err.message || 'Failed to update profile', 'PROFILE_UPDATE_ERROR', 400);
   }
 }

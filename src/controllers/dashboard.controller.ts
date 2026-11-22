@@ -53,7 +53,8 @@ export class DashboardController {
         recommendedMentors: mentorsRes.mentors,
         isMentorsPersonalized: mentorsRes.isPersonalized,
       });
- } catch (_e) { const error = _e as Error; 
+    } catch (_e) {
+      const error = _e as Error;
       logger.error('[DashboardStats:Error]', error);
       return apiError(
         error.message || 'Failed to fetch dashboard data',

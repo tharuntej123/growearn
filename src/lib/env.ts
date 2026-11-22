@@ -49,7 +49,8 @@ let parsedEnv: Env;
 
 try {
   parsedEnv = envSchema.parse(process.env);
-} catch (_e) { const err = _e as Error; 
+} catch (_e) {
+  const err = _e as Error;
   if (process.env.APP_ENV === 'production') {
     const errorsList = _e instanceof z.ZodError ? _e.errors : err.message;
     process.stderr.write(`FATAL: Environment variable validation failed in production:\n${JSON.stringify(errorsList, null, 2)}\n`);

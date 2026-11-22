@@ -103,10 +103,11 @@ export async function POST(req: NextRequest) {
     }
 
     return apiSuccess({ roadmap });
- } catch (_e) { const error = _e as Error; const err = _e as Error; 
+  } catch (_e) {
+    const error = _e as Error;
     logger.error('[LearnerRoadmapRoute:Error]', error);
     if (error.message?.includes('Forbidden')) {
-      return apiError(err.message, 'FORBIDDEN', 403);
+      return apiError(error.message, 'FORBIDDEN', 403);
     }
     return apiError(
       error.message || 'Failed to generate learner roadmap',

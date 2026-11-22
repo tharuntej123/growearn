@@ -21,14 +21,15 @@ export async function GET(
 
     const payment = await PaymentService.getPaymentById(id, user.userId, user.role);
     return apiSuccess(payment);
- } catch (_e) { const error = _e as Error; const err = _e as Error; 
+  } catch (_e) {
+    const error = _e as Error;
     logger.error('[PaymentDetail:Error]', error);
     if (error.message?.includes('Forbidden')) {
-      return apiError(err.message, 'FORBIDDEN', 403);
+      return apiError(error.message, 'FORBIDDEN', 403);
     }
     if (error.message?.includes('not found')) {
-      return apiError(err.message, 'NOT_FOUND', 404);
+      return apiError(error.message, 'NOT_FOUND', 404);
     }
-    return apiError(err.message || 'Failed to fetch payment details', 'PAYMENT_FETCH_ERROR', 500);
+    return apiError(error.message || 'Failed to fetch payment details', 'PAYMENT_FETCH_ERROR', 500);
   }
 }

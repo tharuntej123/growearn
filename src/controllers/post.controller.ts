@@ -24,7 +24,8 @@ export class PostController {
         posts,
         isPersonalized,
       });
- } catch (_e) { const error = _e as Error; 
+    } catch (_e) {
+      const error = _e as Error;
       logger.error('[Feed:FetchError]', error);
       return apiError(
         error.message || 'Failed to fetch posts',
@@ -63,7 +64,8 @@ export class PostController {
       });
 
       return apiSuccess({ post: newPost }, 201);
- } catch (_e) { const error = _e as Error; 
+    } catch (_e) {
+      const error = _e as Error;
       return apiError(
         error.message || 'Failed to create post',
         'INTERNAL_ERROR',
