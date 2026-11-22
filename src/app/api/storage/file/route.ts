@@ -73,7 +73,8 @@ export async function GET(req: NextRequest) {
         'Cache-Control': 'private, max-age=3600',
       },
     });
- } catch (_e) { const error = _e as Error; 
+  } catch (_e) {
+    const error = _e as Error;
     if ((error as { code?: string }).code === 'ENOENT') {
       return NextResponse.json({ error: 'File not found' }, { status: 404 });
     }

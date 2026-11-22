@@ -41,7 +41,8 @@ export async function POST(req: NextRequest) {
       sources: result.sources,
       recommendedActions: result.recommendedActions,
     });
- } catch (_e) { const error = _e as Error; 
+  } catch (_e) {
+    const error = _e as Error;
     logger.error('AI chat error:', error);
     return apiError(
       error.message || 'AI assistant error',

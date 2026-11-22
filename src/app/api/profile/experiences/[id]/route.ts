@@ -25,7 +25,8 @@ export async function DELETE(
 
     await prisma.experience.delete({ where: { id } });
     return apiSuccess({ message: 'Experience record deleted successfully' });
- } catch (_e) { const err = _e as Error; 
+  } catch (_e) {
+    const err = _e as Error;
     return apiError(err.message || 'Failed to delete experience', 'INTERNAL_ERROR', 500);
   }
 }

@@ -33,7 +33,8 @@ export async function GET(req: NextRequest) {
       limit,
       hasMore: offset + limit < result.total,
     });
- } catch (_e) { const err = _e as Error; 
+  } catch (_e) {
+    const err = _e as Error;
     return apiError(err.message || 'Failed to paginate courses', 'INTERNAL_ERROR', 500);
   }
 }

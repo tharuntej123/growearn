@@ -62,7 +62,8 @@ export async function POST(req: NextRequest) {
     });
 
     return apiSuccess({ education }, 201);
- } catch (_e) { const err = _e as Error; 
+  } catch (_e) {
+    const err = _e as Error;
     return apiError(err.message || 'Failed to add education', 'INTERNAL_ERROR', 500);
   }
 }

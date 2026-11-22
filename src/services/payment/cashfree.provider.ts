@@ -192,7 +192,8 @@ export class CashfreePaymentProvider implements IPaymentProvider {
         body: JSON.stringify(orderPayload),
         signal: AbortSignal.timeout(12000),
       });
- } catch (_e) { const netErr = _e as Error;
+    } catch (_e) {
+      const netErr = _e as Error;
       throw new Error(`Cashfree Gateway Connection Timeout/Error: ${netErr.message}`);
     }
 
@@ -403,7 +404,8 @@ export class CashfreePaymentProvider implements IPaymentProvider {
         body: JSON.stringify(refundPayload),
         signal: AbortSignal.timeout(12000),
       });
- } catch (_e) { const netErr = _e as Error;
+    } catch (_e) {
+      const netErr = _e as Error;
       throw new Error(`Cashfree Refund Connection Error: ${netErr.message}`);
     }
 
@@ -443,7 +445,8 @@ export class CashfreePaymentProvider implements IPaymentProvider {
           signal: AbortSignal.timeout(10000),
         }).catch(() => null),
       ]);
- } catch (_e) { const netErr = _e as Error;
+    } catch (_e) {
+      const netErr = _e as Error;
       throw new Error(`Cashfree Order Status Query Connection Error: ${netErr.message}`);
     }
 

@@ -39,8 +39,9 @@ export async function POST(req: NextRequest) {
     });
 
     return apiSuccess(result);
- } catch (_e) { const error = _e as Error; const err = _e as Error; 
+  } catch (_e) {
+    const error = _e as Error;
     logger.error('[PaymentVerify:Error]', error);
-    return apiError(err.message || 'Payment verification failed', 'VERIFICATION_FAILED', 400);
+    return apiError(error.message || 'Payment verification failed', 'VERIFICATION_FAILED', 400);
   }
 }

@@ -92,7 +92,8 @@ export class JobController {
         limit,
         offset,
       });
- } catch (_e) { const err = _e as Error; 
+    } catch (_e) {
+      const err = _e as Error;
       return apiError(err.message || 'Failed to fetch jobs', 'INTERNAL_ERROR', 500);
     }
   }
@@ -193,7 +194,8 @@ export class JobController {
         application,
         matchResult,
       });
- } catch (_e) { const err = _e as Error; 
+    } catch (_e) {
+      const err = _e as Error;
       return apiError(err.message || 'Failed to fetch job details', 'INTERNAL_ERROR', 500);
     }
   }
@@ -234,7 +236,8 @@ export class JobController {
       }).catch(() => {});
 
       return apiSuccess({ job: newJob }, 201);
- } catch (_e) { const err = _e as Error; 
+    } catch (_e) {
+      const err = _e as Error;
       return apiError(err.message || 'Failed to create job listing', 'JOB_CREATE_ERROR', 500);
     }
   }
@@ -330,7 +333,8 @@ export class JobController {
         message: 'Application submitted successfully',
         application,
       }, 201);
- } catch (_e) { const err = _e as Error; 
+    } catch (_e) {
+      const err = _e as Error;
       return apiError(err.message || 'Failed to submit application', 'APPLICATION_ERROR', 500);
     }
   }
@@ -359,7 +363,8 @@ export class JobController {
       const applications = await JobApplicationService.getApplicationsForJob(jobId);
 
       return apiSuccess({ job, applications });
- } catch (_e) { const err = _e as Error; 
+    } catch (_e) {
+      const err = _e as Error;
       return apiError(err.message || 'Failed to fetch applications', 'INTERNAL_ERROR', 500);
     }
   }
@@ -398,7 +403,8 @@ export class JobController {
         message: `Application status updated to ${status}`,
         application: updated,
       });
- } catch (_e) { const err = _e as Error; 
+    } catch (_e) {
+      const err = _e as Error;
       return apiError(err.message || 'Failed to update application status', 'INTERNAL_ERROR', 500);
     }
   }

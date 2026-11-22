@@ -31,7 +31,8 @@ export async function POST(req: NextRequest) {
     const analysis = SkillAnalysisService.analyze(skills, targetRole, exp);
 
     return apiSuccess({ analysis });
- } catch (_e) { const error = _e as Error; 
+  } catch (_e) {
+    const error = _e as Error;
     logger.error('Skill analysis error:', error);
     return apiError(
       error.message || 'Failed to analyze skills',

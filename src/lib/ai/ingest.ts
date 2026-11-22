@@ -118,7 +118,8 @@ export class DocumentIngestionService {
         chunkCount: inserted,
         success: true,
       };
- } catch (_e) { const err = _e as Error; 
+    } catch (_e) {
+      const err = _e as Error;
       logger.error(`[DocumentIngestionService] Failed to ingest ${input.filename}:`, err);
       return {
         source: input.filename,

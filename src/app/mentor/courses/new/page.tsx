@@ -17,6 +17,7 @@ import {
   Save,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { COURSE_CATEGORIES } from '@/lib/constants';
 
 interface LessonInput {
   title: string;
@@ -208,12 +209,11 @@ export default function NewCoursePage() {
                   onChange={(e) => setCategory(e.target.value)}
                   className="w-full text-xs p-2.5 rounded-xl border border-slate-200 bg-white text-slate-900"
                 >
-                  <option value="Backend">Backend</option>
-                  <option value="Frontend">Frontend</option>
-                  <option value="Full Stack">Full Stack</option>
-                  <option value="AI & Machine Learning">AI & Machine Learning</option>
-                  <option value="Cloud & DevOps">Cloud & DevOps</option>
-                  <option value="Database & Architecture">Database & Architecture</option>
+                  {COURSE_CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -231,7 +231,7 @@ export default function NewCoursePage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Price (USD)</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Price (₹ INR)</label>
                 <Input
                   type="number"
                   min="0"

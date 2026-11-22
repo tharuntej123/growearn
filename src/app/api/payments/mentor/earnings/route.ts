@@ -17,8 +17,9 @@ export async function GET(req: NextRequest) {
 
     const earnings = await PaymentService.getMentorEarnings(user.userId);
     return apiSuccess(earnings);
- } catch (_e) { const error = _e as Error; const err = _e as Error; 
+  } catch (_e) {
+    const error = _e as Error;
     logger.error('[MentorEarnings:Error]', error);
-    return apiError(err.message || 'Failed to retrieve mentor earnings', 'EARNINGS_FETCH_ERROR', 500);
+    return apiError(error.message || 'Failed to retrieve mentor earnings', 'EARNINGS_FETCH_ERROR', 500);
   }
 }

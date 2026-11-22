@@ -1,7 +1,6 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 
 export interface User {
   id: string;
@@ -40,7 +39,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
 
   const refreshUser = async () => {
     try {
@@ -119,12 +117,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
-      setUser(null);
-      router.push('/');
     } catch {
-      setUser(null);
-      router.push('/');
+      // Even if the request fails, clear local state and leave the session page.
     }
+    setUser(null);
+    // Full page load: flushes the client router cache (which can hold a prefetched
+    // /login -> /dashboard redirect from the signed-in session) and all in-memory state.
+    window.location.assign(new URL('/', window.location.origin).href);
   };
 
   return (

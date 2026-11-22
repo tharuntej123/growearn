@@ -248,7 +248,8 @@ export class AuthController {
 
     const response = apiSuccess({ message: 'Logged out successfully' });
     const clearOpts = { path: '/', maxAge: 0 };
-    response.cookies.set(AUTH_COOKIE_NAME, '', clearOpts);
+    // Clear the session cookie with the same attributes it was created with so every browser honors it.
+    response.cookies.set(AUTH_COOKIE_NAME, '', { ...getAuthCookieOptions(), maxAge: 0 });
     response.cookies.set(OAUTH_STATE_COOKIE_NAME, '', clearOpts);
     response.cookies.set(LINKING_COOKIE_NAME, '', clearOpts);
     response.cookies.set(LEGACY_COOKIE_NAME, '', clearOpts);

@@ -180,7 +180,8 @@ export async function POST(req: NextRequest) {
       skillAnalysis,
       roadmap,
     });
- } catch (_e) { const error = _e as Error; 
+  } catch (_e) {
+    const error = _e as Error;
     logger.error('Onboarding error:', error);
     return apiError(
       error.message || 'Failed to complete onboarding',

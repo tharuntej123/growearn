@@ -229,7 +229,8 @@ export async function POST(req: NextRequest) {
           },
         });
       }
- } catch (_e) { const dbErr = _e as Error; 
+    } catch (_e) {
+      const dbErr = _e as Error;
       logger.warn('[AgenticRoadmap] Database persistence skipped/failed:', dbErr.message);
     }
 
@@ -241,7 +242,8 @@ export async function POST(req: NextRequest) {
       mode,
       fallbackReason,
     });
- } catch (_e) { const err = _e as Error; 
+  } catch (_e) {
+    const err = _e as Error;
     return apiError(err.message || 'Internal error in agentic roadmap route', 'INTERNAL_ERROR', 500);
   }
 }

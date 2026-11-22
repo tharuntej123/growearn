@@ -129,6 +129,8 @@ services:
         condition: service_healthy
     ports:
       - "${PORT:-3000}:3000"
+    volumes:
+      - storage_data:/app/storage
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://${POSTGRES_USER:-growearn}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-growearn}?schema=public
@@ -169,3 +171,4 @@ networks:
 volumes:
   postgres_data:
   ollama_models:
+  storage_data:

@@ -36,6 +36,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
+# Writable, persistent location for local-provider uploads (mount a volume here)
+RUN mkdir -p /app/storage/private && chown -R nextjs:nodejs /app/storage
+
 USER nextjs
 EXPOSE 3000
 

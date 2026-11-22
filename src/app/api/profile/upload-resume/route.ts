@@ -71,7 +71,8 @@ export async function POST(req: NextRequest) {
       provider: uploadResult.provider,
       mimeType: uploadResult.mimeType,
     });
- } catch (_e) { const err = _e as Error; 
+  } catch (_e) {
+    const err = _e as Error;
     return apiError(err.message || 'Resume upload failed', 'UPLOAD_ERROR', 400);
   }
 }

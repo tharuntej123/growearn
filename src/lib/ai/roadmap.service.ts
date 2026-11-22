@@ -289,7 +289,8 @@ export class CareerRoadmapService {
         experienceLevel: exp,
         maxResults: 6,
       });
- } catch (_e) { const err = _e as Error; 
+    } catch (_e) {
+      const err = _e as Error;
       logger.warn(
         '[CareerRoadmapService:Warn] Tavily search error, falling back to curated knowledge:',
         err.message
@@ -367,7 +368,8 @@ Return ONLY a valid JSON object matching this schema:
           });
           return parsed;
         }
- } catch (_e) { const error = _e as Error; 
+      } catch (_e) {
+        const error = _e as Error;
         logger.warn(
           '[CareerRoadmapService:Warn] LLM-assisted Tavily roadmap generation failed, falling back to curated template with attached web sources:',
           error.message

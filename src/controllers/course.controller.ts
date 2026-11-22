@@ -5,11 +5,12 @@ import { prisma } from '@/lib/prisma';
 import { CourseRepository } from '@/repositories/course.repository';
 import { RAGSyncService } from '@/lib/ai/rag-sync.service';
 import { z } from 'zod';
+import { normalizeCourseCategory, courseCategoryVariants } from '@/lib/constants';
 
 const createCourseSchema = z.object({
   title: z.string().min(3, 'Course title must be at least 3 characters'),
   description: z.string().min(10, 'Description must be at least 10 characters'),
-  category: z.string().default('Development'),
+  category: z.string().trim().min(1).default('Development').transform(normalizeCourseCategory),
   level: z.enum(['BEGINNER', 'INTERMEDIATE', 'ADVANCED']).default('BEGINNER'),
   price: z.number().min(0).default(0),
   durationHours: z.number().min(0.5).default(10),
@@ -62,7 +63,7 @@ export class CourseController {
         ];
       }
       if (category && category !== 'All') {
-        where.category = category;
+        where.category = { in: courseCategoryVariants(category) };
       }
       if (level && level !== 'All') {
         where.level = level.toUpperCase();
@@ -103,7 +104,8 @@ export class CourseController {
         limit,
         offset,
       });
- } catch (_e) { const err = _e as Error; 
+    } catch (_e) {
+      const err = _e as Error;
       return apiError(err.message || 'Failed to fetch courses', 'INTERNAL_ERROR', 500);
     }
   }
@@ -199,7 +201,8 @@ export class CourseController {
         isEnrolled: Boolean(enrollment),
         enrollment,
       });
- } catch (_e) { const err = _e as Error; 
+    } catch (_e) {
+      const err = _e as Error;
       return apiError(err.message || 'Failed to fetch course details', 'INTERNAL_ERROR', 500);
     }
   }
@@ -269,7 +272,8 @@ export class CourseController {
       RAGSyncService.triggerSyncCourse(course.id);
 
       return apiSuccess({ course }, 201);
- } catch (_e) { const err = _e as Error; 
+    } catch (_e) {
+      const err = _e as Error;
       return apiError(err.message || 'Failed to create course', 'INTERNAL_ERROR', 500);
     }
   }
@@ -349,7 +353,8 @@ export class CourseController {
         message: `Successfully enrolled in ${course.title}`,
         enrollment,
       });
- } catch (_e) { const err = _e as Error; 
+    } catch (_e) {
+      const err = _e as Error;
       return apiError(err.message || 'Enrollment failed', 'INTERNAL_ERROR', 500);
     }
   }

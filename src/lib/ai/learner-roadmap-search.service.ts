@@ -166,7 +166,8 @@ export class LearnerRoadmapSearchService {
       });
 
       return normalizedResults;
- } catch (_e) { const err = _e as Error; 
+    } catch (_e) {
+      const err = _e as Error;
       // Graceful fail-open fallback: Never throw to frontend, log structured warning
       if (err.name === 'TimeoutError' || err.message?.includes('timeout')) {
         logger.warn(`[LearnerRoadmapSearch:Timeout] Tavily search timed out after ${this.REQUEST_TIMEOUT_MS}ms`);

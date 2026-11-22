@@ -25,7 +25,8 @@ export async function DELETE(
 
     await prisma.education.delete({ where: { id } });
     return apiSuccess({ message: 'Education record deleted successfully' });
- } catch (_e) { const err = _e as Error; 
+  } catch (_e) {
+    const err = _e as Error;
     return apiError(err.message || 'Failed to delete education', 'INTERNAL_ERROR', 500);
   }
 }
