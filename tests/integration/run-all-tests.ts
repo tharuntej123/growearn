@@ -1,24 +1,24 @@
 // Master End-to-End Automated Test Suite for GrowEarn (Second Deep Verification Pass).
 
-import { prisma } from '../prisma';
-import { AuthService } from '../../services/auth.service';
-import { SkillRAGService } from '../ai/skill-rag.service';
-import { RoadmapRepository } from '../../repositories/roadmap.repository';
-import { CourseRepository } from '../../repositories/course.repository';
-import { MentorRepository } from '../../repositories/mentor.repository';
-import { JobRepository } from '../../repositories/job.repository';
-import { MessagingRepository } from '../../repositories/messaging.repository';
-import { AdminRepository } from '../../repositories/admin.repository';
-import { PostRepository } from '../../repositories/post.repository';
-import { NotificationRepository } from '../../repositories/notification.repository';
-import { StorageService, LocalStorageProvider } from '../../services/storage.service';
-import { DatabaseRateLimiter } from '../rate-limiter';
-import { PgVectorRetriever } from '../ai/retriever';
-import { registerSchema } from '../../validators/auth.schema';
-import { EMBEDDING_DIMENSION, LocalBGE3EmbeddingProvider } from '../ai/embeddings';
-import { formatVectorForPg } from '../ai/vector-store';
-import { PaymentService } from '../../services/payment/payment.service';
-import { PaymentProviderFactory } from '../../services/payment/payment-provider.factory';
+import { prisma } from '@/lib/prisma';
+import { AuthService } from '@/services/auth.service';
+import { SkillRAGService } from '@/lib/ai/skill-rag.service';
+import { RoadmapRepository } from '@/repositories/roadmap.repository';
+import { CourseRepository } from '@/repositories/course.repository';
+import { MentorRepository } from '@/repositories/mentor.repository';
+import { JobRepository } from '@/repositories/job.repository';
+import { MessagingRepository } from '@/repositories/messaging.repository';
+import { AdminRepository } from '@/repositories/admin.repository';
+import { PostRepository } from '@/repositories/post.repository';
+import { NotificationRepository } from '@/repositories/notification.repository';
+import { StorageService, LocalStorageProvider } from '@/services/storage.service';
+import { DatabaseRateLimiter } from '@/lib/rate-limiter';
+import { PgVectorRetriever } from '@/lib/ai/retriever';
+import { registerSchema } from '@/validators/auth.schema';
+import { EMBEDDING_DIMENSION, LocalBGE3EmbeddingProvider } from '@/lib/ai/embeddings';
+import { formatVectorForPg } from '@/lib/ai/vector-store';
+import { PaymentService } from '@/services/payment/payment.service';
+import { PaymentProviderFactory } from '@/services/payment/payment-provider.factory';
 import crypto from 'crypto';
 import {
   getAuthSecret,
@@ -29,7 +29,7 @@ import {
   verifySignedOAuthState,
   verifySessionCookie,
   revokeSession,
-} from '../auth';
+} from '@/lib/auth';
 
 interface TestResult {
   name: string;

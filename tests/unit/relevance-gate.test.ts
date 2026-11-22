@@ -2,7 +2,7 @@
 // Proves that below-threshold, out-of-domain queries return clean refusal without LLM hallucination.
 
 import assert from 'node:assert';
-import { RelevanceGate } from '../ai/relevance-gate';
+import { RelevanceGate } from '@/lib/ai/relevance-gate';
 
 export async function runRelevanceGateTests() {
   console.log('🛡️ Testing RAG Relevance Gate & Hallucination Prevention...');

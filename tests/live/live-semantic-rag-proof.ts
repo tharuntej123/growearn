@@ -1,9 +1,9 @@
 // Real Live Semantic RAG & pgvector HNSW Verification Proof with Local BGE-M3 (1024-dim).
 
-import { prisma } from '../prisma';
-import { PgVectorStore } from '../ai/vector-store';
-import { generateEmbedding, EMBEDDING_DIMENSION, getEmbeddingProvider } from '../ai/embeddings';
-import { SkillRAGService } from '../ai/skill-rag.service';
+import { prisma } from '@/lib/prisma';
+import { PgVectorStore } from '@/lib/ai/vector-store';
+import { generateEmbedding, EMBEDDING_DIMENSION, getEmbeddingProvider } from '@/lib/ai/embeddings';
+import { SkillRAGService } from '@/lib/ai/skill-rag.service';
 
 async function testLiveSemanticRag() {
   console.log('================================================================================');

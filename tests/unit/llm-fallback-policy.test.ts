@@ -2,7 +2,7 @@
 // Verifies that 401/400 fail immediately while 429/5xx and timeouts trigger model fallback.
 
 import assert from 'node:assert';
-import { LLMFallbackPolicy } from '../ai/llm-fallback';
+import { LLMFallbackPolicy } from '@/lib/ai/llm-fallback';
 
 export async function runFallbackPolicyTests() {
   console.log('🔄 Testing LLM Selective Fallback Policy...');

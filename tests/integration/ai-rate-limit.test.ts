@@ -4,7 +4,7 @@ import { GET as mentorsGet } from '@/app/api/ai/mentors/route';
 import { POST as messagePost } from '@/app/api/ai/message/route';
 import { POST as skillAnalysisPost } from '@/app/api/ai/skill-analysis/route';
 import { POST as agenticPost } from '@/app/api/ai/roadmap/agentic/route';
-import { prisma } from '../prisma';
+import { prisma } from '@/lib/prisma';
 
 let passedCount = 0;
 let failedCount = 0;

@@ -1,6 +1,6 @@
-import prisma, { checkDatabaseHealth } from '../prisma';
-import { createJobSchema } from '../../validators/job.schema';
-import { JobRepository } from '../../repositories/job.repository';
+import prisma, { checkDatabaseHealth } from '@/lib/prisma';
+import { createJobSchema } from '@/validators/job.schema';
+import { JobRepository } from '@/repositories/job.repository';
 
 async function runTests() {
   console.log('==============================================');

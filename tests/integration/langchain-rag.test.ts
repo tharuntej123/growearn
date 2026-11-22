@@ -1,6 +1,6 @@
-import { BgeM3Embeddings } from '../ai/lc-embeddings';
-import { executeRAGWithTracing } from '../ai/rag-chain';
-import { completeStructured } from '../ai/llm-client';
+import { BgeM3Embeddings } from '@/lib/ai/lc-embeddings';
+import { executeRAGWithTracing } from '@/lib/ai/rag-chain';
+import { completeStructured } from '@/lib/ai/llm-client';
 import { z } from 'zod';
 
 let passedCount = 0;

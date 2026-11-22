@@ -1,10 +1,10 @@
-import { prisma } from '../prisma';
-import { CourseRepository } from '../../repositories/course.repository';
-import { UserRepository } from '../../repositories/user.repository';
-import { SkillRAGService } from '../ai/skill-rag.service';
-import { RecommendationService } from '../../services/recommendation.service';
-import { HybridMatcher } from '../ai/hybrid-matcher';
-import { getUserAIContext } from '../../services/user-context.service';
+import { prisma } from '@/lib/prisma';
+import { CourseRepository } from '@/repositories/course.repository';
+import { UserRepository } from '@/repositories/user.repository';
+import { SkillRAGService } from '@/lib/ai/skill-rag.service';
+import { RecommendationService } from '@/services/recommendation.service';
+import { HybridMatcher } from '@/lib/ai/hybrid-matcher';
+import { getUserAIContext } from '@/services/user-context.service';
 
 interface MetricResult {
   operation: string;

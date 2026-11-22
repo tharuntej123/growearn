@@ -6,11 +6,11 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import { prisma } from '../prisma';
-import { PaymentService } from '../../services/payment/payment.service';
-import { PaymentProviderFactory } from '../../services/payment/payment-provider.factory';
-import { CashfreePaymentProvider } from '../../services/payment/cashfree.provider';
-import { CourseRepository } from '../../repositories/course.repository';
+import { prisma } from '@/lib/prisma';
+import { PaymentService } from '@/services/payment/payment.service';
+import { PaymentProviderFactory } from '@/services/payment/payment-provider.factory';
+import { CashfreePaymentProvider } from '@/services/payment/cashfree.provider';
+import { CourseRepository } from '@/repositories/course.repository';
 
 interface TestResult {
   suite: string;
